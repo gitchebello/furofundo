@@ -186,15 +186,24 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .mstat small{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}
 .mstat b{font-size:20px;font-variant-numeric:tabular-nums}
 /* Holedown-style phase picker: big cards you swipe sideways; the one that settles in the middle is the phase you play */
-.pcar{position:relative;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 14% 10px;flex-shrink:0;scrollbar-width:none;overscroll-behavior-x:contain}
+.pcar{position:relative;perspective:900px;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 14% 10px;flex-shrink:0;scrollbar-width:none;overscroll-behavior-x:contain}
 .pcar::-webkit-scrollbar{display:none}
 .pcar:focus-visible{outline:2px solid var(--crystal);outline-offset:2px;border-radius:16px}
-.pcar .phase{flex:0 0 100%;scroll-snap-align:center;cursor:pointer;transform:scale(.9);opacity:.5;transition:transform .25s,opacity .25s}
-.pcar .phase.is-on{transform:none;opacity:1}
+/* coverflow: cards turn, shrink and sink as they leave the middle, following the finger; --d is the signed distance from the middle in cards */
+.pcar .phase{flex:0 0 100%;scroll-snap-align:center;cursor:pointer;opacity:.5;transition:opacity .25s;will-change:transform;
+  transform:rotateY(calc(var(--d,0) * -32deg)) scale(calc(1 - var(--ad,0) * .14)) translateY(calc(var(--ad,0) * 12px))}
+.pcar .phase.is-on{opacity:1}
+/* when a card settles in the middle its number hops and a shine runs across the colour band */
+.pcar .phase.is-on .phase__num{display:inline-block;animation:numhop .5s cubic-bezier(.3,1.8,.5,1)}
+@keyframes numhop{0%{transform:scale(1)}35%{transform:scale(1.28) rotate(-6deg)}100%{transform:none}}
+.pcar .phase__band{overflow:hidden}
+.pcar .phase.is-on .phase__band::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:35%;pointer-events:none;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);animation:bandshine .7s ease-out forwards}
+@keyframes bandshine{to{left:110%}}
 /* phases already open keep their full colour off to the side; only locked ones stay dimmed */
 .pcar .phase:not(.phase--locked){opacity:1}
 .phase--locked .phase__band{filter:grayscale(.85) brightness(.45)}
-@media (prefers-reduced-motion:reduce){.pcar .phase{transition:none}}
+@media (prefers-reduced-motion:reduce){.pcar .phase{transition:none;transform:none}.pcar .phase.is-on .phase__num,.pcar .phase.is-on .phase__band::after{animation:none}}
 .shopcoins{font-family:var(--body);font-weight:700;letter-spacing:0;margin-left:6px;-webkit-text-fill-color:var(--crystal)}
 .menu .ups{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px}
 .menu .up{display:flex;flex-direction:column;align-items:stretch;gap:7px;padding:11px;border-radius:12px}
@@ -1129,12 +1138,13 @@ const sfx = {
   },
   plop() { tone(rnd(520, 640), rnd(1100, 1400), .045, "sine", .07, 0, direct); },
   bubbles() { for (let i = 0; i < 5; i++) tone(rnd(300, 400) + i * 90, rnd(700, 950) + i * 120, .05, "sine", .06, i * .05); },
-  tick() {   // one small bubble per phase card passing the middle: a light, quick upward "blup" ringing in the cave, pitch nudged a little each time
+  tick(i) {   // the same "blup" as a breaking tile, one per phase card passing the middle, ringing in the cave; deeper phases sit higher on a pentatonic scale, so swiping on climbs and swiping back falls
     if (!ac) return;
-    const g = rnd(380, 480);
-    tone(g, g * 2.2, .04, "sine", .12, 0, direct);
-    tone(g, g * 2.2, .04, "sine", .1);          // through the cave reverb
-    tone(g, g * 2.2, .04, "sine", .04, .15);    // a faint echo coming back
+    const k = Math.min(i, 10), g = 160 * Math.pow(2, ([0, 2, 4, 7, 9][k % 5] + 12 * Math.floor(k / 5)) / 12);
+    tone(g, g * 3.2, .07, "sine", .22, 0, direct);
+    hiss(.04, "lowpass", 700, 300, .1, 0, .7, direct);
+    tone(g, g * 3.2, .07, "sine", .1);          // through the cave reverb
+    tone(g, g * 3.2, .07, "sine", .04, .15);    // a faint echo coming back
   },
   bad() { tone(260, 180, .3, "triangle", .1); tone(195, 140, .3, "triangle", .07, .08); },
   ff() { for (let i = 0; i < 3; i++) tone(300 + i * 120, 700 + i * 160, .06, "sine", .05, i * .05); },
@@ -2587,6 +2597,14 @@ function pickPhase(i) {
   $("bPlay").disabled = locked; $("bPlay").textContent = locked ? "🔒 Bloqueada" : "Cavar";
   if (!locked && i !== save.level) { save.level = i; store(); newRun(i); }
 }
+// coverflow: each card's distance from the middle of the carousel, in card widths, drives its turn, size and sink in CSS
+function carFx() {
+  const core = $("core"), mid = core.scrollLeft + core.clientWidth / 2;
+  for (const c of core.children) {
+    const d = clamp((c.offsetLeft + c.offsetWidth / 2 - mid) / (c.offsetWidth || 1), -1.5, 1.5);
+    c.style.setProperty("--d", d.toFixed(3)); c.style.setProperty("--ad", Math.min(1, Math.abs(d)).toFixed(3));
+  }
+}
 function menu() {
   const core = $("core"); core.innerHTML = "";
   for (let i = 0, n = Math.max(8, save.maxLevel + 2); i < n; i++) {
@@ -2610,7 +2628,8 @@ function menu() {
     core.onscroll = () => {
       // roulette of bubbles: one every time a card passes the middle, fast on a flick and slowing as it settles
       const now = centred();
-      if (now !== core.tickAt) { if (core.tickAt != null) sfx.tick(); core.tickAt = now; }
+      if (now !== core.tickAt) { if (core.tickAt != null) sfx.tick(now); core.tickAt = now; }
+      if (!core.fxQ) core.fxQ = requestAnimationFrame(() => { core.fxQ = 0; carFx(); });
       clearTimeout(tm);
       tm = setTimeout(() => pickPhase(centred()), 90);
     };
@@ -2618,7 +2637,7 @@ function menu() {
   core.tickAt = save.level;
   pickPhase(save.level);
   // the menu may still be hidden here: centre the chosen card once it has a size
-  requestAnimationFrame(() => { const c = core.children[save.level]; if (c) core.scrollLeft = c.offsetLeft - (core.clientWidth - c.offsetWidth) / 2; });
+  requestAnimationFrame(() => { const c = core.children[save.level]; if (c) core.scrollLeft = c.offsetLeft - (core.clientWidth - c.offsetWidth) / 2; carFx(); });
   $("mGems").textContent = save.gems; $("mGems2").textContent = save.gems;
   // legend: what each button and each power-up does, with the same icons as in the game
   const lb = $("lgBtns");
