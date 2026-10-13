@@ -485,15 +485,6 @@ const MINERALS = [
       return mixc(c, HX("#ffd23a"), glow);
     });
   } },
-  { name: "Willemita nevada", neon: "#c8ffd0", make: () => {
-    const a = noise(), w = noise(), c = noise();
-    return pixTex((x, y) => {
-      const s = fbm(w, x / 28, y / 28), sp = fbm(c, x / 2.4, y / 2.4);
-      if (s > .58) return mixc(HX("#e8fff0"), HX("#ffffff"), sp);
-      if (s > .53) return HX("#9cff9a");
-      return sp > .6 ? ramp(S([[0, "#1fb83a"], [1, "#7cff7a"]]), sp) : ramp(S([[0, "#03140a"], [1, "#0d3a1a"]]), fbm(a, x / 6, y / 6));
-    });
-  } },
   { name: "Calcita laranja", neon: "#ff8a1e", make: () => {
     const a = noise(), d = noise(), g = noise();
     return pixTex((x, y) => {
@@ -566,22 +557,6 @@ const MINERALS = [
       if (fbm(r, x / 30, y / 30) > .64) return ramp(S([[0, "#8a1010"], [1, "#ff3a3a"]]), fbm(a, x / 3, y / 3));
       if ((x % 6 < 2) && (y % 5 < 2) && Math.random() < .55) return HX("#3dff5a");
       return ramp(S([[0, "#1a0828"], [1, "#4a1a6a"]]), fbm(a, x / 9, y / 9));
-    });
-  } },
-  { name: "Leopardo amarelo", neon: "#ffe23a", make: () => {
-    const a = noise(), b = noise();
-    return pixTex((x, y) => {
-      const f = fbm(b, x / 11, y / 11);
-      if (f > .6) return HX("#1a1406");
-      if (f > .56) return HX("#6a5a10");
-      return ramp(S([[0, "#c8a810"], [.6, "#ffe03a"], [1, "#fff6a0"]]), fbm(a, x / 6, y / 6));
-    });
-  } },
-  { name: "Willemita estilhaçada", neon: "#5cff3a", make: () => {
-    const a = noise(), v1 = noise(), v2 = noise();
-    return pixTex((x, y) => {
-      if (vein(v1, x, y, 12, .03) || vein(v2, x, y, 6, .02)) return ramp(S([[0, "#3ae02a"], [1, "#c8ff9a"]]), fbm(a, x / 3, y / 3));
-      return ramp(S([[0, "#031a06"], [1, "#0e4a14"]]), fbm(a, x / 7, y / 7));
     });
   } },
   { name: "Calcita salmão", neon: "#ff6a4a", make: () => {
