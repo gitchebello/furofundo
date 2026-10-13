@@ -1242,13 +1242,9 @@ function move(b, h) {
 function step(h) {
   const r = run;
   r.simT = (r.simT || 0) + h;
+  if (r.hole) holeStep(h);
   for (const b of r.balls) {
-    if (b.home) {   // screen cleared: fly straight back to the drill
-      const dx = r.dx - b.x, dy = LY - b.y, d = Math.hypot(dx, dy);
-      if (d < 12) { b.done = true; continue; }
-      b.x += dx / d * 1300 * h; b.y += dy / d * 1300 * h;
-      continue;
-    }
+    if (b.home) { holeBall(b, h); continue; }   // screen cleared: swirl into the black hole, get spat at the drill
     move(b, h);
     b.age += h;
     if (r.fx.rain > 0) {   // rainbow balls: anything they touch is gone, and they keep flying straight
@@ -1384,6 +1380,75 @@ function ringUpdate() {
   el.style.background = "conic-gradient(from var(--ga)," + stops.join(",") + ")";
 }
 
+// ---------- black hole: when the screen is cleared the balls whirl into it and it spits them at the drill ----------
+function openHole() {
+  const r = run, hx = W / 2, hy = clamp((LY + floorY()) / 2, LY + 120, H - 120);
+  r.hole = { x: hx, y: hy, t: 0, size: 0, spitting: false, spin: 0 };
+  r.balls.forEach((b, i) => {
+    b.home = true; b.miss = true;
+    b.ang = Math.atan2(b.y - hy, b.x - hx); b.rad = Math.hypot(b.x - hx, b.y - hy);
+    b.wait = 0; b.inHole = false; b.order = i;
+  });
+}
+function holeStep(h) {
+  const r = run, o = r.hole;
+  o.t += h; o.spin += h * 9;
+  const home = r.balls.filter(b => b.home);
+  // swallow everything, then spit them out one after another
+  if (!o.spitting && (home.every(b => b.inHole) || o.t > .75)) {
+    o.spitting = true;
+    home.forEach((b, i) => { b.inHole = true; b.rad = 0; b.wait = i * .02; b.x = o.x; b.y = o.y; });
+    sfx.shoot();
+  }
+  const want = o.spitting && !home.length ? 0 : 28;
+  o.size += (want - o.size) * Math.min(1, h * 14);
+  if (o.spitting && !home.length && o.size < 1) r.hole = null;
+}
+function holeBall(b, h) {
+  const r = run, o = r.hole;
+  if (!o) { b.done = true; return; }
+  if (!o.spitting) {
+    if (b.inHole) return;
+    // spiral: the radius collapses while the turn speeds up as it closes in
+    b.rad = Math.max(0, b.rad - (260 + b.rad * 3.2) * h);
+    b.ang += h * (5 + 260 / (b.rad + 18));
+    b.x = o.x + Math.cos(b.ang) * b.rad; b.y = o.y + Math.sin(b.ang) * b.rad;
+    if (b.rad < 3) b.inHole = true;
+    return;
+  }
+  if (b.wait > 0) { b.wait -= h; return; }
+  if (b.inHole) { b.inHole = false; b.x = o.x; b.y = o.y; }
+  const tx = r.dx, ty = LY - 14, dx = tx - b.x, dy = ty - b.y, d = Math.hypot(dx, dy);
+  if (d < 14) { b.done = true; return; }
+  const v = 1700 * h;
+  b.x += dx / d * Math.min(v, d); b.y += dy / d * Math.min(v, d);
+}
+function drawHole() {
+  const r = run, o = r.hole;
+  if (!o || o.size < .5) return;
+  const s = o.size, hue = Math.round(hueAt(r.li, r.depth));
+  ctx.save(); ctx.translate(o.x, o.y);
+  // glow
+  const g = ctx.createRadialGradient(0, 0, s * .4, 0, 0, s * 2.6);
+  g.addColorStop(0, "hsla(" + hue + ",100%,60%,.55)"); g.addColorStop(1, "hsla(" + hue + ",100%,50%,0)");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, s * 2.6, 0, Math.PI * 2); ctx.fill();
+  // swirling accretion arms
+  ctx.lineWidth = 2.2; ctx.lineCap = "round";
+  for (let k = 0; k < 5; k++) {
+    ctx.strokeStyle = "hsla(" + ((hue + k * 50) % 360) + ",100%,65%,.85)";
+    ctx.beginPath();
+    for (let j = 0; j <= 18; j++) {
+      const u = j / 18, rr = s * (2.1 - u * 1.25), a = -o.spin + k * Math.PI * 2 / 5 + u * 3.2;
+      j ? ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : ctx.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+    }
+    ctx.stroke();
+  }
+  // event horizon
+  ctx.fillStyle = "#000"; ctx.beginPath(); ctx.arc(0, 0, s * .8, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = "rgba(255,246,232,.7)"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(0, 0, s * .8, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+
 // double click / double tap during a shot: fast-forward on, and again to go back to normal speed
 function recall() {
   const r = run;
@@ -1493,6 +1558,7 @@ function update(dt) {
   r.shake = Math.max(0, r.shake - dt * 20);
   ringUpdate();
   if (paused) return;
+  if (r.hole && r.state !== "shoot") holeStep(dt);   // let the hole close after the turn ends
   // balls that came back over the line roll along the surface into the drill
   for (const g of r.homing) {
     const ff = r.ff ? 3 : 1;
@@ -1544,8 +1610,8 @@ function update(dt) {
     // every stone on screen is gone while balls are still out: call them home and give the shot back
     if (!r.cleared && r.balls.length && !r.blocks.some(onScreen)) {
       r.cleared = true; r.spawnLeft = 0; r.shots++;
-      for (const b of r.balls) b.home = true;
-      r.texts.push({ x: W / 2, y: H / 2, t: "Tela limpa! +1 tiro", life: 1.6, col: "#ffe58a" });
+      openHole();
+      r.texts.push({ x: W / 2, y: r.hole.y - 80, t: "Tela limpa! +1 tiro", life: 1.6, col: "#ffe58a" });
       sfx.bubbles(); hud();
     }
     if (r.spawnLeft === 0 && r.balls.length === 0) endTurn();
@@ -1880,18 +1946,20 @@ function draw() {
   if (r.rebounds) ctx.fillText("Rebatidas " + r.rebounds, W - 8, 14);
   ctx.textAlign = "center";
 
+  drawHole();
   // balls
   ctx.fillStyle = r.fx.fire > 0 ? "#ff8a4a" : "#fff6e8"; ctx.shadowColor = r.fx.fire > 0 ? "rgba(255,90,40,.95)" : "rgba(255,200,140,.8)"; ctx.shadowBlur = r.fx.fire > 0 ? 14 : 8;
   if (r.fx.rain > 0) {
     const t0 = performance.now() / 3;
     r.balls.forEach((b, i) => {
+      if (b.inHole) return;
       const hh = (t0 + i * 40) % 360;
       ctx.globalAlpha = .35; ctx.fillStyle = "hsl(" + ((hh + 60) % 360) + ",100%,60%)";
       ctx.beginPath(); ctx.arc(b.x - b.vx * .02, b.y - b.vy * .02, R * 1.4, 0, Math.PI * 2); ctx.fill();
       ctx.globalAlpha = 1; ctx.fillStyle = "hsl(" + hh + ",100%,62%)"; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 16;
       ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, Math.PI * 2); ctx.fill();
     });
-  } else for (const b of r.balls) { ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, Math.PI * 2); ctx.fill(); }
+  } else for (const b of r.balls) { if (b.inHole) continue; ctx.beginPath(); ctx.arc(b.x, b.y, b.home && !r.hole?.spitting ? R * clamp(b.rad / 60, .35, 1) : R, 0, Math.PI * 2); ctx.fill(); }
   ctx.shadowBlur = 0;
   // returning balls rolling over the surface into the drill, with a short streak behind them
   for (const g of r.homing) {
