@@ -201,11 +201,10 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
             <li>Como no Holedown, a <b>broca atira do lugar onde a primeira bola voltou</b> na jogada anterior.</li>
             <li><b>Segure</b> o dedo na tela para mirar: a linha reta pontilhada aponta da broca até o seu dedo. <b>Solte</b> para atirar. Para cancelar, solte o dedo em cima da broca.</li>
             <li>No mouse, a mira segue o cursor e o clique atira.</li>
-            <li>No teclado: setas ← → giram a mira, espaço atira.</li>
+            <li>No teclado: setas ← → giram a mira (e movem a barrinha durante a jogada), A/D movem a barrinha, espaço atira.</li>
             <li>Cada bloco é um mineral cortado ao meio (veja a coleção abaixo). O número em cada um é quantas batidas ela aguenta. No zero, ela quebra.</li>
-            <li>As bolas andam em linha reta, quicam nas paredes, no fundo e nas pedras até subir de novo. <b>Mova o rebatedor</b> (arraste, mouse ou setas) para mandá-las de novo para baixo. A ponta do rebatedor dá ângulo. A barrinha só segue o dedo enquanto as bolas estão em jogo.</li>
+            <li>As bolas andam em linha reta, quicam nas paredes, no fundo e nas pedras até subir de novo. <b>Mova o rebatedor</b> (arraste, mouse ou setas) para mandá-las de novo para baixo. A ponta do rebatedor dá ângulo. A barrinha é separada da broca e segue o dedo ou o mouse o tempo todo, com ou sem bolas em campo.</li>
             <li><b>Dois cliques</b> ou <b>dois toques</b> rápidos com as bolas em jogo aceleram a jogada (6×). Mais dois cliques ou toques voltam à velocidade normal.</li>
-            <li><b>Segure</b> a tela ou o botão do mouse por 3 segundos com as bolas em jogo para acelerar para 2×. Solte para voltar ao normal.</li>
             <li>Se você limpar todas as pedras da tela com bolas ainda em jogo, elas voltam sozinhas para a broca e você <b>ganha o tiro de volta</b>.</li>
             <li>O poço só desce quando o bloco mais alto sai do caminho. Toda vez que as bolas passam pela barra e a vez acaba, <b>as pedras sobem</b> um pouco. Se encostarem na linha vermelha embaixo da broca, você é engolido.</li>
             <li>Cada camada é mais difícil (estrelas no menu): pedras mais duras, mais peças e pedras subindo mais rápido.</li>
@@ -970,7 +969,7 @@ function newRun(li) {
     shots: L.shots + save.xShots * 2, used: 0, gemsRun: 0, broken: 0,
     state: "aim", spawnLeft: 0, spawnT: 0, shotT: 0, dir: [0, 1],
     scrollLeft: 0, aimA: Math.PI / 2, aimOn: false, fast: false, shake: 0, hpRef: 1,
-    px: LX, caps: [], falling: [], fx: { fire: 0, wide: 0, slim: 0, rain: 0 }, lv: { fire: 0, wide: 0, slim: 0, rain: 0 }, bonus: 0, rebounds: 0, extra: layerBalls(li)
+    px: LX, dx: LX, caps: [], falling: [], fx: { fire: 0, wide: 0, slim: 0, rain: 0 }, lv: { fire: 0, wide: 0, slim: 0, rain: 0 }, bonus: 0, rebounds: 0, extra: layerBalls(li)
   };
   CAPS.ball.w = 1.5 + li * 2.5;
   // two stones per colour of this phase, drawn fresh every time the phase starts
@@ -1197,7 +1196,7 @@ function step(h) {
   const r = run;
   for (const b of r.balls) {
     if (b.home) {   // screen cleared: fly straight back to the drill
-      const dx = r.px - b.x, dy = LY - b.y, d = Math.hypot(dx, dy);
+      const dx = r.dx - b.x, dy = LY - b.y, d = Math.hypot(dx, dy);
       if (d < 12) { b.done = true; continue; }
       b.x += dx / d * 1300 * h; b.y += dy / d * 1300 * h;
       continue;
@@ -1297,7 +1296,7 @@ function fire() {
   r.shots--; r.used++;
   r.ff = false; r.cleared = false;
   r.state = "shoot"; r.spawnLeft = save.balls + r.extra + r.bonus; r.bonus = 0; r.spawnT = 0; r.shotT = 0;
-  r.dir = [Math.cos(r.aimA), Math.sin(r.aimA)]; r.fireX = r.px; r.homeX = null;
+  r.dir = [Math.cos(r.aimA), Math.sin(r.aimA)]; r.fireX = r.dx; r.homeX = null;
   r.aimOn = false;
   sfx.shoot();
   hud();
@@ -1389,20 +1388,20 @@ function update(dt) {
   if (r.falling.some(k => k.gone)) r.falling = r.falling.filter(k => !k.gone);
   r.shake = Math.max(0, r.shake - dt * 20);
   if (paused) return;
-  // between shots the drill slides over to where the first ball came back, and stays put while you aim
-  if (r.state !== "shoot" && r.homeX != null) {
-    const want = clamp(r.homeX, padW() / 2, W - padW() / 2), d = want - r.px;
-    setPad(Math.abs(d) < 1 ? want : r.px + Math.sign(d) * Math.min(Math.abs(d), Math.max(260, Math.abs(d) * 8) * dt));
+  // the drill is on its own: the moment the first ball comes back it slides over to that spot
+  if (r.homeX != null) {
+    const want = clamp(r.homeX, 12, W - 12), d = want - r.dx;
+    r.dx = Math.abs(d) < 1 ? want : r.dx + Math.sign(d) * Math.min(Math.abs(d), Math.max(260, Math.abs(d) * 8) * dt);
   }
-  // keys: in aim they turn the drill, while balls are out they move the paddle
-  const kl = keys.a || keys.A || keys.ArrowLeft, kr = keys.d || keys.D || keys.ArrowRight;
+  // keys: A/D always move the paddle; arrows turn the drill while aiming and move the paddle otherwise
+  const ka = keys.a || keys.A, kd = keys.d || keys.D;
   if (r.state === "aim") {
-    if (kl) { r.aimA = clamp(r.aimA + 1.6 * dt, MIN_A, Math.PI - MIN_A); r.aimOn = true; }
-    if (kr) { r.aimA = clamp(r.aimA - 1.6 * dt, MIN_A, Math.PI - MIN_A); r.aimOn = true; }
-  } else {
-    if (kl) setPad(r.px - 420 * dt);
-    if (kr) setPad(r.px + 420 * dt);
+    if (keys.ArrowLeft) { r.aimA = clamp(r.aimA + 1.6 * dt, MIN_A, Math.PI - MIN_A); r.aimOn = true; }
+    if (keys.ArrowRight) { r.aimA = clamp(r.aimA - 1.6 * dt, MIN_A, Math.PI - MIN_A); r.aimOn = true; }
   }
+  const kl = ka || (r.state !== "aim" && keys.ArrowLeft), kr = kd || (r.state !== "aim" && keys.ArrowRight);
+  if (kl) setPad(r.px - 420 * dt);
+  if (kr) setPad(r.px + 420 * dt);
   const pw = padW();
   for (const c of r.caps) {
     c.y -= 105 * dt;
@@ -1412,9 +1411,7 @@ function update(dt) {
 
   if (r.state === "shoot") {
     r.shotT += dt;
-    // hold the screen for 3 s to play at 2x, like holding a Reels or TikTok video
-    r.held = holdAt > 0 && performance.now() - holdAt > 3000;
-    const ts = r.ff ? 6 : r.fast ? 2.5 : r.held ? 2 : 1;
+    const ts = r.ff ? 6 : r.fast ? 2.5 : 1;
     let sim = dt * ts;
     for (const f in r.fx) { r.fx[f] = Math.max(0, r.fx[f] - sim); if (!r.fx[f]) r.lv[f] = 0; }
     while (sim > 0) {
@@ -1468,7 +1465,7 @@ function ghostPath() {
   const r = run, cx = Math.cos(r.aimA), sy = Math.sin(r.aimA), fl = floorY() - GV - R;
   const pts = [], blocks = r.blocks.filter(onScreen);
   for (let t = 0; t < 900; t += 3) {
-    const x = r.px + cx * t, y = BY + sy * t;
+    const x = r.dx + cx * t, y = BY + sy * t;
     if (x < R || x > W - R || y > fl) break;
     const b = { x, y };
     if (blocks.some(k => touches(b, k))) break;
@@ -1720,9 +1717,9 @@ function draw() {
     ctx.globalAlpha = 1;
   }
 
-  // the drill rides on the middle of the paddle: they always move together
+  // the drill stands on its own spot (where the last volley came back), apart from the paddle
   ctx.save();
-  ctx.translate(r.px, LY - 14);
+  ctx.translate(r.dx, LY - 14);
   ctx.rotate(r.state === "aim" ? r.aimA - Math.PI / 2 : 0);
   // painted in the colour of the phase right now
   const dh = Math.round(hueAt(r.li, r.depth)), dDark = "hsl(" + dh + ",80%,36%)";
@@ -1739,7 +1736,7 @@ function draw() {
   if (ready && r.state === "shoot") {   // the volley's mouth stays where you fired while balls are still coming out
     ctx.fillStyle = "rgba(255,246,232,.85)"; ctx.beginPath(); ctx.arc(r.fireX, BY, 4, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#f4e7d4"; ctx.fillText("×" + ready, r.fireX + 14, BY + 12);
-  } else if (ready) ctx.fillText("×" + ready, r.px + 14, LY - 22);
+  } else if (ready) ctx.fillText("×" + ready, r.dx + 14, LY - 22);
   ctx.textAlign = "center";
 
   // the paddle: follows the finger or mouse at all times, before and during a shot
@@ -1777,15 +1774,11 @@ function draw() {
   } else for (const b of r.balls) { ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, Math.PI * 2); ctx.fill(); }
   ctx.shadowBlur = 0;
 
-  // 2x badge while the press is held
+  // fast-forward badge
   if (r.ff && r.state === "shoot") {
     ctx.fillStyle = "rgba(19,14,12,.75)"; rr(W / 2 - 40, H - 40, 80, 26, 13); ctx.fill();
     ctx.fillStyle = "#f4e7d4"; ctx.font = "700 14px 'Chakra Petch', sans-serif";
     ctx.fillText("6× ▸▸▸", W / 2, H - 26);
-  } else if (r.held && r.state === "shoot") {
-    ctx.fillStyle = "rgba(19,14,12,.75)"; rr(W / 2 - 34, H - 40, 68, 26, 13); ctx.fill();
-    ctx.fillStyle = "#f4e7d4"; ctx.font = "700 14px 'Chakra Petch', sans-serif";
-    ctx.fillText("2× ▸▸", W / 2, H - 26);
   }
 
   // banner naming the capsule just caught
@@ -1891,50 +1884,44 @@ function play() { audioInit(); $("ovMenu").hidden = true; $("ovEnd").hidden = tr
 
 // ---------- input ----------
 let dragging = false;
-// Holedown aiming: while you aim the drill stays where the last volley came back.
+// The paddle follows the finger or mouse at all times. The drill is separate (Holedown aiming):
+// it stays where the last volley came back.
 // Hold the finger on the screen and the straight dotted line points from the drill to it; let go to fire.
 // Letting go right over the drill cancels. With a mouse the line follows the cursor and a click fires.
-// While the balls are out the paddle follows the finger or mouse, DX-Ball style.
 const toField = e => { const b = cv.getBoundingClientRect(); return [(e.clientX - b.left) / b.width * W, (e.clientY - b.top) / b.height * H]; };
 function padAt(e) { setPad(toField(e)[0]); }
 function aimAt(e) {
-  const [x, y] = toField(e), dx = x - run.px, dy = Math.max(y - BY, 40);
+  const [x, y] = toField(e), dx = x - run.dx, dy = Math.max(y - BY, 40);
   run.aimA = clamp(Math.atan2(dy, dx), MIN_A, Math.PI - MIN_A);
 }
-const nearDrill = e => { const [x, y] = toField(e); return y < LY + 30 && Math.abs(x - run.px) < 34; };
+const nearDrill = e => { const [x, y] = toField(e); return y < LY + 30 && Math.abs(x - run.dx) < 34; };
 let lastDown = 0;
 const keys = {};
-let holdAt = 0;   // when the current press started, 0 when nothing is pressed
 cv.addEventListener("pointerdown", e => {
   audioInit();
-  holdAt = performance.now();
   if (!run || paused) return;
   cv.setPointerCapture(e.pointerId);
   dragging = true;
-  if (run.state === "aim") { aimAt(e); run.aimOn = true; return; }
   padAt(e);
+  if (run.state === "aim") { aimAt(e); run.aimOn = true; return; }
   const now = performance.now();
   if (run.state === "shoot" && now - lastDown < 350) { recall(); lastDown = 0; }   // reset so a third tap doesn't toggle back
   else lastDown = now;
 });
 cv.addEventListener("pointermove", e => {
   if (!run || paused) return;
-  if (run.state === "aim") {
-    if (dragging || e.pointerType === "mouse") { aimAt(e); run.aimOn = true; }
-    return;
-  }
   if (!dragging && e.pointerType !== "mouse") return;
-  padAt(e);
+  padAt(e);   // the paddle is always free, with or without balls in play
+  if (run.state === "aim") { aimAt(e); run.aimOn = true; }
 });
 cv.addEventListener("pointerup", e => {
-  holdAt = 0; if (run) run.held = false;
   const was = dragging;
   dragging = false;
   if (!was || !run || paused || run.state !== "aim") return;
   if (nearDrill(e)) { if (e.pointerType !== "mouse") run.aimOn = false; return; }
   aimAt(e); fire();
 });
-cv.addEventListener("pointercancel", () => { dragging = false; holdAt = 0; if (run) { run.held = false; if (run.state === "aim") run.aimOn = false; } });
+cv.addEventListener("pointercancel", () => { dragging = false; if (run) { if (run.state === "aim") run.aimOn = false; } });
 cv.tabIndex = 0;
 window.addEventListener("keyup", e => { keys[e.key] = false; });
 window.addEventListener("keydown", e => {
