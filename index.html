@@ -59,16 +59,17 @@ body{background:var(--rock);color:var(--ink);font-family:var(--body);font-size:1
 .ibtn:focus-visible,.btn:focus-visible,.up button:focus-visible,.layer:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
 /* game name on top while playing with the phase number beside it, in the height of the buttons so the pit keeps its size */
 .hud__title{display:flex;align-items:baseline;gap:8px;min-width:0}
-.hud__brand{font-family:var(--display);font-size:20px;line-height:1;color:var(--ink);white-space:nowrap}
+.hud__brand{font-family:var(--display);font-size:27px;line-height:1;color:var(--ink);white-space:nowrap}
 .hud__brand span{background:var(--rainbow);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rb 8s linear infinite}
 @media (prefers-reduced-motion:reduce){.hud__brand span{animation:none}}
-.hud__layer{font-family:var(--display);font-size:13px;line-height:1;letter-spacing:.04em;color:var(--magma);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hud__layer{font-family:var(--display);font-size:18px;line-height:1;letter-spacing:.04em;color:var(--magma);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .hud__btns{display:flex;gap:6px}
 .stage{flex:1;min-height:0;width:100%;display:flex;justify-content:center;align-items:flex-start;gap:8px}
 /* the depth gauge: a shaft down the side that the drill digs into */
 .shaft{position:relative;flex:0 0 20px;border-radius:10px;background:#0b0b0d;box-shadow:inset 0 0 0 1px var(--line),inset 0 6px 10px rgba(0,0,0,.8);overflow:visible}
-.shaft::before{content:"";position:absolute;inset:0;border-radius:10px;background:repeating-linear-gradient(180deg,transparent 0 calc(10% - 1px),rgba(255,255,255,.09) calc(10% - 1px) 10%);pointer-events:none}
-.shaft__fill{position:absolute;left:3px;right:3px;top:3px;height:0;border-radius:7px 7px 3px 3px;transition:height .35s;box-shadow:0 0 10px rgba(255,255,255,.12)}
+.shaft__fill{position:absolute;left:3px;right:3px;top:3px;height:0;border-radius:7px 7px 3px 3px;transition:height .35s,top .35s;box-shadow:0 0 10px rgba(255,255,255,.12)}
+/* the stretch dug in earlier phases, dark, in their colours, squeezed into the top of the shaft */
+.shaft__past{position:absolute;left:3px;right:3px;top:3px;height:0;border-radius:7px 7px 0 0;opacity:.45;transition:height .35s}
 .shaft__tip{position:absolute;left:50%;top:3px;width:0;height:0;transform:translate(-50%,0);transition:top .35s}
 .shaft__tip::before{content:"";position:absolute;left:-8px;top:-4px;width:16px;height:16px;border-radius:50%;background:var(--tip-dk,#7a2a10);box-shadow:0 0 8px var(--tip,#ff7a2f)}
 .shaft__tip::after{content:"";position:absolute;left:-7px;top:4px;border-left:7px solid transparent;border-right:7px solid transparent;border-top:14px solid var(--tip,#ff7a2f);animation:drillwob .18s steps(2) infinite}
@@ -239,8 +240,6 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
   padding:11px 12px;border-radius:12px;background:var(--rock-2);border:1px solid var(--line)}
 /* compact shop strip on the main menu: small cards that scroll sideways, tap the price to buy */
 .phase__band{position:relative}
-.phase__hard{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:700 12px var(--body);letter-spacing:.06em;text-transform:uppercase;
-  background:#1a0a06;color:#ff8a4a;padding:4px 9px;border-radius:999px;border:1px solid #ff5a3c;box-shadow:0 0 12px rgba(255,90,60,.5)}
 .mshop__h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .mshop__all{all:unset;cursor:pointer;font:700 12px var(--body);color:var(--crystal)}
 .mshop__all:focus-visible{outline:2px solid var(--crystal);outline-offset:2px;border-radius:4px}
@@ -249,6 +248,15 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .ms__ic{width:22px;height:22px}
 .ms__ic img,.ms__ic svg{width:22px;height:22px;display:block}
 .ms__n{font-size:10.5px;font-weight:700;line-height:1.15;min-height:2.3em;display:flex;align-items:center}
+/* the card you just bought lights up like a power-up: comets race round its edge and it flashes gold */
+.ms,.up{position:relative}
+.is-bought{animation:boughtflash 1.1s ease-out}
+.is-bought::after{content:"";position:absolute;inset:-2px;border-radius:inherit;padding:2px;pointer-events:none;opacity:0;
+  background:conic-gradient(from var(--ga),transparent 0 8%,var(--crystal) 16%,#fff 18%,var(--crystal) 22%,transparent 30% 50%,var(--crystal) 58%,#fff 60%,var(--crystal) 64%,transparent 72% 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+  animation:glowrun 1.6s cubic-bezier(.3,.6,.4,1) forwards}
+@keyframes boughtflash{0%{box-shadow:0 0 0 0 rgba(255,210,58,0)}15%{box-shadow:0 0 22px 3px rgba(255,210,58,.65),inset 0 0 14px rgba(255,210,58,.35)}100%{box-shadow:0 0 0 0 rgba(255,210,58,0)}}
+@media (prefers-reduced-motion:reduce){.is-bought::after{animation:none}}
 .ms__lv{font-size:10px;font-weight:700;color:var(--ink-dim);font-variant-numeric:tabular-nums}
 .ms__lv--max{color:var(--crystal)}
 .ms button{all:unset;box-sizing:border-box;cursor:pointer;margin-top:auto;width:100%;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px 4px;border-radius:7px;
@@ -289,7 +297,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .fold__in{padding:0 14px 14px}
 .howto{margin:0;padding-left:18px;color:var(--ink-dim);font-size:13px;line-height:1.55}
 .howto b{color:var(--ink)}
-@media (prefers-reduced-motion:reduce){.shaft__fill,.shaft__tip{transition:none}.shaft__tip::after{animation:none}.brand span,.btn{animation:none}.pill--low,.pill--bump,#bRegroup:not(:disabled){animation:none}}
+@media (prefers-reduced-motion:reduce){.shaft__fill,.shaft__past,.shaft__tip{transition:none}.shaft__tip::after{animation:none}.brand span,.btn{animation:none}.pill--low,.pill--bump,#bRegroup:not(:disabled){animation:none}}
 </style>
 
 <div class="app">
@@ -311,6 +319,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 
   <div class="stage" id="stage">
     <div class="shaft" id="shaft" role="progressbar" aria-label="Profundidade" aria-valuemin="0">
+      <div class="shaft__past" id="hPast"></div>
       <div class="shaft__fill" id="hBar"></div>
       <div class="shaft__tip" id="hTip"></div>
     </div>
@@ -400,7 +409,6 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
             <li>As bolas andam em linha reta, quicam nas paredes, no fundo e nas pedras até subir de novo. <b>Mova o rebatedor</b> (arraste, mouse ou setas) para mandá-las de novo para baixo. A ponta do rebatedor dá ângulo. A barrinha é separada da broca e segue o dedo ou o mouse o tempo todo, com ou sem bolas em campo.</li>
             <li><b>Dois cliques</b> ou <b>dois toques</b> rápidos com as bolas em jogo aceleram a jogada (6×). Mais dois cliques ou toques voltam à velocidade normal.</li>
             <li>O botão <b>Juntar</b> (a linha reta) (ao lado do » lá em cima, ou tecla R) junta todas as bolas em jogo numa <b>linha só</b> de novo, atrás da bola que está na frente. Bom para salvar as bolas quando elas estão espalhadas.</li>
-            <li>De vez em quando aparece uma <b>fase difícil</b> (🔥 no menu): pedras mais duras, mais peças, pedras subindo mais rápido e um núcleo mais forte.</li>
             <li>Cada fase é <b>mais funda</b> que a anterior e começa com <b>2 tiros a mais</b>. Durante a fase os tiros não aumentam (só com power-up, tela limpa ou lojinha).</li>
             <li>Se você limpar todas as pedras da tela com bolas ainda em jogo, elas voltam sozinhas para a broca e você <b>ganha o tiro de volta</b>.</li>
             <li>O poço só desce quando o bloco mais alto sai do caminho. Toda vez que as bolas passam pela barra e a vez acaba, <b>as pedras sobem</b> um pouco. Se encostarem na linha vermelha embaixo da broca, você é engolido.</li>
@@ -467,7 +475,9 @@ const CAPS = {
   ball:  { w: 2, col: "#ffffff", tx: "B",  name: "Bola extra", short: "+1 bola nesta camada", stack: "",
            desc: "Mais uma bola em todos os tiros até o fim da camada. Aparece mais vezes nas camadas mais fundas." },
   rain:  { w: .3, col: "#ffffff", tx: "★", name: "Bola arco-íris", short: "Destrói tudo por 5 s", stack: "Somou: +5 s de arco-íris",
-           desc: "Raríssima. Por 5 segundos as bolas ficam arco-íris e destroem na hora toda pedra em que encostam, atravessando sem quicar." }
+           desc: "Raríssima. Por 5 segundos as bolas ficam arco-íris e destroem na hora toda pedra em que encostam, atravessando sem quicar." },
+  zap:   { w: .12, col: "#3a8bff", tx: "✕", name: "Apagador", short: "Toque numa pedra para apagar", stack: "Somou: mais uma pedra para apagar",
+           desc: "Raríssimo, ainda mais que o arco-íris. Depois de pegar, toque em qualquer pedra da tela e ela some na hora. Só o núcleo não pode ser apagado. Pegar outro soma: cada um apaga uma pedra." },
 };
 // balls grow with the dig: each layer starts with extra balls, and the ball capsule shows up more often deeper
 const layerBalls = li => Math.min(24, li * 2);
@@ -1192,7 +1202,7 @@ function newRun(li) {
 function hpBase(ri) { return (1.5 + run.li * .7 + ri * .05 + save.balls * .35) * 1.2 * diff(run.li).hp; }
 // how hard each layer is: tougher rock, busier floors, and the stone climbs faster after each turn
 // now and then (every 7th phase) a phase is a notch harder than its neighbours: tougher rock, a few more pieces,
-// stone climbing a bit faster and a sturdier core. It is marked "Difícil" in the menu.
+// stone climbing a bit faster and a sturdier core. It comes unannounced.
 const isHard = li => (li + 1) % 7 === 0;
 function diff(li) {
   const h = isHard(li);
@@ -1344,6 +1354,25 @@ function stackAbove(roots, m) {
 function markHolders() {
   const m = cellMap(run.blocks);
   for (const k of run.blocks) k.holds = stackAbove([k], m).size;
+}
+// the eraser power-up: the piece under the finger breaks at once (never the core), and whatever was stacked on it comes down
+function pieceAt(x, y) {
+  return run.blocks.find(k => !k.core && k.hp > 0 && onScreen(k) && k.cells.some(c => {
+    const x0 = k.x + c.cx * CELL + c.x0, y0 = k.y + c.cy * RH + c.y0, x1 = k.x + c.cx * CELL + c.x1, y1 = k.y + c.cy * RH + c.y1;
+    return x >= x0 - 4 && x <= x1 + 4 && y >= y0 - 6 && y <= y1 + 6;
+  }));
+}
+function zapAt(x, y) {
+  const r = run, k = pieceAt(x, y);
+  if (!k) return false;
+  r.zaps--;
+  k.hp = 0; k.flash = 1; k.hnx = 0; k.hny = 1;
+  breakBlock(k);
+  r.blocks = r.blocks.filter(q => q.hp > 0);
+  collapseAbove([k]); markHolders();
+  edgeGlow("zap", CAPS.zap.col);
+  hud();
+  return true;
 }
 function collapseAbove(dead) {
   const r = run, m = cellMap(r.blocks.concat(dead)), loose = [...stackAbove(dead, m)].filter(k => k.hp > 0);
@@ -1578,6 +1607,7 @@ function takeCap(c) {
     r.fx[c.type] += { fire: 8, wide: 15, slim: 10 }[c.type];
     r.lv[c.type] = Math.min(3, r.lv[c.type] + 1);
   }
+  else if (c.type === "zap") r.zaps = (r.zaps || 0) + 1;
   else if (c.type === "shot") r.shots++;
   else if (c.type === "ball") r.extra++;
   else if (c.type === "gem") { save.gems += 3; r.gemsRun += 3; store(); }
@@ -1598,7 +1628,7 @@ function takeCap(c) {
 }
 
 // light up the panel's edge in the capsule's colour (the rainbow one gets the whole spectrum)
-const GLOW2 = { multi: "#ff7a2f", fire: "#ffd23a", wide: "#2ee6ff", shot: "#ffd166", slim: "#ff5fb8", ball: "#9fd0ff" };
+const GLOW2 = { zap: "#bfe0ff", multi: "#ff7a2f", fire: "#ffd23a", wide: "#2ee6ff", shot: "#ffd166", slim: "#ff5fb8", ball: "#9fd0ff" };
 function flashOnly(col) {
   const f = $("fxFlash");
   f.style.setProperty("--gc", col);
@@ -2042,6 +2072,12 @@ function capIcon(g, type, x, y, R, glow) {
       const col = "hsl(" + Math.round((i * 45 - tt * 160) % 360 + 360) % 360 + ",100%,58%)";
       g.strokeStyle = col; g.beginPath(); g.arc(0, 4 * u, (7.4 - i * .78) * u, Math.PI * 1.05, Math.PI * 1.95); g.stroke();
     }
+  } else if (type === "zap") {   // a little tile with an X in it
+    g.lineWidth = 1.5 * u; g.lineCap = "round"; g.lineJoin = "round";
+    const bx = 6 * u, by = 4.4 * u, br = 2.2 * u;
+    g.beginPath(); g.moveTo(-bx + br, -by); g.arcTo(bx, -by, bx, by, br); g.arcTo(bx, by, -bx, by, br); g.arcTo(-bx, by, -bx, -by, br); g.arcTo(-bx, -by, bx, -by, br); g.closePath(); g.stroke();
+    g.lineWidth = 1.9 * u;
+    g.beginPath(); g.moveTo(-2.4 * u, -2 * u); g.lineTo(2.4 * u, 2 * u); g.moveTo(2.4 * u, -2 * u); g.lineTo(-2.4 * u, 2 * u); g.stroke();
   } else if (type === "ball") {
     g.beginPath(); g.arc(-1.6 * u, 1.4 * u, 4.2 * u, 0, Math.PI * 2); g.fill();
     g.lineWidth = 1.8 * u; g.lineCap = "round";
@@ -2199,6 +2235,20 @@ function drawChips() {
     for (let i = 0; i < r.lv[f]; i++) { ctx.beginPath(); ctx.arc(x + 25 + i * 6, y + 16.5, 1.7, 0, Math.PI * 2); ctx.fill(); }
     ctx.restore(); ctx.globalAlpha = 1;
   }
+}
+// while an eraser is in hand: a blue hint at the bottom of the pit saying what to do, with how many are left
+function drawZap() {
+  const r = run;
+  if (!(r.zaps > 0)) return;
+  const tp = performance.now() / 1000, txt = "Toque numa pedra para apagar" + (r.zaps > 1 ? " (" + r.zaps + ")" : "");
+  ctx.font = "700 13px 'Chakra Petch', sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  const w = ctx.measureText(txt).width + 44, x = (W - w) / 2, y = H - 44;
+  ctx.globalAlpha = reduceMotion ? 1 : .8 + .2 * Math.sin(tp * 5);
+  ctx.fillStyle = "rgba(10,24,52,.9)"; rr(x, y, w, 28, 14); ctx.fill();
+  ctx.strokeStyle = CAPS.zap.col; ctx.lineWidth = 2; ctx.stroke();
+  capIcon(ctx, "zap", x + 16, y + 14, 9, true);
+  ctx.fillStyle = "#e8f2ff"; ctx.fillText(txt, x + 32, y + 14.5);
+  ctx.globalAlpha = 1;
 }
 // a caught power-up's icon: timed ones arc from the paddle into their chip, the others pop and float away
 function drawIcons() {
@@ -2434,6 +2484,7 @@ function draw() {
     }
   }
   drawChips();
+  drawZap();
 
   // danger line: glows red as the stone climbs toward it
   const near = clamp(1 - (topOf() - DANGER) / 140, 0, 1);
@@ -2564,11 +2615,27 @@ function hud() {
   const r = run;
   $("hDepth").textContent = Math.floor(r.depth);
   $("hGoal").textContent = r.L.goal;
-  // the shaft fills downward and the drill tip sits at the bottom of the hole dug so far
-  const f = clamp(r.depth / r.L.goal, 0, 1), sh = $("shaft").clientHeight - 6, dh = Math.round(hueAt(r.li, r.depth));
-  $("hBar").style.height = (f * sh) + "px";
-  $("hBar").style.background = grad(r.li, "180deg") + " 0 0/100% " + sh + "px no-repeat";   // colours spread over the whole shaft
-  $("hTip").style.top = (3 + f * sh) + "px";
+  // the shaft fills downward and the drill tip sits at the bottom of the hole dug so far. The earlier phases take the
+  // top of it, a share that grows fast at first and then ever slower (never past 60%), so each phase sits deeper than
+  // the last even after a hundred of them; the rest is this phase, and it fills to the very end as the core rises into place
+  const sh = $("shaft").clientHeight - 6, dh = Math.round(hueAt(r.li, r.depth));
+  const past = .6 * (1 - 1 / (1 + r.li * .15)), room = 1 - past;
+  let f = clamp(r.depth / r.L.goal, 0, 1);
+  const core = r.blocks.find(k => k.core);
+  if (core) f += (1 - f) * clamp((H - core.y) / (H - (H / 2 - CORE_R)), 0, 1);
+  if (r.coreDown) f = 1;
+  const pastEl = $("hPast");
+  pastEl.style.height = (past * sh) + "px";
+  if (r.li && pastEl.dataset.li !== String(r.li)) {   // earlier phases' colours, darkened, a dozen samples at most
+    const n = Math.min(r.li, 12), hs = Array.from({ length: n }, (_, k) => phaseHues(Math.floor(k * r.li / n))[0]);
+    pastEl.style.background = "linear-gradient(180deg," + (n > 1 ? hs : hs.concat(hs)).map(h => "hsl(" + h + ",70%,40%)").join(",") + ")";
+    pastEl.dataset.li = r.li;
+  }
+  $("hBar").style.top = (3 + past * sh) + "px";
+  $("hBar").style.borderRadius = r.li ? "0 0 3px 3px" : "";
+  $("hBar").style.height = (f * room * sh) + "px";
+  $("hBar").style.background = grad(r.li, "180deg") + " 0 0/100% " + (room * sh) + "px no-repeat";   // colours spread over this phase's stretch
+  $("hTip").style.top = (3 + (past + f * room) * sh) + "px";
   $("hTip").style.setProperty("--tip", "hsl(" + dh + ",92%,58%)");
   $("hTip").style.setProperty("--tip-dk", "hsl(" + dh + ",80%,30%)");
   $("shaft").setAttribute("aria-valuemax", r.L.goal); $("shaft").setAttribute("aria-valuenow", Math.floor(r.depth));
@@ -2590,7 +2657,7 @@ const starsOf = i => "★".repeat(Math.min(5, diff(i).stars)) + (diff(i).stars >
 function phaseCard(i) {
   const L = LV(i), locked = i > save.maxLevel, st = locked ? "🔒 Bloqueada" : i < save.maxLevel ? "Vencida" : "Próxima";
   return '<div class="phase__band" style="background:' + grad(i) + '"><span class="phase__num">' + String(i + 1).padStart(2, "0") +
-    '</span><span class="phase__state">' + st + "</span>" + (isHard(i) ? '<span class="phase__hard">🔥 Difícil</span>' : "") + '</div><div class="phase__body"><p class="phase__name">' + L.name +
+    '</span><span class="phase__state">' + st + "</span>" + '</div><div class="phase__body"><p class="phase__name">' + L.name +
     '</p><div class="phase__sub"><span class="stars" aria-label="Dificuldade ' + diff(i).stars + '">' + starsOf(i) + "</span><span>" + L.km +
     '</span></div><div class="chips"><span class="chip">' + L.goal + "<small>m de meta</small></span><span class=\"chip\">" + L.shots +
     "<small>tiros</small></span>" + (layerBalls(i) ? '<span class="chip">+' + layerBalls(i) + "<small>bolas</small></span>" : "") + "</div></div>";
@@ -2611,6 +2678,7 @@ function carFx() {
     c.style.setProperty("--d", d.toFixed(3)); c.style.setProperty("--ad", Math.min(1, Math.abs(d)).toFixed(3));
   }
 }
+let bought = -1;   // index in UPS of the upgrade just bought, lit up once when the shop is rebuilt
 function menu() {
   const core = $("core"); core.innerHTML = "";
   for (let i = 0, n = Math.max(8, save.maxLevel + 2); i < n; i++) {
@@ -2678,29 +2746,30 @@ function menu() {
   }
   gallery();
   const strip = $("mshop"); strip.innerHTML = "";
-  UPS.forEach(u => {
+  const lit = bought; bought = -1;
+  UPS.forEach((u, i) => {
     const n = u.lvl(), maxed = n >= u.max, c = u.cost(n), d = document.createElement("div");
-    d.className = "ms";
+    d.className = "ms" + (i === lit ? " is-bought" : "");
     d.title = u.name + ": " + u.desc + " " + u.now();
     d.innerHTML = '<span class="ms__ic">' + upIcon(u.ic) + '</span><span class="ms__n">' + u.short + '</span><span class="ms__lv' + (maxed ? " ms__lv--max" : "") + '" aria-label="Nível ' + n + " de " + u.max + '">' + n + "/" + u.max + "</span>";
     const b = document.createElement("button"); b.type = "button";
     if (maxed) b.textContent = "Máximo"; else b.innerHTML = '<span class="pearl" aria-hidden="true"></span> ' + c;
     b.setAttribute("aria-label", "Comprar " + u.name + (maxed ? "" : " por " + c + " moedas"));
     b.disabled = maxed || save.gems < c;
-    b.onclick = () => { if (save.gems < c) return; save.gems -= c; u.buy(); store(); sfx.buy(); newRun(save.level); menu(); };
+    b.onclick = () => { if (save.gems < c) return; save.gems -= c; u.buy(); store(); sfx.buy(); bought = i; newRun(save.level); menu(); };
     d.appendChild(b); strip.appendChild(d);
   });
   const ups1 = $("ups"), ups2 = $("ups2"); ups1.innerHTML = ""; ups2.innerHTML = "";
   UPS.forEach((u, i) => {
     const ups = i < 4 ? ups1 : ups2;
     const n = u.lvl(), maxed = n >= u.max, c = u.cost(n);
-    const d = document.createElement("div"); d.className = "up";
+    const d = document.createElement("div"); d.className = "up" + (i === lit ? " is-bought" : "");
     d.innerHTML = '<div class="up__top"><span class="up__ic">' + upIcon(u.ic) + '</span><div class="up__n">' + u.name + '<small aria-label="Nível ' + n + " de " + u.max + '">' + n + "/" + u.max + '</small></div></div><div class="up__d">' + u.desc + '<span class="up__now">' + u.now() + '</span></div><div class="pips" aria-label="Nível ' + n + " de " + u.max + '">' +
       Array.from({ length: u.max }, (_, j) => "<i" + (j < n ? ' class="on"' : "") + "></i>").join("") + "</div>";
     const btn = document.createElement("button"); btn.type = "button";
     if (maxed) btn.textContent = "Máximo"; else btn.innerHTML = '<span class="pearl" aria-hidden="true"></span> ' + c;
     btn.disabled = maxed || save.gems < c;
-    btn.onclick = () => { if (save.gems < c) return; save.gems -= c; u.buy(); store(); sfx.buy(); newRun(save.level); menu(); };
+    btn.onclick = () => { if (save.gems < c) return; save.gems -= c; u.buy(); store(); sfx.buy(); bought = i; newRun(save.level); menu(); };
     d.appendChild(btn); ups.appendChild(d);
   });
   hud();
@@ -2780,6 +2849,7 @@ const keys = {};
 cv.addEventListener("pointerdown", e => {
   audioInit();
   if (!run || paused) return;
+  if (run.zaps > 0 && (run.state === "aim" || run.state === "shoot") && zapAt(...toField(e))) return;
   cv.setPointerCapture(e.pointerId);
   dragging = true;
   padAt(e);
