@@ -1088,11 +1088,15 @@ const sfx = {
     hiss(.035, "lowpass", 900, 400, .3, 0, .7, master);
     tone(f, f * .95, .04, "sine", .2, 0, master);
   },
-  smash(big) {   // the stone cracks apart: a sharp crack and gravel, with a short low thud
-    hiss(.05, "bandpass", 1400, 900, .3, 0, 1.2, direct);
-    hiss(big ? .4 : .25, "bandpass", 500, 380, big ? .32 : .22, .01, .9);
-    tone(95, 85, big ? .2 : .13, "sine", big ? .32 : .22, 0, direct);
-    for (let i = 0; i < (big ? 7 : 4); i++) hiss(.03, "bandpass", rnd(900, 2200), 800, .1, rnd(.03, .3), 4);
+  smash(big) {   // the stone cracks apart: a quick run of sharp, uneven snaps (no low boom, so it reads as a crack, not a shot), then a few pebbles
+    hiss(.02, "highpass", 2600, 2000, .16, 0, .8, direct);
+    tone(420, 320, .03, "triangle", .07, 0, direct);
+    let when = 0;
+    for (let i = 0; i < (big ? 9 : 6); i++) {
+      hiss(rnd(.005, .01), "bandpass", rnd(2400, 5000), 2000, rnd(.1, .2), when, 3, direct);
+      when += rnd(.006, .022);
+    }
+    for (let i = 0; i < (big ? 5 : 3); i++) hiss(.025, "bandpass", rnd(1500, 3000), 1200, .06, rnd(.08, .3), 4, direct);
   },
   collapse() {
     for (let i = 0; i < 4; i++) tone(rnd(700, 1100), rnd(1600, 2400), .07, "sine", .06, .35 + i * rnd(.15, .35));
