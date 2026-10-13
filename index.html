@@ -1081,12 +1081,15 @@ function startAmbient() {
   ambient = g;
 }
 const sfx = {
-  hit(hp) {   // just a small click: a short burst of filtered noise with a tiny tick on top, a bit lower for tougher rock
+  hit(hp) {   // a magic "plim": a small bell from a high C major pentatonic (rallies make an arpeggio) with a faint fifth after it, lower notes for tougher rock
     if (!ac) return;
     const t = ac.currentTime; if (t - lastHit < .03) return; lastHit = t;
-    const f = 3200 - Math.min(hp, 60) * 20 + rnd(-150, 150);
-    hiss(.016, "bandpass", f, f * .8, .16, 0, 1.6, direct);
-    tone(f * .35, f * .3, .012, "triangle", .06, 0, direct);
+    const notes = [1046.5, 1174.7, 1318.5, 1568, 1760, 2093];
+    const f = notes[Math.max(0, 5 - Math.floor(Math.min(hp, 60) / 12) - (Math.random() < .5 ? 1 : 0))];
+    tone(f, f, .3, "sine", .07, 0, direct);
+    tone(f * 2, f * 2, .12, "sine", .025, 0, direct);
+    tone(f * 3, f * 3, .05, "sine", .012, 0, direct);
+    tone(f * 1.5, f * 1.5, .2, "sine", .03, .045, direct);
   },
   smash(big) {   // the stone cracks apart: a sharp crack and gravel, with a short low thud
     hiss(.05, "bandpass", 1400, 900, .3, 0, 1.2, direct);
