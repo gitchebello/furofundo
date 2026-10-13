@@ -1241,6 +1241,7 @@ function move(b, h) {
 
 function step(h) {
   const r = run;
+  r.simT = (r.simT || 0) + h;
   for (const b of r.balls) {
     if (b.home) {   // screen cleared: fly straight back to the drill
       const dx = r.dx - b.x, dy = LY - b.y, d = Math.hypot(dx, dy);
@@ -1262,7 +1263,12 @@ function step(h) {
     if (b.vy < 0 && b.y < BY && !b.miss) {
       const pw = padW();
       if (Math.abs(b.x - r.px) <= pw / 2 + R) {
-        const off = clamp((b.x - r.px) / (pw / 2), -1, 1), a = Math.PI / 2 - off * .6;   // gentle angle: the volley stays tight
+        // mirror the ball like a wall would, nudged a little by where it lands on the paddle, then pulled toward
+        // the angle the last balls left with: a volley you save goes back down together instead of fanning out
+        const off = clamp((b.x - r.px) / (pw / 2), -1, 1);
+        let a = clamp(Math.atan2(-b.vy, b.vx) - off * .35, MIN_A, Math.PI - MIN_A);
+        if (r.rebT != null && r.simT - r.rebT < .8) a = a * .2 + r.rebA * .8;
+        r.rebA = a; r.rebT = r.simT;
         b.vx = Math.cos(a) * SPEED; b.vy = Math.sin(a) * SPEED; b.y = BY; b.age = 0;
         r.rebounds++; sfx.rebound();
       } else b.miss = true;
@@ -1393,7 +1399,7 @@ function fire() {
   if (r.state !== "aim" || r.shots <= 0 || paused) return;
   r.shots--; r.used++;
   r.ff = false; r.cleared = false;
-  r.state = "shoot"; r.spawnLeft = save.balls + r.extra + r.bonus; r.bonus = 0; r.spawnT = 0; r.shotT = 0;
+  r.state = "shoot"; r.spawnLeft = save.balls + r.extra + r.bonus; r.bonus = 0; r.spawnT = 0; r.shotT = 0; r.rebT = null;
   r.dir = [Math.cos(r.aimA), Math.sin(r.aimA)]; r.fireX = r.dx; r.homeX = null;
   r.aimOn = false;
   sfx.shoot();
