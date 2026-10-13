@@ -390,7 +390,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
             <li><b>Dois cliques</b> ou <b>dois toques</b> rápidos com as bolas em jogo aceleram a jogada (6×). Mais dois cliques ou toques voltam à velocidade normal.</li>
             <li>O botão <b>Juntar</b> (a linha reta) (ao lado do » lá em cima, ou tecla R) junta todas as bolas em jogo numa <b>linha só</b> de novo, atrás da bola que está na frente. Bom para salvar as bolas quando elas estão espalhadas.</li>
             <li>De vez em quando aparece uma <b>fase difícil</b> (🔥 no menu): pedras mais duras, mais peças, pedras subindo mais rápido e um núcleo mais forte.</li>
-            <li>Cada fase é <b>mais funda</b> que a anterior e começa com <b>4 tiros a mais</b>. Durante a fase os tiros não aumentam (só com power-up, tela limpa ou lojinha).</li>
+            <li>Cada fase é <b>mais funda</b> que a anterior e começa com <b>2 tiros a mais</b>. Durante a fase os tiros não aumentam (só com power-up, tela limpa ou lojinha).</li>
             <li>Se você limpar todas as pedras da tela com bolas ainda em jogo, elas voltam sozinhas para a broca e você <b>ganha o tiro de volta</b>.</li>
             <li>O poço só desce quando o bloco mais alto sai do caminho. Toda vez que as bolas passam pela barra e a vez acaba, <b>as pedras sobem</b> um pouco. Se encostarem na linha vermelha embaixo da broca, você é engolido.</li>
             <li>Cada camada é mais difícil (estrelas no menu): pedras mais duras, mais peças e pedras subindo mais rápido.</li>
@@ -938,8 +938,8 @@ const NAMES = [
 const ROMAN = ["", " II", " III", " IV", " V", " VI", " VII", " VIII", " IX", " X"];
 // every phase digs deeper than the last: 150 m, 185 m, 220 m ... and a little more each lap
 const goalOf = i => 150 + i * 35 + Math.floor(i / 10) * 25;
-// the shots don't grow during a phase: each new phase starts with 4 more than the one before
-const shotsOf = i => 18 + i * 4;
+// the shots don't grow during a phase: each new phase starts with 2 more than the one before
+const shotsOf = i => 12 + i * 2;
 function LV(i) {
   const lap = Math.floor(i / NAMES.length);
   let start = 0; for (let j = 0; j < i; j++) start += goalOf(j);
