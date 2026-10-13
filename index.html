@@ -27,8 +27,6 @@ body{background:var(--rock);color:var(--ink);font-family:var(--body);font-size:1
 .hud__depth{min-width:0}
 .hud__row{display:flex;justify-content:space-between;gap:8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim)}
 .hud__row b{color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:0}
-.bar{height:8px;border-radius:4px;background:var(--rock-2);border:1px solid var(--line);overflow:hidden;margin-top:4px}
-.bar i{display:block;height:100%;width:0;background:var(--rainbow);background-size:200% 100%;transition:width .25s}
 .hud__stats{display:flex;gap:6px;align-items:center}
 .pill{display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;background:var(--rock-2);border:1px solid var(--line);font-weight:700;font-variant-numeric:tabular-nums;font-size:14px;white-space:nowrap}
 .pill small{font-weight:600;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}
@@ -40,7 +38,17 @@ body{background:var(--rock);color:var(--ink);font-family:var(--body);font-size:1
 .hud__tools{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .hud__layer{font-family:var(--display);font-size:13px;letter-spacing:.04em;color:var(--magma);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .hud__btns{display:flex;gap:6px}
-.stage{flex:1;min-height:0;width:100%;display:flex;justify-content:center;align-items:flex-start}
+.stage{flex:1;min-height:0;width:100%;display:flex;justify-content:center;align-items:flex-start;gap:8px}
+/* the depth gauge: a shaft down the side that the drill digs into */
+.shaft{position:relative;flex:0 0 20px;border-radius:10px;background:#0b0b0d;box-shadow:inset 0 0 0 1px var(--line),inset 0 6px 10px rgba(0,0,0,.8);overflow:visible}
+.shaft::before{content:"";position:absolute;inset:0;border-radius:10px;background:repeating-linear-gradient(180deg,transparent 0 calc(10% - 1px),rgba(255,255,255,.09) calc(10% - 1px) 10%);pointer-events:none}
+.shaft__fill{position:absolute;left:3px;right:3px;top:3px;height:0;border-radius:7px 7px 3px 3px;transition:height .35s;box-shadow:0 0 10px rgba(255,255,255,.12)}
+.shaft__tip{position:absolute;left:50%;top:3px;width:0;height:0;transform:translate(-50%,0);transition:top .35s}
+.shaft__tip::before{content:"";position:absolute;left:-8px;top:-4px;width:16px;height:16px;border-radius:50%;background:var(--tip-dk,#7a2a10);box-shadow:0 0 8px var(--tip,#ff7a2f)}
+.shaft__tip::after{content:"";position:absolute;left:-7px;top:4px;border-left:7px solid transparent;border-right:7px solid transparent;border-top:14px solid var(--tip,#ff7a2f);animation:drillwob .18s steps(2) infinite}
+@keyframes drillwob{50%{transform:translateX(.8px)}}
+.shaft__mark{position:absolute;left:24px;font-size:10px;color:var(--ink-dim);font-variant-numeric:tabular-nums;white-space:nowrap;transform:translateY(-50%)}
+.shaft__mark--end{bottom:-6px;transform:none}
 .frame{position:relative;border-radius:14px;overflow:hidden;box-shadow:0 0 0 1px var(--line),0 18px 50px rgba(0,0,0,.55)}
 canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
 .ov{position:absolute;inset:0;background:var(--panel);overflow-y:auto;padding:22px 18px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px}
@@ -136,14 +144,13 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .fold__in{padding:0 14px 14px}
 .howto{margin:0;padding-left:18px;color:var(--ink-dim);font-size:13px;line-height:1.55}
 .howto b{color:var(--ink)}
-@media (prefers-reduced-motion:reduce){.bar i{transition:none}.brand span,.btn{animation:none}}
+@media (prefers-reduced-motion:reduce){.shaft__fill,.shaft__tip{transition:none}.shaft__tip::after{animation:none}.brand span,.btn{animation:none}}
 </style>
 
 <div class="app">
   <div class="hud" id="hud">
     <div class="hud__depth">
       <div class="hud__row"><span>Profundidade</span><span><b id="hDepth">0</b> / <b id="hGoal">100</b> m</span></div>
-      <div class="bar"><i id="hBar"></i></div>
     </div>
     <div class="hud__stats">
       <div class="pill" title="Tiros restantes"><small>Tiros</small><span id="hShots">0</span></div>
@@ -160,6 +167,10 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
   </div>
 
   <div class="stage" id="stage">
+    <div class="shaft" id="shaft" role="progressbar" aria-label="Profundidade" aria-valuemin="0">
+      <div class="shaft__fill" id="hBar"></div>
+      <div class="shaft__tip" id="hTip"></div>
+    </div>
     <div class="frame" id="frame">
       <canvas id="cv" aria-label="Poço de escavação. Segure para mirar e solte para atirar. Teclado: setas miram, espaço atira."></canvas>
 
@@ -839,14 +850,17 @@ let scale = 1;
 
 function fit() {
   const st = $("stage").getBoundingClientRect();
+  const room = st.width - 28;   // the depth shaft and its gap sit beside the field
   let h = st.height, w = h * 9 / 16;
-  if (w > st.width) { w = st.width; h = w * 16 / 9; }
+  if (w > room) { w = room; h = w * 16 / 9; }
   w = Math.floor(w); h = Math.floor(h);
   $("frame").style.width = w + "px"; $("frame").style.height = h + "px";
-  $("hud").style.width = w + "px";
+  $("hud").style.width = (w + 28) + "px";
+  $("shaft").style.height = h + "px";
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
   scale = cv.width / W;
+  if (run) hud();
 }
 
 // ---------- sound: everything plays inside a flooded cave ----------
@@ -1825,7 +1839,14 @@ function hud() {
   const r = run;
   $("hDepth").textContent = Math.floor(r.depth);
   $("hGoal").textContent = r.L.goal;
-  $("hBar").style.width = (r.depth / r.L.goal * 100) + "%";
+  // the shaft fills downward and the drill tip sits at the bottom of the hole dug so far
+  const f = clamp(r.depth / r.L.goal, 0, 1), sh = $("shaft").clientHeight - 6, dh = Math.round(hueAt(r.li, r.depth));
+  $("hBar").style.height = (f * sh) + "px";
+  $("hBar").style.background = grad(r.li, "180deg") + " 0 0/100% " + sh + "px no-repeat";   // colours spread over the whole shaft
+  $("hTip").style.top = (3 + f * sh) + "px";
+  $("hTip").style.setProperty("--tip", "hsl(" + dh + ",92%,58%)");
+  $("hTip").style.setProperty("--tip-dk", "hsl(" + dh + ",80%,30%)");
+  $("shaft").setAttribute("aria-valuemax", r.L.goal); $("shaft").setAttribute("aria-valuenow", Math.floor(r.depth));
   $("hShots").textContent = r.shots;
   $("hGems").textContent = save.gems;
   $("hLayer").textContent = (r.li + 1) + " · " + r.L.name;
