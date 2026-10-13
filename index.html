@@ -1108,7 +1108,25 @@ const sfx = {
     tone(58, 72, .6, "sine", .07);
   },
   rebound() { tone(330, 300, .06, "triangle", .12, 0, direct); hiss(.02, "bandpass", 1200, 1000, .08, 0, 2, direct); },
-  shoot() { hiss(.16, "bandpass", 700, 1400, .12, 0, .8); tone(150, 135, .08, "triangle", .12, 0, direct); },
+  shoot() {   // an old door creaking open: a slow sawtooth is a train of stick-slip clicks, its rate wanders, and two resonant filters give the wood
+    if (!ac || !soundOn) return;
+    const t = ac.currentTime, d = .6;
+    const o = ac.createOscillator(); o.type = "sawtooth";
+    o.frequency.setValueAtTime(22, t);
+    o.frequency.linearRampToValueAtTime(55, t + d * .35);
+    o.frequency.linearRampToValueAtTime(38, t + d * .7);
+    o.frequency.linearRampToValueAtTime(70, t + d);
+    const wob = ac.createOscillator(), wobG = ac.createGain(); wob.frequency.value = 9; wobG.gain.value = 8;
+    wob.connect(wobG).connect(o.frequency);
+    const f1 = ac.createBiquadFilter(); f1.type = "bandpass"; f1.Q.value = 8;
+    f1.frequency.setValueAtTime(900, t); f1.frequency.linearRampToValueAtTime(1300, t + d);
+    const f2 = ac.createBiquadFilter(); f2.type = "bandpass"; f2.Q.value = 6; f2.frequency.value = 2100;
+    const g = ac.createGain(), g2 = ac.createGain(); g2.gain.value = .5;
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.9, t + .05);
+    g.gain.setValueAtTime(.9, t + d * .75); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(f1).connect(g); o.connect(f2).connect(g2).connect(g); g.connect(bus);
+    o.start(t); wob.start(t); o.stop(t + d + .05); wob.stop(t + d + .05);
+  },
   coin() {   // water drops
     tone(820, 1850, .07, "sine", .09);
     tone(1150, 2500, .05, "sine", .05, .07);
