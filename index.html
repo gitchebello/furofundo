@@ -1213,8 +1213,11 @@ function collide(b, k) {
     const ox = k.x + c.cx * CELL, oy = k.y + c.cy * RH;
     const h = hitCell(b.x, b.y, ox + c.x0, oy + c.y0, ox + c.x1, oy + c.y1, c.rad);
     if (!h) continue;
-    const [nx, ny, pen] = h;
-    b.x += nx * pen; b.y += ny * pen;
+    const [nx0, ny0, pen] = h;
+    b.x += nx0 * pen; b.y += ny0 * pen;
+    // rounded corners bounce mostly like a flat side, so a stream of balls stays together instead of fanning out
+    const ax = Math.abs(nx0) > Math.abs(ny0) ? Math.sign(nx0) : 0, ay = ax ? 0 : Math.sign(ny0);
+    let nx = nx0 * .15 + ax * .85, ny = ny0 * .15 + ay * .85; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
     const vn = b.vx * nx + b.vy * ny;
     if (vn < 0) { b.vx -= 2 * vn * nx; b.vy -= 2 * vn * ny; hit = true; }
   }
@@ -1259,7 +1262,7 @@ function step(h) {
     if (b.vy < 0 && b.y < BY && !b.miss) {
       const pw = padW();
       if (Math.abs(b.x - r.px) <= pw / 2 + R) {
-        const off = clamp((b.x - r.px) / (pw / 2), -1, 1), a = Math.PI / 2 - off * 1.05;
+        const off = clamp((b.x - r.px) / (pw / 2), -1, 1), a = Math.PI / 2 - off * .6;   // gentle angle: the volley stays tight
         b.vx = Math.cos(a) * SPEED; b.vy = Math.sin(a) * SPEED; b.y = BY; b.age = 0;
         r.rebounds++; sfx.rebound();
       } else b.miss = true;
@@ -1527,7 +1530,7 @@ function update(dt) {
         if (r.spawnT <= 0) {
           // like Holedown: the whole volley streams out of the spot where you fired, in one line
           r.balls.push({ x: r.fireX, y: BY, vx: r.dir[0] * SPEED, vy: r.dir[1] * SPEED, age: 0 });
-          r.spawnLeft--; r.spawnT = .06;
+          r.spawnLeft--; r.spawnT = .04;
         }
       }
       step(h);
