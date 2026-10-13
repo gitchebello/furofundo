@@ -249,6 +249,8 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .ms__ic{width:22px;height:22px}
 .ms__ic img,.ms__ic svg{width:22px;height:22px;display:block}
 .ms__n{font-size:10.5px;font-weight:700;line-height:1.15;min-height:2.3em;display:flex;align-items:center}
+.ms__lv{font-size:10px;font-weight:700;color:var(--ink-dim);font-variant-numeric:tabular-nums}
+.ms__lv--max{color:var(--crystal)}
 .ms button{all:unset;box-sizing:border-box;cursor:pointer;margin-top:auto;width:100%;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px 4px;border-radius:7px;
   border:1px solid var(--crystal);color:var(--crystal);font:700 12px var(--body);font-variant-numeric:tabular-nums}
 .ms button:disabled{border-color:var(--line);color:var(--ink-dim);cursor:not-allowed}
@@ -1148,7 +1150,15 @@ const sfx = {
   },
   bad() { tone(260, 180, .3, "triangle", .1); tone(195, 140, .3, "triangle", .07, .08); },
   ff() { for (let i = 0; i < 3; i++) tone(300 + i * 120, 700 + i * 160, .06, "sine", .05, i * .05); },
-  buy() { sfx.coin(); tone(196, 190, .25, "triangle", .1, .05); },
+  buy() {   // cash register "cha-ching": key clicks, the drawer thumping open, a bright bell and a jingle of coins
+    for (const w of [0, .045, .09]) hiss(.012, "bandpass", 2600, 2200, .12, w, 2, direct);
+    hiss(.12, "bandpass", 700, 350, .14, .13, 1, direct);
+    tone(150, 110, .05, "triangle", .12, .13, direct);
+    tone(2093, 2093, .7, "sine", .1, .15, direct);
+    tone(2093 * 2.4, 2093 * 2.4, .25, "sine", .03, .15, direct);
+    tone(2637, 2637, .6, "sine", .07, .17, direct);
+    for (let i = 0; i < 5; i++) { const f = rnd(3200, 4800); tone(f, f, .05, "sine", .025, rnd(.18, .4), direct); }
+  },
   win() { [196, 247, 294, 392].forEach((f, i) => tone(f, f, 1.1, "sine", .08, i * .1)); sfx.coin(); },
   lose() { [220, 196, 165].forEach((f, i) => tone(f, f, .5, "triangle", .1, i * .22)); }
 };
@@ -2676,7 +2686,7 @@ function menu() {
     const n = u.lvl(), maxed = n >= u.max, c = u.cost(n), d = document.createElement("div");
     d.className = "ms";
     d.title = u.name + ": " + u.desc + " " + u.now();
-    d.innerHTML = '<span class="ms__ic">' + upIcon(u.ic) + '</span><span class="ms__n">' + u.short + "</span>";
+    d.innerHTML = '<span class="ms__ic">' + upIcon(u.ic) + '</span><span class="ms__n">' + u.short + '</span><span class="ms__lv' + (maxed ? " ms__lv--max" : "") + '" aria-label="Nível ' + n + " de " + u.max + '">' + n + "/" + u.max + "</span>";
     const b = document.createElement("button"); b.type = "button";
     if (maxed) b.textContent = "Máximo"; else b.innerHTML = '<span class="pearl" aria-hidden="true"></span> ' + c;
     b.setAttribute("aria-label", "Comprar " + u.name + (maxed ? "" : " por " + c + " moedas"));
@@ -2689,7 +2699,7 @@ function menu() {
     const ups = i < 4 ? ups1 : ups2;
     const n = u.lvl(), maxed = n >= u.max, c = u.cost(n);
     const d = document.createElement("div"); d.className = "up";
-    d.innerHTML = '<div class="up__top"><span class="up__ic">' + upIcon(u.ic) + '</span><div class="up__n">' + u.name + '</div></div><div class="up__d">' + u.desc + '<span class="up__now">' + u.now() + '</span></div><div class="pips" aria-label="Nível ' + n + " de " + u.max + '">' +
+    d.innerHTML = '<div class="up__top"><span class="up__ic">' + upIcon(u.ic) + '</span><div class="up__n">' + u.name + '<small aria-label="Nível ' + n + " de " + u.max + '">' + n + "/" + u.max + '</small></div></div><div class="up__d">' + u.desc + '<span class="up__now">' + u.now() + '</span></div><div class="pips" aria-label="Nível ' + n + " de " + u.max + '">' +
       Array.from({ length: u.max }, (_, j) => "<i" + (j < n ? ' class="on"' : "") + "></i>").join("") + "</div>";
     const btn = document.createElement("button"); btn.type = "button";
     if (maxed) btn.textContent = "Máximo"; else btn.innerHTML = '<span class="pearl" aria-hidden="true"></span> ' + c;
