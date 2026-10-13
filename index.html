@@ -1655,9 +1655,8 @@ function draw() {
   const fy = floorY() - GV;
   if (fy < H) {
     const bg2 = ctx.createLinearGradient(0, fy, 0, H);
-    bg2.addColorStop(0, "hsl(" + Math.round(hueAt(r.li, r.depth)) + ",40%,14%)"); bg2.addColorStop(1, "#050505");
+    bg2.addColorStop(0, "rgba(0,0,0,0)"); bg2.addColorStop(1, "rgba(0,0,0,.55)");
     ctx.fillStyle = bg2; ctx.fillRect(0, fy, W, H - fy + 10);
-    ctx.fillStyle = "hsl(" + Math.round(hueAt(r.li, r.depth)) + ",80%,55%)"; ctx.globalAlpha = .6; ctx.fillRect(0, fy, W, 2); ctx.globalAlpha = 1;
   }
 
   // falling pieces
