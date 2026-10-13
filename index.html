@@ -1114,9 +1114,21 @@ const sfx = {
     tone(58, 72, .6, "sine", .07);
   },
   rebound() { tone(330, 300, .06, "triangle", .12, 0, direct); hiss(.02, "bandpass", 1200, 1000, .08, 0, 2, direct); },
-  shoot() {   // a laser "pew": a bright tone diving fast from high to low, with a thinner one an octave up
-    tone(1800, 160, .2, "square", .07, 0, direct);
-    tone(3000, 300, .14, "sine", .04, 0, direct);
+  shoot() {   // a laser "zooom": a thick buzzing beam whose filter sweeps open and shut like something flying past, with a rush of air
+    if (!ac || !soundOn) return;
+    const t = ac.currentTime, d = .45;
+    const lp = ac.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 6;
+    lp.frequency.setValueAtTime(300, t); lp.frequency.exponentialRampToValueAtTime(2400, t + d * .35); lp.frequency.exponentialRampToValueAtTime(400, t + d);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.12, t + .04);
+    g.gain.setValueAtTime(.12, t + d * .5); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    for (const k of [1, 1.012]) {
+      const o = ac.createOscillator(); o.type = "sawtooth";
+      o.frequency.setValueAtTime(140 * k, t); o.frequency.exponentialRampToValueAtTime(90 * k, t + d);
+      o.connect(lp); o.start(t); o.stop(t + d + .05);
+    }
+    lp.connect(g).connect(direct);
+    hiss(d, "bandpass", 600, 2600, .1, 0, 1.5, direct);
   },
   coin() {   // water drops
     tone(820, 1850, .07, "sine", .09);
