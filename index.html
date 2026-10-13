@@ -415,15 +415,6 @@ function bubbles(n, r0, r1, stops, gap) {
 const vein = (nz, x, y, sc, w) => Math.abs(fbm(nz, x / sc, y / sc) - .5) < w;
 
 const MINERALS = [
-  { name: "Calcita-de-Franklin", neon: "#46ff6e", make: () => {
-    const a = noise(), b = noise(), c = noise();
-    return pixTex((x, y) => {
-      const sp = fbm(c, x / 2.2, y / 2.2), red = fbm(b, x / 22, y / 22);
-      if (red > .6 && sp > .35) return ramp(S([[0, "#a8250c"], [1, "#ff6a2a"]]), (red - .6) * 3 + sp * .4);
-      if (sp > .64 || vein(a, x, y, 9, .018)) return ramp(S([[0, "#1fbf4a"], [1, "#8cff9c"]]), sp);
-      return ramp(S([[0, "#141826"], [1, "#3a4466"]]), fbm(a, x / 10, y / 10));
-    });
-  } },
   { name: "Calcita vermelha", neon: "#ff4a1c", make: () => {
     const a = noise(), v1 = noise(), v2 = noise();
     return pixTex((x, y) => {
@@ -431,7 +422,6 @@ const MINERALS = [
       return ramp(S([[0, "#c51e06"], [.6, "#ff4a14"], [1, "#ff9050"]]), fbm(a, x / 14, y / 14));
     });
   } },
-  { name: "Hialita verde", neon: "#3dff5a", make: () => bubbles(110, 7, 18, [[0, "#0d6a1a"], [.5, "#2fe043"], [1, "#c8ffb0"]], "#06240a") },
   { name: "Scheelita", neon: "#8fd0ff", make: () => {
     const a = noise(), v = noise(), w = noise();
     return pixTex((x, y) => {
@@ -551,14 +541,6 @@ const MINERALS = [
       return vein(v, x, y, 30, .01) ? mul(c, 1.1) : c;
     });
   } },
-  { name: "Esfalerita", neon: "#4dff6a", make: () => {
-    const a = noise(), r = noise();
-    return pixTex((x, y) => {
-      if (fbm(r, x / 30, y / 30) > .64) return ramp(S([[0, "#8a1010"], [1, "#ff3a3a"]]), fbm(a, x / 3, y / 3));
-      if ((x % 6 < 2) && (y % 5 < 2) && Math.random() < .55) return HX("#3dff5a");
-      return ramp(S([[0, "#1a0828"], [1, "#4a1a6a"]]), fbm(a, x / 9, y / 9));
-    });
-  } },
   { name: "Calcita salmão", neon: "#ff6a4a", make: () => {
     const a = noise(), st = Array.from({ length: 12 }, () => rnd(4, 14));
     return pixTex((x, y) => {
@@ -580,9 +562,6 @@ const MINERALS = [
     const a = noise(), b = noise();
     return pixTex((x, y) => ramp(S([[0, "#2a7aa0"], [.5, "#6ac8e8"], [1, "#d8f6ff"]]), fbm(a, x / 30, y / 12) * .8 + fbm(b, x / 4, y / 4) * .3));
   } },
-  { name: "Enxofre granulado", neon: "#fff23a", make: () => bubbles(200, 3, 8, [[0, "#9a8a08"], [.5, "#f5e22a"], [1, "#fffbb0"]], "#3a3204") }
-  ,
-  // ---- organic stones: fossils, landscapes, growth rings and branching
   { name: "Ágata rendada", neon: "#c8d8ff", make: () => {
     const nz = noise(), cs = [[rnd(0, VX), rnd(0, VY)], [rnd(0, VX), rnd(0, VY)]];
     return pixTex((x, y) => {
@@ -665,19 +644,6 @@ const MINERALS = [
       for (const [cx, cy] of C) { const dd = Math.hypot(x - cx, y - cy); if (dd < d) { d = dd; a = Math.atan2(y - cy, x - cx); } }
       return ramp(S([[0, "#8a2448"], [.5, "#f08ab0"], [.7, "#fff0f4"], [1, "#8a2448"]]), frac((d + Math.sin(a * 5) * 7 + fbm(nz, x / 30, y / 30) * 16) / 15));
     });
-  } },
-  { name: "Turritela", neon: "#e0c8a0", make: () => {
-    const c = document.createElement("canvas"); c.width = TX; c.height = TY;
-    const x = c.getContext("2d"); x.fillStyle = "#2a1e14"; x.fillRect(0, 0, TX, TY);
-    for (let i = 0; i < 45; i++) {
-      x.save(); x.translate(rnd(0, TX), rnd(0, TY)); x.rotate(rnd(0, Math.PI * 2));
-      const L = rnd(14, 26), w = L * .32;
-      x.fillStyle = "#c8a878"; x.beginPath(); x.moveTo(0, -L / 2); x.lineTo(w, L / 2); x.lineTo(-w, L / 2); x.closePath(); x.fill();
-      x.strokeStyle = "#5a3e24"; x.lineWidth = .8;
-      for (let k = 1; k < 5; k++) { const yy = -L / 2 + L * k / 5, ww = w * k / 5; x.beginPath(); x.moveTo(-ww, yy); x.lineTo(ww, yy + 1.5); x.stroke(); }
-      x.restore();
-    }
-    return c;
   } },
   { name: "Ágata-musgo", neon: "#9aff9a", make: () => {
     const a = noise(), b = noise(), cl = noise();
@@ -1363,10 +1329,10 @@ function ringUpdate() {
   el.style.background = "conic-gradient(from var(--ga)," + stops.join(",") + ")";
 }
 
-// ---------- black hole: when the screen is cleared the balls whirl into it and it spits them at the drill ----------
+// ---------- drain: when the screen is cleared the balls swirl down a drain and pop back out of the drill ----------
 function openHole() {
   const r = run, hx = W / 2, hy = clamp((LY + floorY()) / 2, LY + 120, H - 120);
-  r.hole = { x: hx, y: hy, t: 0, size: 0, spitting: false, spin: 0 };
+  r.hole = { x: hx, y: hy, t: 0, size: 0, phase: "swirl", spin: 0, rip: [], pops: [] };
   r.balls.forEach((b, i) => {
     b.home = true; b.miss = true;
     b.ang = Math.atan2(b.y - hy, b.x - hx); b.rad = Math.hypot(b.x - hx, b.y - hy);
@@ -1375,60 +1341,95 @@ function openHole() {
 }
 function holeStep(h) {
   const r = run, o = r.hole;
-  o.t += h; o.spin += h * 9;
+  o.t += h; o.spin += h * (o.phase === "swirl" ? 7 : 3);
+  for (const q of o.rip) q.t += h;
+  for (const q of o.pops) q.t += h;
+  o.rip = o.rip.filter(q => q.t < .45); o.pops = o.pops.filter(q => q.t < .35);
   const home = r.balls.filter(b => b.home);
-  // swallow everything, then spit them out one after another
-  if (!o.spitting && (home.every(b => b.inHole) || o.t > .75)) {
-    o.spitting = true;
-    home.forEach((b, i) => { b.inHole = true; b.rad = 0; b.wait = i * .02; b.x = o.x; b.y = o.y; });
-    sfx.shoot();
+  // everything gone down the drain: the balls come back out of the drill one after another
+  if (o.phase === "swirl" && (home.every(b => b.inHole) || o.t > 1.1)) {
+    o.phase = "pipe";
+    home.forEach((b, i) => { b.inHole = true; b.wait = .12 + i * .035; });
+    sfx.bubbles();
   }
-  const want = o.spitting && !home.length ? 0 : 28;
-  o.size += (want - o.size) * Math.min(1, h * 14);
-  if (o.spitting && !home.length && o.size < 1) r.hole = null;
+  const want = o.phase === "swirl" ? 34 : 0;
+  o.size += (want - o.size) * Math.min(1, h * (want ? 10 : 6));
+  if (o.phase === "pipe" && !home.length && o.size < 1 && !o.pops.length) r.hole = null;
 }
 function holeBall(b, h) {
   const r = run, o = r.hole;
   if (!o) { b.done = true; return; }
-  if (!o.spitting) {
+  if (o.phase === "swirl") {
     if (b.inHole) return;
-    // spiral: the radius collapses while the turn speeds up as it closes in
-    b.rad = Math.max(0, b.rad - (260 + b.rad * 3.2) * h);
-    b.ang += h * (5 + 260 / (b.rad + 18));
+    // like water down a plughole: the circle tightens and the spin speeds up as it closes in
+    b.rad = Math.max(0, b.rad - (140 + b.rad * 3.6) * h);
+    b.ang -= h * (3 + 520 / (b.rad + 14));
     b.x = o.x + Math.cos(b.ang) * b.rad; b.y = o.y + Math.sin(b.ang) * b.rad;
-    if (b.rad < 3) b.inHole = true;
+    if (b.rad < 5) { b.inHole = true; o.rip.push({ t: 0 }); }
     return;
   }
-  if (b.wait > 0) { b.wait -= h; return; }
-  if (b.inHole) { b.inHole = false; b.x = o.x; b.y = o.y; }
-  const tx = r.dx, ty = LY - 14, dx = tx - b.x, dy = ty - b.y, d = Math.hypot(dx, dy);
-  if (d < 14) { b.done = true; return; }
-  const v = 1700 * h;
-  b.x += dx / d * Math.min(v, d); b.y += dy / d * Math.min(v, d);
+  b.wait -= h;
+  if (b.wait <= 0) { b.done = true; o.pops.push({ t: 0 }); }
 }
 function drawHole() {
   const r = run, o = r.hole;
-  if (!o || o.size < .5) return;
+  if (!o) return;
   const s = o.size, hue = Math.round(hueAt(r.li, r.depth));
-  ctx.save(); ctx.translate(o.x, o.y);
-  // glow
-  const g = ctx.createRadialGradient(0, 0, s * .4, 0, 0, s * 2.6);
-  g.addColorStop(0, "hsla(" + hue + ",100%,60%,.55)"); g.addColorStop(1, "hsla(" + hue + ",100%,50%,0)");
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, s * 2.6, 0, Math.PI * 2); ctx.fill();
-  // swirling accretion arms
-  ctx.lineWidth = 2.2; ctx.lineCap = "round";
-  for (let k = 0; k < 5; k++) {
-    ctx.strokeStyle = "hsla(" + ((hue + k * 50) % 360) + ",100%,65%,.85)";
-    ctx.beginPath();
-    for (let j = 0; j <= 18; j++) {
-      const u = j / 18, rr = s * (2.1 - u * 1.25), a = -o.spin + k * Math.PI * 2 / 5 + u * 3.2;
-      j ? ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : ctx.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+  ctx.save();
+  if (s > .5) {
+    ctx.save(); ctx.translate(o.x, o.y);
+    // the water dips into a dark funnel
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, s * 2.3);
+    g.addColorStop(0, "rgba(0,0,0,.97)"); g.addColorStop(.3, "rgba(4,14,20,.85)");
+    g.addColorStop(.7, "hsla(" + hue + ",60%,30%,.25)"); g.addColorStop(1, "hsla(" + hue + ",60%,30%,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, s * 2.3, 0, Math.PI * 2); ctx.fill();
+    // rings of water sliding toward the hole
+    ctx.lineWidth = 1;
+    for (let j = 0; j < 3; j++) {
+      const f = 1 - ((o.t * 1.3 + j / 3) % 1), rr = s * (.5 + f * 1.7);
+      ctx.strokeStyle = "rgba(220,240,255," + (.22 * (1 - f) + .04) + ")";
+      ctx.beginPath(); ctx.arc(0, 0, rr, 0, Math.PI * 2); ctx.stroke();
     }
-    ctx.stroke();
+    // streaks of the whirlpool, thinner and brighter near the drain
+    ctx.lineCap = "round";
+    for (let k = 0; k < 8; k++) {
+      let px = 0, py = 0;
+      for (let j = 0; j <= 16; j++) {
+        const u = j / 16, rr = s * (2.1 - u * 1.6), a = o.spin + k * Math.PI / 4 - u * 4.2;
+        const x = Math.cos(a) * rr, y = Math.sin(a) * rr;
+        if (j) {
+          ctx.strokeStyle = "rgba(225,245,255," + (.08 + u * .5) + ")";
+          ctx.lineWidth = 2.6 - u * 1.6;
+          ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(x, y); ctx.stroke();
+        }
+        px = x; py = y;
+      }
+    }
+    // the drain grate
+    const gr = s * .42, mg = ctx.createRadialGradient(-gr * .3, -gr * .3, 0, 0, 0, gr);
+    mg.addColorStop(0, "#c9d1d5"); mg.addColorStop(1, "#59636a");
+    ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(0, 0, gr, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#20262a"; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.save(); ctx.rotate(o.spin * .15);
+    ctx.strokeStyle = "#0b0e10"; ctx.lineWidth = 2.2;
+    for (let k = 0; k < 6; k++) {
+      const a = k * Math.PI / 3;
+      ctx.beginPath(); ctx.moveTo(Math.cos(a) * gr * .28, Math.sin(a) * gr * .28); ctx.lineTo(Math.cos(a) * gr * .8, Math.sin(a) * gr * .8); ctx.stroke();
+    }
+    ctx.fillStyle = "#0b0e10"; ctx.beginPath(); ctx.arc(0, 0, gr * .16, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // a little splash ring each time a ball goes down
+    for (const q of o.rip) {
+      ctx.strokeStyle = "rgba(235,250,255," + (1 - q.t / .45) * .8 + ")"; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(0, 0, gr + q.t * 50, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.restore();
   }
-  // event horizon
-  ctx.fillStyle = "#000"; ctx.beginPath(); ctx.arc(0, 0, s * .8, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = "rgba(255,246,232,.7)"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(0, 0, s * .8, 0, Math.PI * 2); ctx.stroke();
+  // each ball pops back out of the drill with a small ring
+  for (const q of o.pops) {
+    ctx.strokeStyle = "rgba(255,246,232," + (1 - q.t / .35) + ")"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(r.dx, LY - 14, 8 + q.t * 60, 0, Math.PI * 2); ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -1964,7 +1965,7 @@ function draw() {
       ctx.globalAlpha = 1; ctx.fillStyle = "hsl(" + hh + ",100%,62%)"; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 16;
       ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, Math.PI * 2); ctx.fill();
     });
-  } else for (const b of r.balls) { if (b.inHole) continue; ctx.beginPath(); ctx.arc(b.x, b.y, b.home && !r.hole?.spitting ? R * clamp(b.rad / 60, .35, 1) : R, 0, Math.PI * 2); ctx.fill(); }
+  } else for (const b of r.balls) { if (b.inHole) continue; ctx.beginPath(); ctx.arc(b.x, b.y, b.home && r.hole?.phase === "swirl" ? R * clamp(b.rad / 70, .3, 1) : R, 0, Math.PI * 2); ctx.fill(); }
   ctx.shadowBlur = 0;
   // returning balls rolling over the surface into the drill, with a short streak behind them
   for (const g of r.homing) {
