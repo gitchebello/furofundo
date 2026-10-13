@@ -57,7 +57,12 @@ body{background:var(--rock);color:var(--ink);font-family:var(--body);font-size:1
 #bRegroup.fab:disabled{opacity:.18;pointer-events:none}
 @keyframes ready{50%{box-shadow:0 0 0 4px rgba(255,210,58,.2)}}
 .ibtn:focus-visible,.btn:focus-visible,.up button:focus-visible,.layer:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
-.hud__layer{font-family:var(--display);font-size:14px;letter-spacing:.04em;color:var(--magma);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* game name on top while playing, the phase name small under it; together they fit the height of the buttons so the pit keeps its size */
+.hud__title{display:flex;flex-direction:column;gap:3px;min-width:0}
+.hud__brand{font-family:var(--display);font-size:20px;line-height:1;color:var(--ink);white-space:nowrap}
+.hud__brand span{background:var(--rainbow);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rb 8s linear infinite}
+@media (prefers-reduced-motion:reduce){.hud__brand span{animation:none}}
+.hud__layer{font-family:var(--display);font-size:11px;line-height:1.2;letter-spacing:.04em;color:var(--magma);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .hud__btns{display:flex;gap:6px}
 .stage{flex:1;min-height:0;width:100%;display:flex;justify-content:center;align-items:flex-start;gap:8px}
 /* the depth gauge: a shaft down the side that the drill digs into */
@@ -162,8 +167,8 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 /* menu */
 .menu{gap:16px;padding:22px 16px 28px}
 .m-hero{display:flex;flex-direction:column;gap:8px}
-.menu .brand{font-size:clamp(44px,14vw,58px)}
-.tag{margin:0;color:var(--ink-dim);font-size:14px;line-height:1.45;max-width:32ch;text-wrap:balance}
+.menu .brand{font-size:clamp(40px,13vw,56px);white-space:nowrap}
+.menu .brand span{display:inline}
 .phase{border-radius:16px;background:var(--rock-2);border:1px solid var(--line);overflow:hidden;flex-shrink:0}
 .phase__band{height:62px;display:flex;align-items:flex-end;justify-content:space-between;padding:8px 14px;box-sizing:border-box;color:#0a0a0b}
 .phase__num{font-family:var(--display);font-size:34px;line-height:.9}
@@ -180,14 +185,16 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .mstat{background:var(--rock-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .mstat small{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}
 .mstat b{font-size:20px;font-variant-numeric:tabular-nums}
-.phases{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity;scrollbar-width:thin}
-.ph{all:unset;box-sizing:border-box;flex:0 0 88px;scroll-snap-align:start;border-radius:12px;overflow:hidden;background:var(--rock-2);border:1px solid var(--line);cursor:pointer;display:flex;flex-direction:column}
-.ph__band{height:38px;display:grid;place-items:center;font-family:var(--display);font-size:17px;color:#0a0a0b}
-.ph__lbl{padding:5px 5px 6px;font-size:10.5px;overflow-wrap:anywhere;hyphens:auto;color:var(--ink-dim);text-align:center;line-height:1.2}
-.ph[aria-current="true"]{box-shadow:0 0 0 2px var(--ink)}
-.ph[disabled]{cursor:not-allowed}
-.ph[disabled] .ph__band{filter:grayscale(.85) brightness(.45)}
-.ph:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
+/* Holedown-style phase picker: big cards you swipe sideways; the one that settles in the middle is the phase you play */
+.pcar{position:relative;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 14% 10px;flex-shrink:0;scrollbar-width:none;overscroll-behavior-x:contain}
+.pcar::-webkit-scrollbar{display:none}
+.pcar:focus-visible{outline:2px solid var(--crystal);outline-offset:2px;border-radius:16px}
+.pcar .phase{flex:0 0 100%;scroll-snap-align:center;cursor:pointer;transform:scale(.9);opacity:.5;transition:transform .25s,opacity .25s}
+.pcar .phase.is-on{transform:none;opacity:1}
+/* phases already open keep their full colour off to the side; only locked ones stay dimmed */
+.pcar .phase:not(.phase--locked){opacity:1}
+.phase--locked .phase__band{filter:grayscale(.85) brightness(.45)}
+@media (prefers-reduced-motion:reduce){.pcar .phase{transition:none}}
 .shopcoins{font-family:var(--body);font-weight:700;letter-spacing:0;margin-left:6px;-webkit-text-fill-color:var(--crystal)}
 .menu .ups{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px}
 .menu .up{display:flex;flex-direction:column;align-items:stretch;gap:7px;padding:11px;border-radius:12px}
@@ -225,8 +232,6 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .phase__band{position:relative}
 .phase__hard{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:700 12px var(--body);letter-spacing:.06em;text-transform:uppercase;
   background:#1a0a06;color:#ff8a4a;padding:4px 9px;border-radius:999px;border:1px solid #ff5a3c;box-shadow:0 0 12px rgba(255,90,60,.5)}
-.ph__band{position:relative}
-.ph__hard{position:absolute;right:5px;top:3px;font-size:13px;filter:drop-shadow(0 0 4px rgba(255,90,60,.9))}
 .mshop__h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .mshop__all{all:unset;cursor:pointer;font:700 12px var(--body);color:var(--crystal)}
 .mshop__all:focus-visible{outline:2px solid var(--crystal);outline-offset:2px;border-radius:4px}
@@ -279,7 +284,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 <div class="app">
   <div class="hud" id="hud">
     <div class="hud__top">
-      <div class="hud__layer" id="hLayer">Primeira Picareta em Brasa</div>
+      <div class="hud__title"><div class="hud__brand" aria-hidden="true">Dx<span>Drill</span></div><div class="hud__layer" id="hLayer">Primeira Picareta em Brasa</div></div>
       <div class="hud__btns">
         <button class="ibtn" id="bFast" type="button" aria-pressed="false" title="Acelerar as bolas" aria-label="Acelerar as bolas"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="currentColor"><path d="M3 5.5v13l8.5-6.5zM12.5 5.5v13L21 12z"/></svg></button>
         <button class="ibtn" id="bSound" type="button" aria-pressed="true" title="Som" aria-label="Som"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path class="snd-on" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="snd-off" d="m16 9.5 5 5m0-5-5 5"/></svg></button>
@@ -308,7 +313,6 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
       <div class="ov menu" id="ovMenu">
         <header class="m-hero">
           <h1 class="brand">Dx<span>Drill</span></h1>
-          <p class="tag">Cave o arco-íris, rebata as bolas e não deixe as pedras te engolirem.</p>
         </header>
 
         <ol class="how" aria-label="Como jogar">
@@ -330,8 +334,14 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
             <b>Quebre o núcleo</b><span>no fundo, para passar de fase</span></li>
         </ol>
 
-        <section class="phase" id="phaseCard" aria-live="polite"></section>
+        <div class="pcar" id="core" tabindex="0" aria-label="Fases: arraste para o lado para escolher"></div>
         <button class="btn btn--big" id="bPlay" type="button">Cavar</button>
+
+        <section class="mshopwrap">
+          <div class="mshop__h"><h2>Lojinha <span class="gem shopcoins"><span class="pearl" aria-hidden="true"></span> <span id="mGems">0</span></span></h2>
+            <button class="mshop__all" type="button" data-panel="pShop">ver detalhes</button></div>
+          <div class="mshop" id="mshop"></div>
+        </section>
 
         <section class="legend" aria-label="Legenda">
           <h2>Botões</h2>
@@ -339,17 +349,6 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
           <h2>Power-ups</h2>
           <ul class="lg" id="lgCaps"></ul>
           <p class="lg__note"><span class="lg__chip" aria-hidden="true"><i></i></span>No canto do jogo, a barrinha mostra quanto tempo ainda resta. Pontinhos = força.</p>
-        </section>
-
-        <section>
-          <h2>Fases</h2>
-          <div class="phases" id="core"></div>
-        </section>
-
-        <section class="mshopwrap">
-          <div class="mshop__h"><h2>Lojinha <span class="gem shopcoins"><span class="pearl" aria-hidden="true"></span> <span id="mGems">0</span></span></h2>
-            <button class="mshop__all" type="button" data-panel="pShop">ver detalhes</button></div>
-          <div class="mshop" id="mshop"></div>
         </section>
 
         <nav class="mtiles" aria-label="Mais opções">
@@ -1114,21 +1113,15 @@ const sfx = {
     tone(58, 72, .6, "sine", .07);
   },
   rebound() { tone(330, 300, .06, "triangle", .12, 0, direct); hiss(.02, "bandpass", 1200, 1000, .08, 0, 2, direct); },
-  shoot() {   // a laser "zooom": a thick buzzing beam whose filter sweeps open and shut like something flying past, with a rush of air
-    if (!ac || !soundOn) return;
-    const t = ac.currentTime, d = .45;
-    const lp = ac.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 6;
-    lp.frequency.setValueAtTime(200, t); lp.frequency.exponentialRampToValueAtTime(1100, t + d * .35); lp.frequency.exponentialRampToValueAtTime(250, t + d);
-    const g = ac.createGain();
-    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.12, t + .04);
-    g.gain.setValueAtTime(.12, t + d * .5); g.gain.exponentialRampToValueAtTime(.0001, t + d);
-    for (const k of [1, 1.012]) {
-      const o = ac.createOscillator(); o.type = "sawtooth";
-      o.frequency.setValueAtTime(70 * k, t); o.frequency.exponentialRampToValueAtTime(45 * k, t + d);
-      o.connect(lp); o.start(t); o.stop(t + d + .05);
+  shoot() {   // a stream of bubbles rushing out of the drill: one bigger blup with a soft puff, then smaller ones rising quicker and a little higher
+    tone(200, 640, .08, "sine", .22, 0, direct);
+    hiss(.05, "lowpass", 700, 300, .1, 0, .7, direct);
+    let when = .05;
+    for (let i = 0; i < 6; i++) {
+      const g = rnd(240, 340) + i * 30;
+      tone(g, g * 2.4, .045, "sine", .08, when, direct);
+      when += rnd(.03, .06);
     }
-    lp.connect(g).connect(direct);
-    hiss(d, "bandpass", 400, 1400, .1, 0, 1.5, direct);
   },
   coin() {   // water drops
     tone(820, 1850, .07, "sine", .09);
@@ -2571,32 +2564,47 @@ const grad = (i, dir = "90deg") => {
   return "linear-gradient(" + dir + "," + c[0] + " 0%," + c.map((x, k) => x + " " + (HOLD + (1 - HOLD) * k / (n - 1)) * 100 + "%").join(",") + ")";
 };
 const starsOf = i => "★".repeat(Math.min(5, diff(i).stars)) + (diff(i).stars > 5 ? "+" + (diff(i).stars - 5) : "");
-function phaseCard() {
-  const i = save.level, L = LV(i), st = i < save.maxLevel ? "Vencida" : "Próxima";
-  $("phaseCard").innerHTML =
-    '<div class="phase__band" style="background:' + grad(i) + '"><span class="phase__num">' + String(i + 1).padStart(2, "0") +
+function phaseCard(i) {
+  const L = LV(i), locked = i > save.maxLevel, st = locked ? "🔒 Bloqueada" : i < save.maxLevel ? "Vencida" : "Próxima";
+  return '<div class="phase__band" style="background:' + grad(i) + '"><span class="phase__num">' + String(i + 1).padStart(2, "0") +
     '</span><span class="phase__state">' + st + "</span>" + (isHard(i) ? '<span class="phase__hard">🔥 Difícil</span>' : "") + '</div><div class="phase__body"><p class="phase__name">' + L.name +
     '</p><div class="phase__sub"><span class="stars" aria-label="Dificuldade ' + diff(i).stars + '">' + starsOf(i) + "</span><span>" + L.km +
     '</span></div><div class="chips"><span class="chip">' + L.goal + "<small>m de meta</small></span><span class=\"chip\">" + L.shots +
     "<small>tiros</small></span>" + (layerBalls(i) ? '<span class="chip">+' + layerBalls(i) + "<small>bolas</small></span>" : "") + "</div></div>";
 }
+// the card resting in the middle of the carousel is the chosen phase; a locked one can be looked at but not played
+function pickPhase(i) {
+  const core = $("core");
+  for (const c of core.children) c.classList.toggle("is-on", +c.dataset.i === i);
+  const locked = i > save.maxLevel;
+  $("bPlay").disabled = locked; $("bPlay").textContent = locked ? "🔒 Bloqueada" : "Cavar";
+  if (!locked && i !== save.level) { save.level = i; store(); newRun(i); }
+}
 function menu() {
   const core = $("core"); core.innerHTML = "";
   for (let i = 0, n = Math.max(8, save.maxLevel + 2); i < n; i++) {
-    const L = LV(i), b = document.createElement("button");
-    b.type = "button"; b.className = "ph";
-    b.disabled = i > save.maxLevel;
-    b.setAttribute("aria-current", i === save.level ? "true" : "false");
-    b.setAttribute("aria-label", "Fase " + (i + 1) + ", " + L.name + (b.disabled ? ", bloqueada" : ""));
-    b.innerHTML = '<span class="ph__band" style="background:' + grad(i) + '">' + (b.disabled ? "🔒" : i + 1) + (isHard(i) ? '<span class="ph__hard" title="Fase difícil">🔥</span>' : "") + '</span><span class="ph__lbl">' +
-      (i < save.maxLevel ? "✓ " : "") + L.name + "</span>";
-    b.onclick = () => { save.level = i; store(); newRun(i); menu(); };
-    core.appendChild(b);
+    const c = document.createElement("section");
+    c.className = "phase" + (i > save.maxLevel ? " phase--locked" : ""); c.dataset.i = i;
+    c.setAttribute("aria-label", "Fase " + (i + 1) + ", " + LV(i).name + (i > save.maxLevel ? ", bloqueada" : ""));
+    c.innerHTML = phaseCard(i);
+    c.onclick = () => c.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    core.appendChild(c);
   }
-  const cur = core.children[save.level];
-  if (cur) core.scrollLeft = Math.max(0, cur.offsetLeft - core.clientWidth / 2 + 44);
-  phaseCard();
-  $("bPlay").textContent = "Cavar";
+  if (!core.onscroll) {
+    let tm = 0;
+    core.onscroll = () => {
+      clearTimeout(tm);
+      tm = setTimeout(() => {
+        const mid = core.scrollLeft + core.clientWidth / 2;
+        let best = 0, bd = 1e9;
+        for (const c of core.children) { const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - mid); if (d < bd) { bd = d; best = +c.dataset.i; } }
+        pickPhase(best);
+      }, 90);
+    };
+  }
+  pickPhase(save.level);
+  // the menu may still be hidden here: centre the chosen card once it has a size
+  requestAnimationFrame(() => { const c = core.children[save.level]; if (c) core.scrollLeft = c.offsetLeft - (core.clientWidth - c.offsetWidth) / 2; });
   $("mGems").textContent = save.gems; $("mGems2").textContent = save.gems;
   // legend: what each button and each power-up does, with the same icons as in the game
   const lb = $("lgBtns");
