@@ -1081,12 +1081,12 @@ function startAmbient() {
   ambient = g;
 }
 const sfx = {
-  hit(hp) {   // same recipe as the paddle rebound, a bit lower for tougher rock
+  hit(hp) {   // just a small click: a short burst of filtered noise with a tiny tick on top, a bit lower for tougher rock
     if (!ac) return;
     const t = ac.currentTime; if (t - lastHit < .03) return; lastHit = t;
-    const f = 330 - Math.min(hp, 60) * 1.5 + rnd(-8, 8);
-    tone(f, f * .91, .06, "triangle", .12, 0, direct);
-    hiss(.02, "bandpass", f * 3.6, f * 3, .08, 0, 2, direct);
+    const f = 3200 - Math.min(hp, 60) * 20 + rnd(-150, 150);
+    hiss(.016, "bandpass", f, f * .8, .16, 0, 1.6, direct);
+    tone(f * .35, f * .3, .012, "triangle", .06, 0, direct);
   },
   smash(big) {   // the stone cracks apart: a sharp crack and gravel, with a short low thud
     hiss(.05, "bandpass", 1400, 900, .3, 0, 1.2, direct);
