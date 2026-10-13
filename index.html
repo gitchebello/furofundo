@@ -198,7 +198,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
           <summary>Como jogar</summary>
           <div class="fold__in">
             <ul class="howto">
-            <li>Como no Holedown, a <b>broca atira do lugar onde a primeira bola voltou</b> na jogada anterior.</li>
+            <li>Como no Holedown, a <b>broca vai até cada bola que volta</b> e fica onde a <b>última</b> entrou: o próximo tiro sai dali.</li>
             <li><b>Segure</b> o dedo na tela para mirar: a linha reta pontilhada aponta da broca até o seu dedo. <b>Solte</b> para atirar. Para cancelar, solte o dedo em cima da broca.</li>
             <li>No mouse, a mira segue o cursor e o clique atira.</li>
             <li>No teclado: setas ← → giram a mira (e movem a barrinha durante a jogada), A/D movem a barrinha, espaço atira.</li>
@@ -1222,7 +1222,7 @@ function step(h) {
     }
     if ((b.y < LY - 14 && b.vy < 0) || b.age > 25) {
       b.done = true;
-      if (r.homeX == null && b.y < LY) r.homeX = b.x;   // like Holedown: the first ball back marks where the next shot leaves from
+      if (b.y < LY) r.homeX = b.x;   // every ball back moves the mark: the last one decides where the next shot leaves from
     }
   }
   if (r.blocks.some(k => k.hp <= 0)) {
@@ -1388,7 +1388,7 @@ function update(dt) {
   if (r.falling.some(k => k.gone)) r.falling = r.falling.filter(k => !k.gone);
   r.shake = Math.max(0, r.shake - dt * 20);
   if (paused) return;
-  // the drill is on its own: the moment the first ball comes back it slides over to that spot
+  // the drill is on its own: each time a ball comes back it slides over to that spot, so it ends where the last one came in
   if (r.homeX != null) {
     const want = clamp(r.homeX, 12, W - 12), d = want - r.dx;
     r.dx = Math.abs(d) < 1 ? want : r.dx + Math.sign(d) * Math.min(Math.abs(d), Math.max(260, Math.abs(d) * 8) * dt);
@@ -1885,7 +1885,7 @@ function play() { audioInit(); $("ovMenu").hidden = true; $("ovEnd").hidden = tr
 // ---------- input ----------
 let dragging = false;
 // The paddle follows the finger or mouse at all times. The drill is separate (Holedown aiming):
-// it stays where the last volley came back.
+// it goes to where the last ball of the volley came back.
 // Hold the finger on the screen and the straight dotted line points from the drill to it; let go to fire.
 // Letting go right over the drill cancels. With a mouse the line follows the cursor and a click fires.
 const toField = e => { const b = cv.getBoundingClientRect(); return [(e.clientX - b.left) / b.width * W, (e.clientY - b.top) / b.height * H]; };
