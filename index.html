@@ -33,6 +33,7 @@ body{background:var(--rock);color:var(--ink);font-family:var(--body);font-size:1
 .gem{color:var(--crystal)}
 .pearl{display:inline-block;width:.85em;height:.85em;border-radius:50%;vertical-align:-.08em;background:radial-gradient(circle at 34% 30%,#fff6b0 0 14%,#ffd23a 45%,#d99a12 72%,#a8700c 73%);box-shadow:0 0 6px rgba(255,200,60,.35)}
 .ibtn{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--rock-2);color:var(--ink);font:700 14px var(--body);cursor:pointer;display:grid;place-items:center;padding:0}
+.ibtn:disabled{opacity:.35;cursor:default}
 .ibtn[aria-pressed="true"]{background:var(--rainbow);background-size:300% 100%;color:var(--rock);border-color:transparent}
 .ibtn:focus-visible,.btn:focus-visible,.up button:focus-visible,.layer:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
 .hud__tools{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -181,6 +182,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
     <div class="hud__tools">
       <div class="hud__layer" id="hLayer">Primeira Picareta em Brasa</div>
       <div class="hud__btns">
+        <button class="ibtn" id="bRegroup" type="button" disabled title="Reordenar: junta todas as bolas numa linha só" aria-label="Reordenar as bolas numa linha">⋮</button>
         <button class="ibtn" id="bFast" type="button" aria-pressed="false" title="Acelerar bolas">»</button>
         <button class="ibtn" id="bSound" type="button" aria-pressed="true" title="Som">♪</button>
         <button class="ibtn" id="bMenu" type="button" title="Pausar">II</button>
@@ -241,6 +243,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
             <li>Cada bloco é um mineral cortado ao meio (veja a coleção abaixo). O número em cada um é quantas batidas ela aguenta. No zero, ela quebra.</li>
             <li>As bolas andam em linha reta, quicam nas paredes, no fundo e nas pedras até subir de novo. <b>Mova o rebatedor</b> (arraste, mouse ou setas) para mandá-las de novo para baixo. A ponta do rebatedor dá ângulo. A barrinha é separada da broca e segue o dedo ou o mouse o tempo todo, com ou sem bolas em campo.</li>
             <li><b>Dois cliques</b> ou <b>dois toques</b> rápidos com as bolas em jogo aceleram a jogada (6×). Mais dois cliques ou toques voltam à velocidade normal.</li>
+            <li>O botão <b>⋮ Reordenar</b> (ao lado do » lá em cima, ou tecla R) junta todas as bolas em jogo numa <b>linha só</b> de novo, atrás da bola que está na frente. Bom para salvar as bolas quando elas estão espalhadas.</li>
             <li>Cada fase é <b>mais funda</b> que a anterior e começa com <b>4 tiros a mais</b>. Durante a fase os tiros não aumentam (só com cápsula, tela limpa ou loja).</li>
             <li>Se você limpar todas as pedras da tela com bolas ainda em jogo, elas voltam sozinhas para a broca e você <b>ganha o tiro de volta</b>.</li>
             <li>O poço só desce quando o bloco mais alto sai do caminho. Toda vez que as bolas passam pela barra e a vez acaba, <b>as pedras sobem</b> um pouco. Se encostarem na linha vermelha embaixo da broca, você é engolido.</li>
@@ -1243,7 +1246,13 @@ function step(h) {
   r.simT = (r.simT || 0) + h;
   if (r.hole) holeStep(h);
   for (const b of r.balls) {
-    if (b.home) { holeBall(b, h); continue; }   // screen cleared: swirl into the black hole, get spat at the drill
+    if (b.home) { holeBall(b, h); continue; }
+    if (b.gather) {   // regroup: fly to the lead ball's spot, then wait in line to be sent out again
+      const g = r.regroup, dx = g.x - b.x, dy = g.y - b.y, d = Math.hypot(dx, dy), v = 1800 * h;
+      if (d <= v) { b.done = true; g.left++; continue; }
+      b.x += dx / d * v; b.y += dy / d * v;
+      continue;
+    }   // screen cleared: swirl into the black hole, get spat at the drill
     move(b, h);
     b.age += h;
     if (r.fx.rain > 0) {   // rainbow balls: anything they touch is gone, and they keep flying straight
@@ -1448,6 +1457,25 @@ function drawHole() {
   ctx.restore();
 }
 
+// regroup button: every ball still in play lines up behind the lead one again, Holedown style
+function canRegroup() {
+  const r = run;
+  return r && r.state === "shoot" && !paused && !r.hole && !r.regroup && r.balls.filter(b => !b.miss && !b.home).length > 1;
+}
+function regroup() {
+  if (!canRegroup()) return;
+  const r = run, live = r.balls.filter(b => !b.miss && !b.home);
+  // the leader is a ball heading down (the one nearest the top, so the line has the whole field ahead of it);
+  // if every ball is on its way up, the deepest one leads
+  const down = live.filter(b => b.vy > 0);
+  const lead = down.length ? down.reduce((a, b) => b.y < a.y ? b : a) : live.reduce((a, b) => b.y > a.y ? b : a);
+  r.regroup = { x: lead.x, y: lead.y, vx: lead.vx, vy: lead.vy, left: r.spawnLeft, t: .04 };
+  r.spawnLeft = 0;   // balls not fired yet join the same line
+  for (const b of live) if (b !== lead) b.gather = true;
+  r.texts.push({ x: clamp(lead.x, 70, W - 70), y: lead.y - 18, t: "Reordenar", life: .8, col: "#f4e7d4" });
+  sfx.bubbles();
+}
+
 // double click / double tap during a shot: fast-forward on, and again to go back to normal speed
 function recall() {
   const r = run;
@@ -1556,6 +1584,8 @@ function update(dt) {
   if (r.falling.some(k => k.gone)) r.falling = r.falling.filter(k => !k.gone);
   r.shake = Math.max(0, r.shake - dt * 20);
   ringUpdate();
+  const rg = canRegroup();
+  if ($("bRegroup").disabled === rg) $("bRegroup").disabled = !rg;
   if (paused) return;
   if (r.hole && r.state !== "shoot") holeStep(dt);   // let the hole close after the turn ends
   // balls that came back over the line roll along the surface into the drill
@@ -1596,6 +1626,12 @@ function update(dt) {
     for (const f in r.fx) { r.fx[f] = Math.max(0, r.fx[f] - sim); if (!r.fx[f]) r.lv[f] = 0; }
     while (sim > 0) {
       const h = Math.min(STEP, sim); sim -= h;
+      if (r.regroup && r.regroup.left > 0) {   // regrouped balls stream back out of one spot, in one line
+        const g = r.regroup;
+        g.t -= h;
+        if (g.t <= 0) { r.balls.push({ x: g.x, y: g.y, vx: g.vx, vy: g.vy, age: 0 }); g.left--; g.t = .04; }
+      }
+      if (r.regroup && r.regroup.left === 0 && !r.balls.some(b => b.gather)) r.regroup = null;
       if (r.spawnLeft > 0) {
         r.spawnT -= h;
         if (r.spawnT <= 0) {
@@ -1613,7 +1649,7 @@ function update(dt) {
       r.texts.push({ x: W / 2, y: r.hole.y - 80, t: "Tela limpa! +1 tiro", life: 1.6, col: "#ffe58a" });
       sfx.bubbles(); hud();
     }
-    if (r.spawnLeft === 0 && r.balls.length === 0) endTurn();
+    if (r.spawnLeft === 0 && r.balls.length === 0 && !r.regroup) endTurn();
   } else if (r.state === "rise") {
     const amt = Math.min(r.riseLeft, 70 * dt);
     r.riseLeft -= amt;
@@ -2127,6 +2163,7 @@ window.addEventListener("keydown", e => {
   if (!run || paused) return;
   if ("aAdD".includes(e.key) && e.key.length === 1) { keys[e.key] = true; return; }
   if (e.key === "ArrowLeft" || e.key === "ArrowRight") { keys[e.key] = true; e.preventDefault(); }
+ else if (e.key === "r" || e.key === "R") regroup();
  else if (e.key === " " || e.key === "Enter") {
     if (document.activeElement && document.activeElement.tagName === "BUTTON") return;
     fire(); e.preventDefault();
@@ -2140,6 +2177,7 @@ $("eShop").onclick = showMenu;
 $("bMenu").onclick = () => { if (!run || paused) return; paused = true; $("ovPause").hidden = false; $("bResume").focus(); };
 $("bResume").onclick = () => { $("ovPause").hidden = true; paused = false; cv.focus(); };
 $("bQuit").onclick = () => { newRun(save.level); showMenu(); };
+$("bRegroup").onclick = () => { regroup(); cv.focus(); };
 $("bFast").onclick = () => { if (!run) return; run.fast = !run.fast; $("bFast").setAttribute("aria-pressed", run.fast); };
 $("bSound").onclick = () => { setSound(!soundOn); $("bSound").setAttribute("aria-pressed", soundOn); if (soundOn) audioInit(); };
 
