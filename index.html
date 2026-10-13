@@ -1129,10 +1129,12 @@ const sfx = {
   },
   plop() { tone(rnd(520, 640), rnd(1100, 1400), .045, "sine", .07, 0, direct); },
   bubbles() { for (let i = 0; i < 5; i++) tone(rnd(300, 400) + i * 90, rnd(700, 950) + i * 120, .05, "sine", .06, i * .05); },
-  tick() {   // one small bubble per phase card passing the middle: a light, quick upward "blup", pitch nudged a little each time
+  tick() {   // one small bubble per phase card passing the middle: a light, quick upward "blup" ringing in the cave, pitch nudged a little each time
     if (!ac) return;
     const g = rnd(380, 480);
     tone(g, g * 2.2, .04, "sine", .12, 0, direct);
+    tone(g, g * 2.2, .04, "sine", .1);          // through the cave reverb
+    tone(g, g * 2.2, .04, "sine", .04, .15);    // a faint echo coming back
   },
   bad() { tone(260, 180, .3, "triangle", .1); tone(195, 140, .3, "triangle", .07, .08); },
   ff() { for (let i = 0; i < 3; i++) tone(300 + i * 120, 700 + i * 160, .06, "sine", .05, i * .05); },
