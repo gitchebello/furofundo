@@ -1,0 +1,665 @@
+<title>Furo Fundo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;600;700&display=swap">
+<style>
+/* Layout: one screen. HUD strip on top, a 9:16 dig shaft below it; menus slide over the shaft. */
+:root{
+  --rock:#130e0c;
+  --rock-2:#211813;
+  --panel:rgba(19,14,12,.93);
+  --line:#3a2c22;
+  --ink:#f4e7d4;
+  --ink-dim:#b29a83;
+  --magma:#ff7a2f;
+  --magma-dk:#c4521a;
+  --crystal:#6ff3d6;
+  --display:"Bungee",Impact,"Arial Black",sans-serif;
+  --body:"Chakra Petch","Trebuchet MS",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--rock);color:var(--ink);font-family:var(--body);font-size:15px;overflow:hidden;-webkit-tap-highlight-color:transparent}
+.app{height:100%;box-sizing:border-box;padding-inline:16px;padding-block:10px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.hud{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;max-width:100%}
+.hud__depth{min-width:0}
+.hud__row{display:flex;justify-content:space-between;gap:8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim)}
+.hud__row b{color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:0}
+.bar{height:8px;border-radius:4px;background:var(--rock-2);border:1px solid var(--line);overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--magma-dk),var(--magma));transition:width .25s}
+.hud__stats{display:flex;gap:6px;align-items:center}
+.pill{display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;background:var(--rock-2);border:1px solid var(--line);font-weight:700;font-variant-numeric:tabular-nums;font-size:14px;white-space:nowrap}
+.pill small{font-weight:600;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}
+.gem{color:var(--crystal)}
+.ibtn{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--rock-2);color:var(--ink);font:700 14px var(--body);cursor:pointer;display:grid;place-items:center;padding:0}
+.ibtn[aria-pressed="true"]{background:var(--magma);color:var(--rock);border-color:var(--magma)}
+.ibtn:focus-visible,.btn:focus-visible,.up button:focus-visible,.layer:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
+.hud__tools{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.hud__layer{font-family:var(--display);font-size:13px;letter-spacing:.04em;color:var(--magma);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hud__btns{display:flex;gap:6px}
+.stage{flex:1;min-height:0;width:100%;display:flex;justify-content:center;align-items:flex-start}
+.frame{position:relative;border-radius:14px;overflow:hidden;box-shadow:0 0 0 1px var(--line),0 18px 50px rgba(0,0,0,.55)}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.ov{position:absolute;inset:0;background:var(--panel);overflow-y:auto;padding:22px 18px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px}
+.brand{font-family:var(--display);font-size:clamp(34px,11vw,46px);line-height:.92;margin:0;color:var(--ink);text-wrap:balance}
+.brand span{display:block;color:var(--magma)}
+.lede{margin:0;color:var(--ink-dim);line-height:1.5;font-size:14px}
+.lede b{color:var(--ink)}
+h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px;color:var(--ink-dim);font-weight:400}
+.core{display:flex;flex-direction:column;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.layer{all:unset;box-sizing:border-box;display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:9px 12px;cursor:pointer;color:#1a120d;position:relative}
+.layer[disabled]{cursor:not-allowed}
+.layer[disabled]::after{content:"";position:absolute;inset:0;background:rgba(19,14,12,.62)}
+.layer__n{font-weight:700;font-size:14px}
+.layer__km{font-size:11px;font-variant-numeric:tabular-nums;opacity:.8;text-align:right}
+.layer__goal{font-size:11px;opacity:.8}
+.layer[aria-current="true"]{box-shadow:inset 0 0 0 3px var(--ink)}
+.layer__tag{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-align:right}
+.ups{display:flex;flex-direction:column;gap:8px}
+.up{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;padding:10px 12px;border-radius:10px;background:var(--rock-2);border:1px solid var(--line)}
+.up__n{font-weight:700}
+.up__n small{color:var(--ink-dim);font-weight:600;margin-left:6px;font-variant-numeric:tabular-nums}
+.up__d{grid-column:1;font-size:12px;color:var(--ink-dim)}
+.up button{grid-row:1/3;grid-column:2;border:1px solid var(--crystal);background:transparent;color:var(--crystal);border-radius:8px;padding:7px 10px;font:700 14px var(--body);cursor:pointer;font-variant-numeric:tabular-nums;white-space:nowrap}
+.up button:disabled{border-color:var(--line);color:var(--ink-dim);cursor:not-allowed}
+.btn{border:0;border-radius:12px;padding:14px 18px;font:400 17px var(--display);letter-spacing:.03em;cursor:pointer;background:var(--magma);color:var(--rock);box-shadow:0 4px 0 var(--magma-dk)}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--magma-dk)}
+.btn--ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.btn--ghost:active{box-shadow:inset 0 0 0 1px var(--line)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row .btn{flex:1 1 140px}
+.end{justify-content:center;text-align:center}
+.end__k{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--magma);font-weight:700}
+.end h3{font-family:var(--display);font-size:clamp(26px,8vw,34px);line-height:1;margin:0;text-wrap:balance;font-weight:400}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{padding:12px 8px;border-radius:10px;background:var(--rock-2);border:1px solid var(--line)}
+.stat b{display:block;font-size:24px;font-variant-numeric:tabular-nums}
+.stat small{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}
+.howto{margin:0;padding-left:18px;color:var(--ink-dim);font-size:13px;line-height:1.55}
+.howto b{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+
+<div class="app">
+  <div class="hud" id="hud">
+    <div class="hud__depth">
+      <div class="hud__row"><span>Profundidade</span><span><b id="hDepth">0</b> / <b id="hGoal">100</b> m</span></div>
+      <div class="bar"><i id="hBar"></i></div>
+    </div>
+    <div class="hud__stats">
+      <div class="pill" title="Tiros restantes"><small>Tiros</small><span id="hShots">0</span></div>
+      <div class="pill gem" title="Cristais"><span aria-hidden="true">◆</span><span id="hGems">0</span></div>
+    </div>
+    <div class="hud__tools">
+      <div class="hud__layer" id="hLayer">Crosta</div>
+      <div class="hud__btns">
+        <button class="ibtn" id="bFast" type="button" aria-pressed="false" title="Acelerar bolas">»</button>
+        <button class="ibtn" id="bSound" type="button" aria-pressed="true" title="Som">♪</button>
+        <button class="ibtn" id="bMenu" type="button" title="Pausar">II</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="frame" id="frame">
+      <canvas id="cv" aria-label="Poço de escavação. Arraste para mirar e solte para atirar. Teclado: setas miram, espaço atira."></canvas>
+
+      <div class="ov" id="ovMenu">
+        <h1 class="brand">Furo <span>Fundo</span></h1>
+        <p class="lede">Atire bolas poço abaixo, quebre as rochas e cave até a meta de cada camada <b>antes de acabar os tiros</b>. Os cristais pagam as melhorias da oficina.</p>
+        <div>
+          <h2>Camadas da Terra</h2>
+          <div class="core" id="core"></div>
+        </div>
+        <button class="btn" id="bPlay" type="button">Cavar</button>
+        <div>
+          <h2>Oficina · <span class="gem">◆ <span id="mGems">0</span></span></h2>
+          <div class="ups" id="ups"></div>
+        </div>
+        <div>
+          <h2>Como jogar</h2>
+          <ul class="howto">
+            <li><b>Arraste</b> para mirar e <b>solte</b> para atirar. No computador, mire com o mouse e clique. Setas e espaço também funcionam.</li>
+            <li>Cada batida tira 1 ponto do bloco. No zero, ele quebra.</li>
+            <li>As bolas sobem de volta para a broca sozinhas. O poço só desce quando o bloco mais alto sai do caminho.</li>
+            <li>Blocos com <span class="gem">◆</span> soltam cristais.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="ov" id="ovPause" hidden>
+        <div class="end" style="display:flex;flex-direction:column;gap:16px;flex:1">
+          <div class="end__k">Pausa</div>
+          <h3>A broca está parada</h3>
+          <div class="row">
+            <button class="btn" id="bResume" type="button">Continuar</button>
+            <button class="btn btn--ghost" id="bQuit" type="button">Desistir</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ov end" id="ovEnd" hidden>
+        <div class="end__k" id="eKicker">Camada concluída</div>
+        <h3 id="eTitle">Você atravessou a Crosta</h3>
+        <div class="stats">
+          <div class="stat"><b id="eDepth">0 m</b><small>Profundidade</small></div>
+          <div class="stat"><b class="gem" id="eGems">0</b><small>Cristais</small></div>
+          <div class="stat"><b id="eShots">0</b><small>Tiros usados</small></div>
+          <div class="stat"><b id="eBlocks">0</b><small>Blocos</small></div>
+        </div>
+        <div class="row">
+          <button class="btn" id="eMain" type="button">Próxima camada</button>
+          <button class="btn btn--ghost" id="eShop" type="button">Oficina</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+// Logical play field: 360 x 640, gravity pulls balls back up to the drill.
+const W = 360, H = 640, COLS = 7, CELL = W / COLS, LX = W / 2, LY = 40, R = 6.5;
+const SPEED = 660, GRAV = 340, REST = 170, MPR = 10, STEP = 1 / 240, MIN_A = 0.2;
+
+const LEVELS = [
+  { name: "Crosta",         km: "0 – 35 km",       goal: 100, shots: 20, bg: ["#2b1c13", "#40291b"], blk: ["#e8b27a", "#c4713d", "#8e3d22"] },
+  { name: "Manto superior", km: "35 – 660 km",     goal: 150, shots: 22, bg: ["#2c130f", "#4a1b12"], blk: ["#ffa46b", "#e5552e", "#a2241d"] },
+  { name: "Manto inferior", km: "660 – 2.890 km",  goal: 200, shots: 24, bg: ["#241019", "#3e1428"], blk: ["#ff8db3", "#d6457a", "#86214f"] },
+  { name: "Núcleo externo", km: "2.890 – 5.150 km", goal: 250, shots: 26, bg: ["#2a1d06", "#4a320b"], blk: ["#ffe08a", "#f2a531", "#b26a10"] },
+  { name: "Núcleo interno", km: "5.150 – 6.371 km", goal: 300, shots: 28, bg: ["#0c1b22", "#123744"], blk: ["#b5f5ff", "#4fc6e0", "#1f7a9c"] }
+];
+
+const DEF = { level: 0, maxLevel: 0, balls: 4, xShots: 0, luck: 0, gems: 0, wins: 0 };
+const KEY = "furofundo.v1";
+let save = load();
+function load() {
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) return Object.assign({}, DEF, s); } catch (e) {}
+  return Object.assign({}, DEF);
+}
+function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} }
+
+const UPS = [
+  { name: "Mais uma bola", desc: "Cada tiro lança uma bola a mais.", lvl: () => save.balls - 4, max: 14,
+    cost: n => Math.round(12 * Math.pow(1.5, n)), buy: () => { save.balls++; } },
+  { name: "Brocas extras", desc: "+2 tiros em toda camada.", lvl: () => save.xShots, max: 10,
+    cost: n => Math.round(10 * Math.pow(1.45, n)), buy: () => { save.xShots++; } },
+  { name: "Faro de cristal", desc: "Mais blocos com cristais.", lvl: () => save.luck, max: 8,
+    cost: n => Math.round(14 * Math.pow(1.6, n)), buy: () => { save.luck++; } }
+];
+
+// ---------- DOM ----------
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let scale = 1;
+
+function fit() {
+  const st = $("stage").getBoundingClientRect();
+  let h = st.height, w = h * 9 / 16;
+  if (w > st.width) { w = st.width; h = w * 16 / 9; }
+  w = Math.floor(w); h = Math.floor(h);
+  $("frame").style.width = w + "px"; $("frame").style.height = h + "px";
+  $("hud").style.width = w + "px";
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  scale = cv.width / W;
+}
+
+// ---------- sound ----------
+let ac = null, soundOn = true, lastBlip = 0;
+function audioInit() {
+  if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ac = null; } }
+  if (ac && ac.state === "suspended") ac.resume();
+}
+function blip(f, d = .06, type = "square", v = .04) {
+  if (!ac || !soundOn) return;
+  const t = ac.currentTime;
+  if (type === "square" && t - lastBlip < .025) return;
+  if (type === "square") lastBlip = t;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + d + .02);
+}
+
+// ---------- run state ----------
+let run = null, paused = true;
+const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+
+function newRun(li) {
+  const L = LEVELS[li];
+  run = {
+    li, L, pal: L.blk.map(rgb), blocks: [], balls: [], parts: [], texts: [],
+    depth: 0, rows: 0, nextY: REST, carry: new Set(),
+    shots: L.shots + save.xShots * 2, used: 0, gemsRun: 0, broken: 0,
+    state: "aim", spawnLeft: 0, spawnT: 0, shotT: 0, dir: [0, 1],
+    scrollLeft: 0, aimA: Math.PI / 2, aimOn: false, fast: false, shake: 0, hpRef: 1
+  };
+  fill();
+  hud();
+}
+
+function hpBase(ri) { return 1.6 + run.li * 2.4 + ri * 0.22 + save.balls * 0.6; }
+
+function mk(shape, x, y, w, h, hp, big) {
+  const luck = 0.09 + save.luck * 0.03;
+  const gem = Math.random() < (big ? luck * 2 : luck) ? 1 + (run.li > 1 ? 1 : 0) + (Math.random() < .3 ? 1 : 0) + (big ? 2 : 0) : 0;
+  return { shape, x, y, w, h, hp, max: hp, gem, flash: 0 };
+}
+
+function genRow() {
+  const r = run, y = r.nextY, ri = r.rows++;
+  const occ = r.carry; r.carry = new Set();
+  const dens = Math.min(.6, .4 + ri * .006 + r.li * .03);
+  const base = hpBase(ri);
+  r.hpRef = base * 1.4;
+  for (let c = 0; c < COLS; c++) {
+    if (occ.has(c) || Math.random() > dens) continue;
+    const hp = Math.max(1, Math.round(base * (.5 + Math.random() * .9)));
+    if (ri > 1 && c < COLS - 1 && !occ.has(c + 1) && Math.random() < .07) {
+      r.blocks.push(mk("rect", c * CELL, y, CELL * 2, CELL * 2, Math.round(hp * 2.6), true));
+      r.carry.add(c); r.carry.add(c + 1); c++;
+      continue;
+    }
+    r.blocks.push(mk(Math.random() < .28 ? "circle" : "rect", c * CELL, y, CELL, CELL, hp, false));
+  }
+  r.nextY += CELL;
+}
+function fill() { while (run.nextY < H + CELL * 2) genRow(); }
+
+// ---------- physics ----------
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+
+function collide(b, k) {
+  let nx, ny;
+  if (k.shape === "circle") {
+    const cx = k.x + k.w / 2, cy = k.y + k.h / 2, rr = k.w / 2 - 3;
+    const dx = b.x - cx, dy = b.y - cy, d = Math.hypot(dx, dy);
+    if (d >= rr + R) return false;
+    nx = d ? dx / d : 0; ny = d ? dy / d : -1;
+    const pen = rr + R - d; b.x += nx * pen; b.y += ny * pen;
+  } else {
+    const x0 = k.x + 2, y0 = k.y + 2, x1 = k.x + k.w - 2, y1 = k.y + k.h - 2;
+    const qx = clamp(b.x, x0, x1), qy = clamp(b.y, y0, y1);
+    const dx = b.x - qx, dy = b.y - qy, d = Math.hypot(dx, dy);
+    if (d >= R) return false;
+    if (d > 0) {
+      nx = dx / d; ny = dy / d; const pen = R - d; b.x += nx * pen; b.y += ny * pen;
+    } else {
+      // centre inside the block: leave by the nearest side
+      const l = b.x - x0, rt = x1 - b.x, t = b.y - y0, bt = y1 - b.y, m = Math.min(l, rt, t, bt);
+      if (m === l) { nx = -1; ny = 0; b.x = x0 - R; }
+      else if (m === rt) { nx = 1; ny = 0; b.x = x1 + R; }
+      else if (m === t) { nx = 0; ny = -1; b.y = y0 - R; }
+      else { nx = 0; ny = 1; b.y = y1 + R; }
+    }
+  }
+  const vn = b.vx * nx + b.vy * ny;
+  if (vn < 0) { b.vx -= 2 * vn * nx; b.vy -= 2 * vn * ny; return true; }
+  return false;
+}
+
+function move(b, h) {
+  b.vy -= GRAV * h;
+  b.x += b.vx * h; b.y += b.vy * h;
+  if (b.x < R) { b.x = R; b.vx = Math.abs(b.vx); }
+  else if (b.x > W - R) { b.x = W - R; b.vx = -Math.abs(b.vx); }
+  if (b.y > H - R) { b.y = H - R; b.vy = -Math.abs(b.vy); }
+}
+
+function step(h) {
+  const r = run;
+  for (const b of r.balls) {
+    move(b, h);
+    for (const k of r.blocks) {
+      if (k.hp <= 0 || !collide(b, k)) continue;
+      k.hp--; k.flash = 1;
+      blip(220 + Math.min(k.hp, 40) * 14);
+      if (k.hp <= 0) breakBlock(k);
+    }
+    if (b.y < LY && b.vy < 0) b.done = true;
+  }
+  if (r.blocks.some(k => k.hp <= 0)) r.blocks = r.blocks.filter(k => k.hp > 0);
+  if (r.balls.some(b => b.done)) r.balls = r.balls.filter(b => !b.done);
+}
+
+function breakBlock(k) {
+  const r = run, cx = k.x + k.w / 2, cy = k.y + k.h / 2, col = blockColor(k.max);
+  r.broken++;
+  const n = reduceMotion ? 6 : 14 + (k.w > CELL ? 14 : 0);
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, s = 40 + Math.random() * 160;
+    r.parts.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: .5 + Math.random() * .4, col, s: 2 + Math.random() * 3 });
+  }
+  if (!reduceMotion) r.shake = Math.max(r.shake, k.w > CELL ? 6 : 2.5);
+  blip(90 + Math.random() * 30, .12, "triangle", .08);
+  if (k.gem) {
+    save.gems += k.gem; r.gemsRun += k.gem; store();
+    r.texts.push({ x: cx, y: cy, t: "+" + k.gem + " ◆", life: 1 });
+    blip(1180, .14, "sine", .06); blip(1560, .18, "sine", .04);
+    hud();
+  }
+}
+
+// ---------- turn flow ----------
+function fire() {
+  const r = run;
+  if (r.state !== "aim" || r.shots <= 0 || paused) return;
+  r.shots--; r.used++;
+  r.state = "shoot"; r.spawnLeft = save.balls; r.spawnT = 0; r.shotT = 0;
+  r.dir = [Math.cos(r.aimA), Math.sin(r.aimA)];
+  r.aimOn = false;
+  blip(140, .09, "sawtooth", .05);
+  hud();
+}
+
+function endTurn() {
+  const r = run;
+  let top = Infinity;
+  for (const k of r.blocks) top = Math.min(top, k.y);
+  r.scrollLeft = top === Infinity ? CELL * 3 : Math.max(0, top - REST);
+  r.state = "scroll";
+}
+
+function afterScroll() {
+  const r = run;
+  r.state = "aim";
+  hud();
+  if (r.depth >= r.L.goal - 0.01) return finish(true);
+  if (r.shots <= 0) return finish(false);
+}
+
+function finish(won) {
+  const r = run;
+  r.state = "over";
+  const last = r.li === LEVELS.length - 1;
+  if (won) {
+    if (last) save.wins++;
+    else { save.level = r.li + 1; save.maxLevel = Math.max(save.maxLevel, r.li + 1); }
+    store();
+    blip(523, .15, "sine", .07); setTimeout(() => blip(784, .25, "sine", .07), 130);
+  } else {
+    blip(180, .3, "triangle", .07);
+  }
+  $("eKicker").textContent = won ? (last ? "Centro da Terra" : "Camada concluída") : "Sem tiros";
+  $("eTitle").textContent = won
+    ? (last ? "Você chegou ao centro da Terra" : "Você atravessou: " + r.L.name)
+    : "Faltaram " + Math.ceil(r.L.goal - r.depth) + " m";
+  $("eDepth").textContent = Math.floor(r.depth) + " m";
+  $("eGems").textContent = "◆ " + r.gemsRun;
+  $("eShots").textContent = r.used;
+  $("eBlocks").textContent = r.broken;
+  $("eMain").textContent = won ? (last ? "Cavar de novo" : "Próxima camada") : "Tentar de novo";
+  setTimeout(() => { $("ovEnd").hidden = false; paused = true; $("eMain").focus(); }, 450);
+}
+
+// ---------- update ----------
+function update(dt) {
+  const r = run;
+  if (!r) return;
+  for (const p of r.parts) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy -= GRAV * .5 * dt; }
+  r.parts = r.parts.filter(p => p.life > 0);
+  for (const t of r.texts) { t.life -= dt; t.y -= 28 * dt; }
+  r.texts = r.texts.filter(t => t.life > 0);
+  for (const k of r.blocks) if (k.flash > 0) k.flash = Math.max(0, k.flash - dt * 7);
+  r.shake = Math.max(0, r.shake - dt * 20);
+  if (paused) return;
+
+  if (r.state === "shoot") {
+    r.shotT += dt;
+    const ts = r.fast ? 3 : r.shotT > 12 ? 3 : r.shotT > 6 ? 2 : 1;
+    let sim = dt * ts;
+    while (sim > 0) {
+      const h = Math.min(STEP, sim); sim -= h;
+      if (r.spawnLeft > 0) {
+        r.spawnT -= h;
+        if (r.spawnT <= 0) {
+          r.balls.push({ x: LX, y: LY, vx: r.dir[0] * SPEED, vy: r.dir[1] * SPEED });
+          r.spawnLeft--; r.spawnT = .075;
+        }
+      }
+      step(h);
+    }
+    // safety net: a ball still out after 40 s floats home
+    if (r.shotT > 40) r.balls.length = 0;
+    if (r.spawnLeft === 0 && r.balls.length === 0) endTurn();
+  } else if (r.state === "scroll") {
+    const amt = Math.min(r.scrollLeft, (r.scrollLeft * 7 + 90) * dt);
+    r.scrollLeft -= amt;
+    for (const k of r.blocks) k.y -= amt;
+    for (const p of r.parts) p.y -= amt;
+    r.nextY -= amt;
+    r.depth = Math.min(r.L.goal, r.depth + amt / CELL * MPR);
+    fill();
+    hud();
+    if (r.scrollLeft <= 0.01) afterScroll();
+  }
+}
+
+// ---------- aim preview ----------
+function ghostPath() {
+  const r = run, b = { x: LX, y: LY, vx: Math.cos(r.aimA) * SPEED, vy: Math.sin(r.aimA) * SPEED };
+  const pts = []; let after = -1;
+  for (let i = 0; i < 520; i++) {
+    move(b, 1 / 120);
+    let hit = false;
+    for (const k of r.blocks) if (collide(b, k)) hit = true;
+    if (i % 3 === 0) pts.push(b.x, b.y);
+    if (hit && after < 0) after = 14;
+    if (after >= 0 && --after === 0) break;
+    if (b.y < LY && b.vy < 0) break;
+  }
+  return pts;
+}
+
+// ---------- draw ----------
+function mix(a, b, t) { return a.map((v, i) => Math.round(v + (b[i] - v) * t)); }
+function blockColor(hp) {
+  const p = run.pal, t = clamp(hp / run.hpRef, 0, 1);
+  const c = t < .5 ? mix(p[0], p[1], t * 2) : mix(p[1], p[2], (t - .5) * 2);
+  return "rgb(" + c.join(",") + ")";
+}
+function rr(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function gemIcon(x, y, s) {
+  ctx.beginPath(); ctx.moveTo(x, y - s); ctx.lineTo(x + s * .8, y); ctx.lineTo(x, y + s); ctx.lineTo(x - s * .8, y); ctx.closePath();
+  ctx.fillStyle = "#6ff3d6"; ctx.fill(); ctx.strokeStyle = "#0d3d35"; ctx.lineWidth = 1.5; ctx.stroke();
+}
+
+function draw() {
+  const r = run;
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  if (!r) return;
+  const sx = r.shake ? (Math.random() - .5) * r.shake : 0, sy = r.shake ? (Math.random() - .5) * r.shake : 0;
+  ctx.translate(sx, sy);
+
+  // rock background with strata that slide past as you dig
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, r.L.bg[0]); g.addColorStop(1, r.L.bg[1]);
+  ctx.fillStyle = g; ctx.fillRect(-10, -10, W + 20, H + 20);
+  const off = (r.depth / MPR * CELL) % 96;
+  ctx.strokeStyle = "rgba(255,235,210,.05)"; ctx.lineWidth = 10;
+  for (let y = -off; y < H + 96; y += 96) {
+    ctx.beginPath();
+    for (let x = 0; x <= W; x += 20) ctx.lineTo(x, y + Math.sin((x + y * 1.7) * .03) * 6);
+    ctx.stroke();
+  }
+
+  // blocks
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  for (const k of r.blocks) {
+    if (k.y > H + 4 || k.y + k.h < 0) continue;
+    const col = blockColor(k.hp);
+    ctx.fillStyle = col;
+    if (k.shape === "circle") {
+      ctx.beginPath(); ctx.arc(k.x + k.w / 2, k.y + k.h / 2, k.w / 2 - 3, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,.25)"; ctx.lineWidth = 3; ctx.stroke();
+    } else {
+      rr(k.x + 2, k.y + 2, k.w - 4, k.h - 4, 7); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.18)"; rr(k.x + 6, k.y + 5, k.w - 12, 4, 2); ctx.fill();
+      ctx.fillStyle = "rgba(0,0,0,.2)"; rr(k.x + 2, k.y + k.h - 8, k.w - 4, 6, 4); ctx.fill();
+    }
+    if (k.flash > 0) {
+      ctx.globalAlpha = k.flash * .7; ctx.fillStyle = "#fff";
+      if (k.shape === "circle") { ctx.beginPath(); ctx.arc(k.x + k.w / 2, k.y + k.h / 2, k.w / 2 - 3, 0, Math.PI * 2); ctx.fill(); }
+      else { rr(k.x + 2, k.y + 2, k.w - 4, k.h - 4, 7); ctx.fill(); }
+      ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = "#1a110c";
+    ctx.font = "700 " + (k.w > CELL ? 26 : k.hp > 99 ? 14 : 17) + "px 'Chakra Petch', sans-serif";
+    ctx.fillText(k.hp, k.x + k.w / 2, k.y + k.h / 2 + 1);
+    if (k.gem) gemIcon(k.x + k.w - (k.shape === "circle" ? 12 : 10), k.y + 11, 5.5);
+  }
+
+  // particles
+  for (const p of r.parts) { ctx.globalAlpha = clamp(p.life * 2, 0, 1); ctx.fillStyle = p.col; ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s); }
+  ctx.globalAlpha = 1;
+
+  // surface band and drill
+  ctx.fillStyle = "#130e0c"; ctx.fillRect(-10, -10, W + 20, LY + 8);
+  ctx.fillStyle = "#3a2c22"; ctx.fillRect(-10, LY - 2, W + 20, 3);
+  if (r.state === "aim" && r.aimOn && !paused) {
+    const pts = ghostPath();
+    ctx.fillStyle = "rgba(244,231,212,.75)";
+    for (let i = 0; i < pts.length; i += 2) {
+      const a = 1 - i / pts.length; ctx.globalAlpha = .25 + a * .7;
+      ctx.beginPath(); ctx.arc(pts[i], pts[i + 1], 2.2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  ctx.save();
+  ctx.translate(LX, LY);
+  ctx.rotate(r.aimA - Math.PI / 2);
+  ctx.fillStyle = "#ff7a2f";
+  ctx.beginPath(); ctx.moveTo(-11, -4); ctx.lineTo(11, -4); ctx.lineTo(0, 24); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = "#c4521a"; ctx.lineWidth = 2;
+  for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(-8 + i * 2.7, 2 + i * 6); ctx.lineTo(8 - i * 2.7, 6 + i * 6); ctx.stroke(); }
+  ctx.restore();
+  ctx.fillStyle = "#f4e7d4"; ctx.beginPath(); ctx.arc(LX, LY - 6, 13, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#130e0c"; ctx.font = "700 13px 'Chakra Petch', sans-serif";
+  const ready = r.state === "aim" ? save.balls : r.spawnLeft;
+  ctx.fillText("×" + ready, LX, LY - 5);
+
+  // balls
+  ctx.fillStyle = "#fff6e8"; ctx.shadowColor = "rgba(255,200,140,.8)"; ctx.shadowBlur = 8;
+  for (const b of r.balls) { ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, Math.PI * 2); ctx.fill(); }
+  ctx.shadowBlur = 0;
+
+  // floating crystal text
+  ctx.font = "700 16px 'Chakra Petch', sans-serif";
+  for (const t of r.texts) { ctx.globalAlpha = clamp(t.life * 1.5, 0, 1); ctx.fillStyle = "#6ff3d6"; ctx.fillText(t.t, t.x, t.y); }
+  ctx.globalAlpha = 1;
+}
+
+// ---------- HUD and menus ----------
+function hud() {
+  const r = run;
+  $("hDepth").textContent = Math.floor(r.depth);
+  $("hGoal").textContent = r.L.goal;
+  $("hBar").style.width = (r.depth / r.L.goal * 100) + "%";
+  $("hShots").textContent = r.shots;
+  $("hGems").textContent = save.gems;
+  $("hLayer").textContent = (r.li + 1) + " · " + r.L.name;
+}
+
+function menu() {
+  const core = $("core"); core.innerHTML = "";
+  LEVELS.forEach((L, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "layer";
+    b.style.background = "linear-gradient(90deg," + L.blk[0] + "," + L.blk[1] + ")";
+    b.disabled = i > save.maxLevel;
+    b.setAttribute("aria-current", i === save.level ? "true" : "false");
+    const tag = i > save.maxLevel ? "Bloqueada" : i < save.maxLevel || (i === LEVELS.length - 1 && save.wins) ? "Concluída" : "Atual";
+    b.innerHTML = '<span class="layer__n">' + (i + 1) + ". " + L.name + '</span><span class="layer__tag">' + tag +
+      '</span><span class="layer__goal">Meta ' + L.goal + " m · " + L.shots + ' tiros</span><span class="layer__km">' + L.km + "</span>";
+    b.onclick = () => { save.level = i; store(); newRun(i); menu(); };
+    core.appendChild(b);
+  });
+  $("bPlay").textContent = "Cavar: " + LEVELS[save.level].name;
+  $("mGems").textContent = save.gems;
+  const ups = $("ups"); ups.innerHTML = "";
+  UPS.forEach(u => {
+    const n = u.lvl(), maxed = n >= u.max, c = u.cost(n);
+    const d = document.createElement("div"); d.className = "up";
+    d.innerHTML = '<div class="up__n">' + u.name + "<small>nível " + n + '</small></div><div class="up__d">' + u.desc + "</div>";
+    const btn = document.createElement("button"); btn.type = "button";
+    btn.textContent = maxed ? "Máximo" : "◆ " + c;
+    btn.disabled = maxed || save.gems < c;
+    btn.onclick = () => { if (save.gems < c) return; save.gems -= c; u.buy(); store(); blip(880, .12, "sine", .06); newRun(save.level); menu(); };
+    d.appendChild(btn); ups.appendChild(d);
+  });
+  hud();
+}
+
+function showMenu() { paused = true; $("ovEnd").hidden = true; $("ovPause").hidden = true; menu(); $("ovMenu").hidden = false; }
+function play() { audioInit(); $("ovMenu").hidden = true; $("ovEnd").hidden = true; newRun(save.level); paused = false; cv.focus(); }
+
+// ---------- input ----------
+let dragging = false;
+function aimAt(e) {
+  const b = cv.getBoundingClientRect();
+  const px = (e.clientX - b.left) / b.width * W, py = (e.clientY - b.top) / b.height * H;
+  let a = Math.atan2(py - LY, px - LX);
+  if (a < MIN_A && a > -Math.PI / 2) a = MIN_A;
+  else if (a > Math.PI - MIN_A || a <= -Math.PI / 2) a = Math.PI - MIN_A;
+  run.aimA = a; run.aimOn = true;
+}
+cv.addEventListener("pointerdown", e => {
+  audioInit();
+  if (!run || paused || run.state !== "aim") return;
+  dragging = true; cv.setPointerCapture(e.pointerId); aimAt(e);
+});
+cv.addEventListener("pointermove", e => {
+  if (!run || paused || run.state !== "aim") return;
+  if (dragging || e.pointerType === "mouse") aimAt(e);
+});
+cv.addEventListener("pointerup", () => { if (dragging) { dragging = false; fire(); } });
+cv.addEventListener("pointercancel", () => { dragging = false; });
+cv.addEventListener("pointerleave", e => { if (!dragging && e.pointerType === "mouse" && run) run.aimOn = false; });
+cv.tabIndex = 0;
+window.addEventListener("keydown", e => {
+  if (!run || paused) return;
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+    run.aimOn = true;
+    run.aimA = clamp(run.aimA + (e.key === "ArrowLeft" ? .03 : -.03), MIN_A, Math.PI - MIN_A);
+    e.preventDefault();
+  } else if (e.key === " " || e.key === "Enter") {
+    if (document.activeElement && document.activeElement.tagName === "BUTTON") return;
+    fire(); e.preventDefault();
+  }
+});
+
+$("bPlay").onclick = play;
+$("eMain").onclick = play;
+$("eShop").onclick = showMenu;
+$("bMenu").onclick = () => { if (!run || paused) return; paused = true; $("ovPause").hidden = false; $("bResume").focus(); };
+$("bResume").onclick = () => { $("ovPause").hidden = true; paused = false; cv.focus(); };
+$("bQuit").onclick = () => { newRun(save.level); showMenu(); };
+$("bFast").onclick = () => { if (!run) return; run.fast = !run.fast; $("bFast").setAttribute("aria-pressed", run.fast); };
+$("bSound").onclick = () => { soundOn = !soundOn; $("bSound").setAttribute("aria-pressed", soundOn); if (soundOn) audioInit(); };
+
+// ---------- boot ----------
+let last = performance.now();
+function frame(t) {
+  const dt = Math.min(.05, (t - last) / 1000); last = t;
+  update(dt); draw();
+  requestAnimationFrame(frame);
+}
+function start(data) {
+  if (data && data.save) save = Object.assign({}, DEF, data.save);
+  fit();
+  window.addEventListener("resize", fit);
+  newRun(save.level);
+  run.aimOn = false;
+  showMenu();
+  requestAnimationFrame(frame);
+}
+window.claude?.hot?.snapshot?.(() => ({ save }));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
