@@ -241,7 +241,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
             <li>Cada bloco é um mineral cortado ao meio (veja a coleção abaixo). O número em cada um é quantas batidas ela aguenta. No zero, ela quebra.</li>
             <li>As bolas andam em linha reta, quicam nas paredes, no fundo e nas pedras até subir de novo. <b>Mova o rebatedor</b> (arraste, mouse ou setas) para mandá-las de novo para baixo. A ponta do rebatedor dá ângulo. A barrinha é separada da broca e segue o dedo ou o mouse o tempo todo, com ou sem bolas em campo.</li>
             <li><b>Dois cliques</b> ou <b>dois toques</b> rápidos com as bolas em jogo aceleram a jogada (6×). Mais dois cliques ou toques voltam à velocidade normal.</li>
-            <li>Você começa a fase com poucos tiros e <b>ganha +1 tiro a cada 12 metros</b> cavados. Cada fase é mais funda que a anterior.</li>
+            <li>Cada fase é <b>mais funda</b> que a anterior e começa com <b>4 tiros a mais</b>. Durante a fase os tiros não aumentam (só com cápsula, tela limpa ou loja).</li>
             <li>Se você limpar todas as pedras da tela com bolas ainda em jogo, elas voltam sozinhas para a broca e você <b>ganha o tiro de volta</b>.</li>
             <li>O poço só desce quando o bloco mais alto sai do caminho. Toda vez que as bolas passam pela barra e a vez acaba, <b>as pedras sobem</b> um pouco. Se encostarem na linha vermelha embaixo da broca, você é engolido.</li>
             <li>Cada camada é mais difícil (estrelas no menu): pedras mais duras, mais peças e pedras subindo mais rápido.</li>
@@ -824,11 +824,10 @@ const NAMES = [
   "Prisma Enterrado", "Mina do Arco-Íris", "Escadaria de Luz", "Floresta de Cristais",
   "Rio de Opala", "Abismo Estrelado", "Catedral Prismática", "Mergulho no Arco-Íris"];
 const ROMAN = ["", " II", " III", " IV", " V", " VI", " VII", " VIII", " IX", " X"];
-// every phase digs deeper than the last: 150 m, 200 m, 250 m ... and a little more each lap
-const goalOf = i => 150 + i * 50 + Math.floor(i / 10) * 25;
-// few shots to start; digging pays them back (+1 every SHOT_EVERY metres)
-const SHOT_EVERY = 12;
-const shotsOf = i => Math.min(30, 10 + i);
+// every phase digs deeper than the last: 150 m, 185 m, 220 m ... and a little more each lap
+const goalOf = i => 150 + i * 35 + Math.floor(i / 10) * 25;
+// the shots don't grow during a phase: each new phase starts with 4 more than the one before
+const shotsOf = i => 18 + i * 4;
 function LV(i) {
   const lap = Math.floor(i / NAMES.length);
   let start = 0; for (let j = 0; j < i; j++) start += goalOf(j);
@@ -1010,7 +1009,7 @@ function newRun(li) {
   run = {
     li, L, pal: L.blk.map(rgb), blocks: [], balls: [], homing: [], parts: [], texts: [],
     depth: 0, rows: 0, nextY: REST, carry: new Set(),
-    shots: L.shots + save.xShots * 2, earnAt: SHOT_EVERY, used: 0, gemsRun: 0, broken: 0,
+    shots: L.shots + save.xShots * 2, used: 0, gemsRun: 0, broken: 0,
     state: "aim", spawnLeft: 0, spawnT: 0, shotT: 0, dir: [0, 1],
     scrollLeft: 0, aimA: Math.PI / 2, aimOn: false, fast: false, shake: 0, hpRef: 1,
     px: LX, dx: LX, caps: [], falling: [], fx: { fire: 0, wide: 0, slim: 0, rain: 0 }, lv: { fire: 0, wide: 0, slim: 0, rain: 0 }, bonus: 0, rebounds: 0, extra: layerBalls(li)
@@ -1634,11 +1633,6 @@ function update(dt) {
     for (const d of deep) d.y -= amt * .4;
     r.nextY -= amt;
     r.depth = Math.min(r.L.goal, r.depth + amt / RH * MPR);
-    while (r.depth >= r.earnAt && r.depth < r.L.goal - .01) {   // the deeper you dig, the more shots you earn
-      r.earnAt += SHOT_EVERY; r.shots++;
-      r.texts.push({ x: W - 46, y: LY + 30, t: "+1 tiro", life: 1.1, col: "#ffe58a" });
-      sfx.coin();
-    }
     fill();
     hud();
     if (r.scrollLeft <= 0.01) afterScroll();
@@ -2026,7 +2020,7 @@ function phaseCard() {
     '</span><span class="phase__state">' + st + '</span></div><div class="phase__body"><p class="phase__name">' + L.name +
     '</p><div class="phase__sub"><span class="stars" aria-label="Dificuldade ' + diff(i).stars + '">' + starsOf(i) + "</span><span>" + L.km +
     '</span></div><div class="chips"><span class="chip">' + L.goal + "<small>m de meta</small></span><span class=\"chip\">" + L.shots +
-    "<small>tiros +1/" + SHOT_EVERY + " m</small></span>" + (layerBalls(i) ? '<span class="chip">+' + layerBalls(i) + "<small>bolas</small></span>" : "") + "</div></div>";
+    "<small>tiros</small></span>" + (layerBalls(i) ? '<span class="chip">+' + layerBalls(i) + "<small>bolas</small></span>" : "") + "</div></div>";
 }
 function menu() {
   const core = $("core"); core.innerHTML = "";
