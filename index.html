@@ -58,6 +58,15 @@ body{background:var(--rock);color:var(--ink);font-family:var(--body);font-size:1
 .glow--rain{background:conic-gradient(from var(--ga),#ff3b3b,#ff9a2e,#ffe23a,#4dff7a,#2ee6ff,#4a6aff,#b45cff,#ff5fb8,#ff3b3b)}
 .glow.on{animation:glowrun 1.6s cubic-bezier(.3,.6,.4,1) forwards}
 .glow--rain.on{animation-duration:2.4s}
+/* power-ups with a timer keep a ring of comets running round the edge while they last, one colour per active effect */
+.ring{position:absolute;inset:0;border-radius:14px;padding:3px;pointer-events:none;z-index:5;opacity:0;transition:opacity .4s;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+  animation:ringrun 2.2s linear infinite}
+.ring.on{opacity:1}
+.ring.ending{animation:ringrun 2.2s linear infinite,ringblink .3s steps(2) infinite}
+@keyframes ringrun{to{--ga:360deg}}
+@keyframes ringblink{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.ring{animation:none}.ring.ending{animation:none}}
 .flash{position:absolute;inset:0;border-radius:14px;pointer-events:none;z-index:4;opacity:0;box-shadow:inset 0 0 26px 4px var(--gc)}
 .flash.on{animation:flashin 1s ease-out forwards}
 @keyframes glowrun{0%{--ga:0deg;opacity:0}8%{opacity:1}75%{opacity:1}100%{--ga:540deg;opacity:0}}
@@ -187,6 +196,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
     <div class="frame" id="frame">
       <div class="flash" id="fxFlash" aria-hidden="true"></div>
       <div class="glow" id="fxGlow" aria-hidden="true"></div>
+      <div class="ring" id="fxRing" aria-hidden="true"></div>
       <canvas id="cv" aria-label="Poço de escavação. Segure para mirar e solte para atirar. Teclado: setas miram, espaço atira."></canvas>
 
       <div class="ov menu" id="ovMenu">
@@ -1303,7 +1313,9 @@ function takeCap(c) {
   setPad(r.px);
   const lvl = r.lv[c.type];
   r.banner = { t: C.name + (lvl > 1 ? " ×" + lvl : ""), d: lvl > 1 ? C.stack : C.short, col: C.col, type: c.type, life: 2.4 };
-  if (c.type !== "gem") edgeGlow(c.type, C.col);
+  if (c.type !== "gem" && !TIMED.includes(c.type)) edgeGlow(c.type, C.col);
+  else if (TIMED.includes(c.type)) flashOnly(c.type === "rain" ? "#b45cff" : C.col);
+  ringUpdate();
   if (c.type === "slim") sfx.bad();
   else if (c.type === "gem") sfx.coin();
   else sfx.bubbles();
@@ -1312,12 +1324,50 @@ function takeCap(c) {
 
 // light up the panel's edge in the capsule's colour (the rainbow one gets the whole spectrum)
 const GLOW2 = { multi: "#ff7a2f", fire: "#ffd23a", wide: "#2ee6ff", shot: "#ffd166", slim: "#ff5fb8", ball: "#9fd0ff" };
+function flashOnly(col) {
+  const f = $("fxFlash");
+  f.style.setProperty("--gc", col);
+  f.classList.remove("on"); void f.offsetWidth; f.classList.add("on");
+}
 function edgeGlow(type, col) {
   const g = $("fxGlow"), f = $("fxFlash");
   g.style.setProperty("--gc", col); g.style.setProperty("--gc2", GLOW2[type] || col);
   f.style.setProperty("--gc", type === "rain" ? "#b45cff" : col);
   g.classList.toggle("glow--rain", type === "rain");
   for (const el of [g, f]) { el.classList.remove("on"); void el.offsetWidth; el.classList.add("on"); }
+}
+
+// the ring for timed effects: fire, wide, slim and rainbow. Each active one gets its comets on the
+// same ring, spaced evenly, so two or more at once share the edge. It blinks in the last 2 seconds.
+const TIMED = ["fire", "wide", "slim", "rain"];
+const RAINBOW_STOPS = ["#ff3b3b", "#ff9a2e", "#ffe23a", "#4dff7a", "#2ee6ff", "#4a6aff", "#b45cff", "#ff5fb8"];
+let ringKey = "";
+function ringUpdate() {
+  const r = run, el = $("fxRing");
+  const on = r ? TIMED.filter(t => r.fx[t] > 0) : [];
+  const ending = on.length > 0 && on.every(t => r.fx[t] < 2);
+  const key = on.join(",") + (ending ? "!" : "");
+  if (key === ringKey) return;
+  ringKey = key;
+  el.classList.toggle("on", on.length > 0);
+  el.classList.toggle("ending", ending);
+  if (!on.length) return;
+  if (on.length === 1 && on[0] === "rain") {   // rainbow alone: the whole ring is the spectrum
+    el.style.background = "conic-gradient(from var(--ga)," + RAINBOW_STOPS.join(",") + ",#ff3b3b)";
+    return;
+  }
+  // two comets per effect, all spread evenly round the ring
+  const list = on.concat(on), seg = 100 / list.length, stops = [];
+  list.forEach((t, i) => {
+    const a = i * seg, cols = t === "rain" ? RAINBOW_STOPS : [CAPS[t].col, GLOW2[t]];
+    stops.push("transparent " + a.toFixed(2) + "%");
+    const len = seg * .7, n = cols.length;
+    cols.forEach((c, j) => stops.push(c + " " + (a + seg * .1 + len * j / n).toFixed(2) + "%"));
+    stops.push("#fff " + (a + seg * .1 + len).toFixed(2) + "%");
+    stops.push("transparent " + (a + seg * .1 + len + seg * .08).toFixed(2) + "%");
+  });
+  stops.push("transparent 100%");
+  el.style.background = "conic-gradient(from var(--ga)," + stops.join(",") + ")";
 }
 
 // double click / double tap during a shot: fast-forward on, and again to go back to normal speed
@@ -1427,6 +1477,7 @@ function update(dt) {
   }
   if (r.falling.some(k => k.gone)) r.falling = r.falling.filter(k => !k.gone);
   r.shake = Math.max(0, r.shake - dt * 20);
+  ringUpdate();
   if (paused) return;
   // balls that came back over the line roll along the surface into the drill
   for (const g of r.homing) {
