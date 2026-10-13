@@ -1090,11 +1090,11 @@ const sfx = {
   },
   smash(big) {   // the stone pops like a bubble: a quick upward "blup" with a soft muffled puff, then a few smaller bubbles, nothing sharp or high
     const f = big ? 170 : 230;
-    tone(f, f * 3.2, .07, "sine", .22, 0, direct);
-    hiss(.04, "lowpass", 700, 300, .12, 0, .7, direct);
+    tone(f, f * 3.2, .07, "sine", .34, 0, direct);
+    hiss(.04, "lowpass", 700, 300, .18, 0, .7, direct);
     for (let i = 0; i < (big ? 3 : 2); i++) {
       const g = rnd(260, 360);
-      tone(g, g * 2.4, .045, "sine", .07, .06 + i * rnd(.04, .07), direct);
+      tone(g, g * 2.4, .045, "sine", .1, .06 + i * rnd(.04, .07), direct);
     }
   },
   collapse() {
