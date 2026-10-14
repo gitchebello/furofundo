@@ -187,7 +187,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
     <div class="hud__tools">
       <div class="hud__layer" id="hLayer">Primeira Picareta em Brasa</div>
       <div class="hud__btns">
-        <button class="ibtn" id="bRegroup" type="button" disabled title="Reordenar: junta todas as bolas numa linha só" aria-label="Reordenar as bolas numa linha"><span class="ibtn__ic"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 19 19 5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg></span><span class="ibtn__lb">Reordenar</span></button>
+        <button class="ibtn" id="bRegroup" type="button" disabled title="Juntar: junta todas as bolas numa linha só" aria-label="Juntar as bolas numa linha"><span class="ibtn__ic"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 19 19 5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg></span><span class="ibtn__lb">Juntar</span></button>
         <button class="ibtn" id="bFast" type="button" aria-pressed="false" title="Acelerar bolas"><span class="ibtn__ic">»</span><span class="ibtn__lb">Acelerar</span></button>
         <button class="ibtn" id="bSound" type="button" aria-pressed="true" title="Som"><span class="ibtn__ic">♪</span><span class="ibtn__lb">Som</span></button>
         <button class="ibtn" id="bMenu" type="button" title="Pausar"><span class="ibtn__ic">II</span><span class="ibtn__lb">Pausar</span></button>
@@ -249,7 +249,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
             <li>Cada bloco é um mineral cortado ao meio (veja a coleção abaixo). O número em cada um é quantas batidas ela aguenta. No zero, ela quebra.</li>
             <li>As bolas andam em linha reta, quicam nas paredes, no fundo e nas pedras até subir de novo. <b>Mova o rebatedor</b> (arraste, mouse ou setas) para mandá-las de novo para baixo. A ponta do rebatedor dá ângulo. A barrinha é separada da broca e segue o dedo ou o mouse o tempo todo, com ou sem bolas em campo.</li>
             <li><b>Dois cliques</b> ou <b>dois toques</b> rápidos com as bolas em jogo aceleram a jogada (6×). Mais dois cliques ou toques voltam à velocidade normal.</li>
-            <li>O botão <b>Reordenar</b> (a linha reta) (ao lado do » lá em cima, ou tecla R) junta todas as bolas em jogo numa <b>linha só</b> de novo, atrás da bola que está na frente. Bom para salvar as bolas quando elas estão espalhadas.</li>
+            <li>O botão <b>Juntar</b> (a linha reta) (ao lado do » lá em cima, ou tecla R) junta todas as bolas em jogo numa <b>linha só</b> de novo, atrás da bola que está na frente. Bom para salvar as bolas quando elas estão espalhadas.</li>
             <li>Cada fase é <b>mais funda</b> que a anterior e começa com <b>4 tiros a mais</b>. Durante a fase os tiros não aumentam (só com cápsula, tela limpa ou loja).</li>
             <li>Se você limpar todas as pedras da tela com bolas ainda em jogo, elas voltam sozinhas para a broca e você <b>ganha o tiro de volta</b>.</li>
             <li>O poço só desce quando o bloco mais alto sai do caminho. Toda vez que as bolas passam pela barra e a vez acaba, <b>as pedras sobem</b> um pouco. Se encostarem na linha vermelha embaixo da broca, você é engolido.</li>
@@ -1490,7 +1490,7 @@ function regroup() {
   r.regroup = { x: lead.x, y: lead.y, vx: lead.vx, vy: lead.vy, left: r.spawnLeft, t: .04 };
   r.spawnLeft = 0;   // balls not fired yet join the same line
   for (const b of live) if (b !== lead) b.gather = true;
-  r.texts.push({ x: clamp(lead.x, 70, W - 70), y: lead.y - 18, t: "Reordenar", life: .8, col: "#f4e7d4" });
+  r.texts.push({ x: clamp(lead.x, 70, W - 70), y: lead.y - 18, t: "Juntar", life: .8, col: "#f4e7d4" });
   sfx.bubbles();
 }
 
