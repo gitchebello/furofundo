@@ -57,7 +57,12 @@ body{background:var(--rock);color:var(--ink);font-family:var(--body);font-size:1
 #bRegroup.fab:disabled{opacity:.18;pointer-events:none}
 @keyframes ready{50%{box-shadow:0 0 0 4px rgba(255,210,58,.2)}}
 .ibtn:focus-visible,.btn:focus-visible,.up button:focus-visible,.layer:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
-.hud__layer{font-family:var(--display);font-size:14px;letter-spacing:.04em;color:var(--magma);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* game name on top while playing, the phase name small under it; together they fit the height of the buttons so the pit keeps its size */
+.hud__title{display:flex;flex-direction:column;gap:3px;min-width:0}
+.hud__brand{font-family:var(--display);font-size:20px;line-height:1;color:var(--ink);white-space:nowrap}
+.hud__brand span{background:var(--rainbow);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rb 8s linear infinite}
+@media (prefers-reduced-motion:reduce){.hud__brand span{animation:none}}
+.hud__layer{font-family:var(--display);font-size:11px;line-height:1.2;letter-spacing:.04em;color:var(--magma);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .hud__btns{display:flex;gap:6px}
 .stage{flex:1;min-height:0;width:100%;display:flex;justify-content:center;align-items:flex-start;gap:8px}
 /* the depth gauge: a shaft down the side that the drill digs into */
@@ -279,7 +284,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 <div class="app">
   <div class="hud" id="hud">
     <div class="hud__top">
-      <div class="hud__layer" id="hLayer">Primeira Picareta em Brasa</div>
+      <div class="hud__title"><div class="hud__brand" aria-hidden="true">Dx<span>Drill</span></div><div class="hud__layer" id="hLayer">Primeira Picareta em Brasa</div></div>
       <div class="hud__btns">
         <button class="ibtn" id="bFast" type="button" aria-pressed="false" title="Acelerar as bolas" aria-label="Acelerar as bolas"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="currentColor"><path d="M3 5.5v13l8.5-6.5zM12.5 5.5v13L21 12z"/></svg></button>
         <button class="ibtn" id="bSound" type="button" aria-pressed="true" title="Som" aria-label="Som"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path class="snd-on" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="snd-off" d="m16 9.5 5 5m0-5-5 5"/></svg></button>
@@ -1114,11 +1119,15 @@ const sfx = {
     tone(58, 72, .6, "sine", .07);
   },
   rebound() { tone(330, 300, .06, "triangle", .12, 0, direct); hiss(.02, "bandpass", 1200, 1000, .08, 0, 2, direct); },
-  shoot() {   // a stone leaving a slingshot: the band and pouch snap, a short rubber twang, then a whoosh of air dropping away as the stone flies off
-    hiss(.015, "bandpass", 1500, 1200, .25, 0, 1, direct);
-    tone(300, 120, .12, "triangle", .15, 0, direct);
-    tone(420, 330, .2, "sine", .05, .005, direct);
-    hiss(.75, "bandpass", 1800, 300, .12, .02, 2, direct);
+  shoot() {   // a stream of bubbles rushing out of the drill: one bigger blup with a soft puff, then smaller ones rising quicker and a little higher
+    tone(200, 640, .08, "sine", .22, 0, direct);
+    hiss(.05, "lowpass", 700, 300, .1, 0, .7, direct);
+    let when = .05;
+    for (let i = 0; i < 6; i++) {
+      const g = rnd(240, 340) + i * 30;
+      tone(g, g * 2.4, .045, "sine", .08, when, direct);
+      when += rnd(.03, .06);
+    }
   },
   coin() {   // water drops
     tone(820, 1850, .07, "sine", .09);
