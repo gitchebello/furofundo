@@ -240,8 +240,6 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
   padding:11px 12px;border-radius:12px;background:var(--rock-2);border:1px solid var(--line)}
 /* compact shop strip on the main menu: small cards that scroll sideways, tap the price to buy */
 .phase__band{position:relative}
-.phase__hard{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:700 12px var(--body);letter-spacing:.06em;text-transform:uppercase;
-  background:#1a0a06;color:#ff8a4a;padding:4px 9px;border-radius:999px;border:1px solid #ff5a3c;box-shadow:0 0 12px rgba(255,90,60,.5)}
 .mshop__h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .mshop__all{all:unset;cursor:pointer;font:700 12px var(--body);color:var(--crystal)}
 .mshop__all:focus-visible{outline:2px solid var(--crystal);outline-offset:2px;border-radius:4px}
@@ -411,7 +409,6 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
             <li>As bolas andam em linha reta, quicam nas paredes, no fundo e nas pedras até subir de novo. <b>Mova o rebatedor</b> (arraste, mouse ou setas) para mandá-las de novo para baixo. A ponta do rebatedor dá ângulo. A barrinha é separada da broca e segue o dedo ou o mouse o tempo todo, com ou sem bolas em campo.</li>
             <li><b>Dois cliques</b> ou <b>dois toques</b> rápidos com as bolas em jogo aceleram a jogada (6×). Mais dois cliques ou toques voltam à velocidade normal.</li>
             <li>O botão <b>Juntar</b> (a linha reta) (ao lado do » lá em cima, ou tecla R) junta todas as bolas em jogo numa <b>linha só</b> de novo, atrás da bola que está na frente. Bom para salvar as bolas quando elas estão espalhadas.</li>
-            <li>De vez em quando aparece uma <b>fase difícil</b> (🔥 no menu): pedras mais duras, mais peças, pedras subindo mais rápido e um núcleo mais forte.</li>
             <li>Cada fase é <b>mais funda</b> que a anterior e começa com <b>2 tiros a mais</b>. Durante a fase os tiros não aumentam (só com power-up, tela limpa ou lojinha).</li>
             <li>Se você limpar todas as pedras da tela com bolas ainda em jogo, elas voltam sozinhas para a broca e você <b>ganha o tiro de volta</b>.</li>
             <li>O poço só desce quando o bloco mais alto sai do caminho. Toda vez que as bolas passam pela barra e a vez acaba, <b>as pedras sobem</b> um pouco. Se encostarem na linha vermelha embaixo da broca, você é engolido.</li>
@@ -478,7 +475,9 @@ const CAPS = {
   ball:  { w: 2, col: "#ffffff", tx: "B",  name: "Bola extra", short: "+1 bola nesta camada", stack: "",
            desc: "Mais uma bola em todos os tiros até o fim da camada. Aparece mais vezes nas camadas mais fundas." },
   rain:  { w: .3, col: "#ffffff", tx: "★", name: "Bola arco-íris", short: "Destrói tudo por 5 s", stack: "Somou: +5 s de arco-íris",
-           desc: "Raríssima. Por 5 segundos as bolas ficam arco-íris e destroem na hora toda pedra em que encostam, atravessando sem quicar." }
+           desc: "Raríssima. Por 5 segundos as bolas ficam arco-íris e destroem na hora toda pedra em que encostam, atravessando sem quicar." },
+  zap:   { w: .12, col: "#3a8bff", tx: "✕", name: "Apagador", short: "Toque numa pedra para apagar", stack: "Somou: mais uma pedra para apagar",
+           desc: "Raríssimo, ainda mais que o arco-íris. Depois de pegar, toque em qualquer pedra da tela e ela some na hora. Só o núcleo não pode ser apagado. Pegar outro soma: cada um apaga uma pedra." },
 };
 // balls grow with the dig: each layer starts with extra balls, and the ball capsule shows up more often deeper
 const layerBalls = li => Math.min(24, li * 2);
@@ -1203,7 +1202,7 @@ function newRun(li) {
 function hpBase(ri) { return (1.5 + run.li * .7 + ri * .05 + save.balls * .35) * 1.2 * diff(run.li).hp; }
 // how hard each layer is: tougher rock, busier floors, and the stone climbs faster after each turn
 // now and then (every 7th phase) a phase is a notch harder than its neighbours: tougher rock, a few more pieces,
-// stone climbing a bit faster and a sturdier core. It is marked "Difícil" in the menu.
+// stone climbing a bit faster and a sturdier core. It comes unannounced.
 const isHard = li => (li + 1) % 7 === 0;
 function diff(li) {
   const h = isHard(li);
@@ -1355,6 +1354,25 @@ function stackAbove(roots, m) {
 function markHolders() {
   const m = cellMap(run.blocks);
   for (const k of run.blocks) k.holds = stackAbove([k], m).size;
+}
+// the eraser power-up: the piece under the finger breaks at once (never the core), and whatever was stacked on it comes down
+function pieceAt(x, y) {
+  return run.blocks.find(k => !k.core && k.hp > 0 && onScreen(k) && k.cells.some(c => {
+    const x0 = k.x + c.cx * CELL + c.x0, y0 = k.y + c.cy * RH + c.y0, x1 = k.x + c.cx * CELL + c.x1, y1 = k.y + c.cy * RH + c.y1;
+    return x >= x0 - 4 && x <= x1 + 4 && y >= y0 - 6 && y <= y1 + 6;
+  }));
+}
+function zapAt(x, y) {
+  const r = run, k = pieceAt(x, y);
+  if (!k) return false;
+  r.zaps--;
+  k.hp = 0; k.flash = 1; k.hnx = 0; k.hny = 1;
+  breakBlock(k);
+  r.blocks = r.blocks.filter(q => q.hp > 0);
+  collapseAbove([k]); markHolders();
+  edgeGlow("zap", CAPS.zap.col);
+  hud();
+  return true;
 }
 function collapseAbove(dead) {
   const r = run, m = cellMap(r.blocks.concat(dead)), loose = [...stackAbove(dead, m)].filter(k => k.hp > 0);
@@ -1589,6 +1607,7 @@ function takeCap(c) {
     r.fx[c.type] += { fire: 8, wide: 15, slim: 10 }[c.type];
     r.lv[c.type] = Math.min(3, r.lv[c.type] + 1);
   }
+  else if (c.type === "zap") r.zaps = (r.zaps || 0) + 1;
   else if (c.type === "shot") r.shots++;
   else if (c.type === "ball") r.extra++;
   else if (c.type === "gem") { save.gems += 3; r.gemsRun += 3; store(); }
@@ -1609,7 +1628,7 @@ function takeCap(c) {
 }
 
 // light up the panel's edge in the capsule's colour (the rainbow one gets the whole spectrum)
-const GLOW2 = { multi: "#ff7a2f", fire: "#ffd23a", wide: "#2ee6ff", shot: "#ffd166", slim: "#ff5fb8", ball: "#9fd0ff" };
+const GLOW2 = { zap: "#bfe0ff", multi: "#ff7a2f", fire: "#ffd23a", wide: "#2ee6ff", shot: "#ffd166", slim: "#ff5fb8", ball: "#9fd0ff" };
 function flashOnly(col) {
   const f = $("fxFlash");
   f.style.setProperty("--gc", col);
@@ -2053,6 +2072,12 @@ function capIcon(g, type, x, y, R, glow) {
       const col = "hsl(" + Math.round((i * 45 - tt * 160) % 360 + 360) % 360 + ",100%,58%)";
       g.strokeStyle = col; g.beginPath(); g.arc(0, 4 * u, (7.4 - i * .78) * u, Math.PI * 1.05, Math.PI * 1.95); g.stroke();
     }
+  } else if (type === "zap") {   // a little tile with an X in it
+    g.lineWidth = 1.5 * u; g.lineCap = "round"; g.lineJoin = "round";
+    const bx = 6 * u, by = 4.4 * u, br = 2.2 * u;
+    g.beginPath(); g.moveTo(-bx + br, -by); g.arcTo(bx, -by, bx, by, br); g.arcTo(bx, by, -bx, by, br); g.arcTo(-bx, by, -bx, -by, br); g.arcTo(-bx, -by, bx, -by, br); g.closePath(); g.stroke();
+    g.lineWidth = 1.9 * u;
+    g.beginPath(); g.moveTo(-2.4 * u, -2 * u); g.lineTo(2.4 * u, 2 * u); g.moveTo(2.4 * u, -2 * u); g.lineTo(-2.4 * u, 2 * u); g.stroke();
   } else if (type === "ball") {
     g.beginPath(); g.arc(-1.6 * u, 1.4 * u, 4.2 * u, 0, Math.PI * 2); g.fill();
     g.lineWidth = 1.8 * u; g.lineCap = "round";
@@ -2210,6 +2235,20 @@ function drawChips() {
     for (let i = 0; i < r.lv[f]; i++) { ctx.beginPath(); ctx.arc(x + 25 + i * 6, y + 16.5, 1.7, 0, Math.PI * 2); ctx.fill(); }
     ctx.restore(); ctx.globalAlpha = 1;
   }
+}
+// while an eraser is in hand: a blue hint at the bottom of the pit saying what to do, with how many are left
+function drawZap() {
+  const r = run;
+  if (!(r.zaps > 0)) return;
+  const tp = performance.now() / 1000, txt = "Toque numa pedra para apagar" + (r.zaps > 1 ? " (" + r.zaps + ")" : "");
+  ctx.font = "700 13px 'Chakra Petch', sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  const w = ctx.measureText(txt).width + 44, x = (W - w) / 2, y = H - 44;
+  ctx.globalAlpha = reduceMotion ? 1 : .8 + .2 * Math.sin(tp * 5);
+  ctx.fillStyle = "rgba(10,24,52,.9)"; rr(x, y, w, 28, 14); ctx.fill();
+  ctx.strokeStyle = CAPS.zap.col; ctx.lineWidth = 2; ctx.stroke();
+  capIcon(ctx, "zap", x + 16, y + 14, 9, true);
+  ctx.fillStyle = "#e8f2ff"; ctx.fillText(txt, x + 32, y + 14.5);
+  ctx.globalAlpha = 1;
 }
 // a caught power-up's icon: timed ones arc from the paddle into their chip, the others pop and float away
 function drawIcons() {
@@ -2445,6 +2484,7 @@ function draw() {
     }
   }
   drawChips();
+  drawZap();
 
   // danger line: glows red as the stone climbs toward it
   const near = clamp(1 - (topOf() - DANGER) / 140, 0, 1);
@@ -2617,7 +2657,7 @@ const starsOf = i => "★".repeat(Math.min(5, diff(i).stars)) + (diff(i).stars >
 function phaseCard(i) {
   const L = LV(i), locked = i > save.maxLevel, st = locked ? "🔒 Bloqueada" : i < save.maxLevel ? "Vencida" : "Próxima";
   return '<div class="phase__band" style="background:' + grad(i) + '"><span class="phase__num">' + String(i + 1).padStart(2, "0") +
-    '</span><span class="phase__state">' + st + "</span>" + (isHard(i) ? '<span class="phase__hard">🔥 Difícil</span>' : "") + '</div><div class="phase__body"><p class="phase__name">' + L.name +
+    '</span><span class="phase__state">' + st + "</span>" + '</div><div class="phase__body"><p class="phase__name">' + L.name +
     '</p><div class="phase__sub"><span class="stars" aria-label="Dificuldade ' + diff(i).stars + '">' + starsOf(i) + "</span><span>" + L.km +
     '</span></div><div class="chips"><span class="chip">' + L.goal + "<small>m de meta</small></span><span class=\"chip\">" + L.shots +
     "<small>tiros</small></span>" + (layerBalls(i) ? '<span class="chip">+' + layerBalls(i) + "<small>bolas</small></span>" : "") + "</div></div>";
@@ -2809,6 +2849,7 @@ const keys = {};
 cv.addEventListener("pointerdown", e => {
   audioInit();
   if (!run || paused) return;
+  if (run.zaps > 0 && (run.state === "aim" || run.state === "shoot") && zapAt(...toField(e))) return;
   cv.setPointerCapture(e.pointerId);
   dragging = true;
   padAt(e);
