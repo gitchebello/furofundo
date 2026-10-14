@@ -57,12 +57,12 @@ body{background:var(--rock);color:var(--ink);font-family:var(--body);font-size:1
 #bRegroup.fab:disabled{opacity:.18;pointer-events:none}
 @keyframes ready{50%{box-shadow:0 0 0 4px rgba(255,210,58,.2)}}
 .ibtn:focus-visible,.btn:focus-visible,.up button:focus-visible,.layer:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
-/* game name on top while playing, the phase name small under it; together they fit the height of the buttons so the pit keeps its size */
-.hud__title{display:flex;flex-direction:column;gap:3px;min-width:0}
+/* game name on top while playing with the phase number beside it, in the height of the buttons so the pit keeps its size */
+.hud__title{display:flex;align-items:baseline;gap:8px;min-width:0}
 .hud__brand{font-family:var(--display);font-size:20px;line-height:1;color:var(--ink);white-space:nowrap}
 .hud__brand span{background:var(--rainbow);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rb 8s linear infinite}
 @media (prefers-reduced-motion:reduce){.hud__brand span{animation:none}}
-.hud__layer{font-family:var(--display);font-size:11px;line-height:1.2;letter-spacing:.04em;color:var(--magma);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hud__layer{font-family:var(--display);font-size:13px;line-height:1;letter-spacing:.04em;color:var(--magma);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .hud__btns{display:flex;gap:6px}
 .stage{flex:1;min-height:0;width:100%;display:flex;justify-content:center;align-items:flex-start;gap:8px}
 /* the depth gauge: a shaft down the side that the drill digs into */
@@ -295,7 +295,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 <div class="app">
   <div class="hud" id="hud">
     <div class="hud__top">
-      <div class="hud__title"><div class="hud__brand" aria-hidden="true">Dx<span>Drill</span></div><div class="hud__layer" id="hLayer">Primeira Picareta em Brasa</div></div>
+      <div class="hud__title"><div class="hud__brand" aria-hidden="true">Dx<span>Drill</span></div><div class="hud__layer" id="hLayer" title="Fase">1</div></div>
       <div class="hud__btns">
         <button class="ibtn" id="bFast" type="button" aria-pressed="false" title="Acelerar as bolas" aria-label="Acelerar as bolas"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="currentColor"><path d="M3 5.5v13l8.5-6.5zM12.5 5.5v13L21 12z"/></svg></button>
         <button class="ibtn" id="bSound" type="button" aria-pressed="true" title="Som" aria-label="Som"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path class="snd-on" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="snd-off" d="m16 9.5 5 5m0-5-5 5"/></svg></button>
@@ -1150,16 +1150,10 @@ const sfx = {
   },
   bad() { tone(260, 180, .3, "triangle", .1); tone(195, 140, .3, "triangle", .07, .08); },
   ff() { for (let i = 0; i < 3; i++) tone(300 + i * 120, 700 + i * 160, .06, "sine", .05, i * .05); },
-  buy() {   // an old mechanical cash register on a worn record: just the ratchet clicks and the drawer clunk, squeezed through a narrow band with surface hiss and crackle
-    if (!ac || !soundOn) return;
-    const old = ac.createBiquadFilter(), lp = ac.createBiquadFilter();
-    old.type = "highpass"; old.frequency.value = 350; lp.type = "lowpass"; lp.frequency.value = 2200;
-    old.connect(lp).connect(direct);
-    hiss(.4, "bandpass", 1800, 1600, .035, 0, .5, old);
-    for (let i = 0; i < 4; i++) hiss(.004, "highpass", 1500, 1400, rnd(.05, .12), rnd(0, .35), .7, old);
-    for (const w of [0, .05, .1, .15]) hiss(.015, "bandpass", 1400, 1200, .14, w, 2, old);
-    hiss(.14, "bandpass", 500, 300, .18, .2, 1, old);
-    tone(120, 90, .06, "triangle", .16, .2, old);
+  buy() {   // a simple "bling" for paying: two quick rising notes, the second one ringing a little with a soft shimmer on top
+    tone(988, 988, .06, "triangle", .1, 0, direct);
+    tone(1318.5, 1318.5, .35, "sine", .12, .06, direct);
+    tone(2637, 2637, .15, "sine", .03, .06, direct);
   },
   win() { [196, 247, 294, 392].forEach((f, i) => tone(f, f, 1.1, "sine", .08, i * .1)); sfx.coin(); },
   lose() { [220, 196, 165].forEach((f, i) => tone(f, f, .5, "triangle", .1, i * .22)); }
@@ -2583,7 +2577,7 @@ function hud() {
   $("hShots").textContent = r.shots;
   ps.classList.toggle("pill--low", r.shots <= 2);
   $("hGems").textContent = save.gems;
-  $("hLayer").textContent = (r.li + 1) + " · " + r.L.name;
+  $("hLayer").textContent = r.li + 1;
   $("hLayer").style.color = "hsl(" + Math.round(hueAt(r.li, r.depth)) + ",90%,62%)";
 }
 
