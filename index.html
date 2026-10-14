@@ -1081,13 +1081,12 @@ function startAmbient() {
   ambient = g;
 }
 const sfx = {
-  hit(hp) {   // a single dry "toc": very short, straight to the output with no cave echo, lower for tougher rock
+  hit(hp) {   // same recipe as the paddle rebound, a bit lower for tougher rock
     if (!ac) return;
     const t = ac.currentTime; if (t - lastHit < .03) return; lastHit = t;
-    const f = 300 - Math.min(hp, 60) * 2 + rnd(-10, 10);
-    tone(f, f * .8, .035, "sine", .32, 0, master);
-    tone(f * 2.3, f * 2, .015, "sine", .1, 0, master);
-    hiss(.012, "bandpass", f * 6, f * 5, .18, 0, 2, master);
+    const f = 330 - Math.min(hp, 60) * 1.5 + rnd(-8, 8);
+    tone(f, f * .91, .06, "triangle", .12, 0, direct);
+    hiss(.02, "bandpass", f * 3.6, f * 3, .08, 0, 2, direct);
   },
   smash(big) {   // the stone cracks apart: a sharp crack and gravel, with a short low thud
     hiss(.05, "bandpass", 1400, 900, .3, 0, 1.2, direct);
