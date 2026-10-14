@@ -806,8 +806,9 @@ const neonOf = (m, k) => "hsl(" + Math.round(k.hue) + ",100%,62%)";
 // neighbouring colours (red-orange, orange-yellow ... pink-red), then every run of three
 // (red-orange-yellow, orange-yellow-green ... pink-red-orange), then four, and so on up to all eight
 const RAINBOW8 = [0, 30, 55, 125, 185, 225, 275, 325];   // red orange yellow green cyan blue violet pink
+// every phase is a gradient between two neighbouring colours of the rainbow, never more
 function phaseHues(li) {
-  const w = Math.min(8, 2 + Math.floor(li / 8)), st = li % 8, out = [];
+  const w = 2, st = li % 8, out = [];
   for (let j = 0; j < w; j++) { const i = st + j; out.push(RAINBOW8[i % 8] + 360 * Math.floor(i / 8)); }
   return out;
 }
