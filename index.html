@@ -189,7 +189,20 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .mtiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0}
 .mtile{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:30px 1fr;grid-template-rows:auto auto;gap:1px 10px;align-items:center;
   padding:11px 12px;border-radius:12px;background:var(--rock-2);border:1px solid var(--line)}
-.mtile--wide{grid-column:1/-1}
+/* compact shop strip on the main menu: small cards that scroll sideways, tap the price to buy */
+.mshop__h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.mshop__all{all:unset;cursor:pointer;font:700 12px var(--body);color:var(--crystal)}
+.mshop__all:focus-visible{outline:2px solid var(--crystal);outline-offset:2px;border-radius:4px}
+.mshop{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;scroll-snap-type:x proximity;scrollbar-width:thin}
+.ms{flex:0 0 112px;scroll-snap-align:start;display:flex;flex-direction:column;gap:5px;padding:9px;border-radius:12px;background:var(--rock-2);border:1px solid var(--line)}
+.ms__ic{width:24px;height:24px}
+.ms__ic img,.ms__ic svg{width:24px;height:24px;display:block}
+.ms__n{font-size:11.5px;font-weight:700;line-height:1.2;min-height:2.4em}
+.ms__now{font-size:10px;color:var(--crystal);line-height:1.2;min-height:2.4em}
+.ms button{all:unset;box-sizing:border-box;cursor:pointer;margin-top:auto;display:flex;align-items:center;justify-content:center;gap:4px;padding:5px 6px;border-radius:8px;
+  border:1px solid var(--crystal);color:var(--crystal);font:700 12px var(--body);font-variant-numeric:tabular-nums}
+.ms button:disabled{border-color:var(--line);color:var(--ink-dim);cursor:not-allowed}
+.ms button:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
 .mtile:hover{border-color:var(--crystal)}
 .mtile:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
 .mtile__ic{grid-row:1/3;width:28px;height:28px;fill:none;stroke:var(--crystal);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -289,10 +302,13 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
           <div class="phases" id="core"></div>
         </section>
 
+        <section class="mshopwrap">
+          <div class="mshop__h"><h2>Lojinha <span class="gem shopcoins"><span class="pearl" aria-hidden="true"></span> <span id="mGems">0</span></span></h2>
+            <button class="mshop__all" type="button" data-panel="pShop">ver detalhes</button></div>
+          <div class="mshop" id="mshop"></div>
+        </section>
+
         <nav class="mtiles" aria-label="Mais opções">
-          <button class="mtile mtile--wide" type="button" data-panel="pShop">
-            <svg class="mtile__ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8Z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></svg>
-            <b>Lojinha</b><small><span class="pearl" aria-hidden="true"></span> <span id="mGems">0</span> moedas</small></button>
           <button class="mtile" type="button" data-panel="pCaps">
             <svg class="mtile__ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-35 12 12)"/><path d="M9.7 8.7l4.6 6.6"/></svg>
             <b>Power-ups</b><small>o que cada um faz</small></button>
@@ -812,8 +828,11 @@ function phaseHues(li) {
   for (let j = 0; j < w; j++) { const i = st + j; out.push(RAINBOW8[i % 8] + 360 * Math.floor(i / 8)); }
   return out;
 }
+// the first colour holds for the first part of the dig, then blends smoothly into the second
+const HOLD = .4;
 function hueAt(li, meters) {
-  const hs = phaseHues(li), x = clamp(meters / LV(li).goal, 0, 1) * (hs.length - 1), i = Math.floor(x);
+  const t = clamp((clamp(meters / LV(li).goal, 0, 1) - HOLD) / (1 - HOLD), 0, 1), e = t * t * (3 - 2 * t);
+  const hs = phaseHues(li), x = e * (hs.length - 1), i = Math.floor(x);
   return hs[i] + (hs[Math.min(i + 1, hs.length - 1)] - hs[i]) * (x - i);
 }
 const CAP_KEYS = Object.keys(CAPS);
@@ -1108,7 +1127,7 @@ function mk(x, y, cells, hp, col0, row0) {
     cap: Math.random() < (big ? .4 : .14) + save.capRate * .03 ? pickCap() : null };
 }
 
-const CORE_ROWS = 3, CORE_R = 60;
+const CORE_ROWS = 5, CORE_R = 88;   // big, and it never climbs past the middle of the screen (see rise/scroll)
 function coreHp(li) { return Math.max(30, Math.round(hpBase(run.coreRow) * 12)); }
 function genRow() {
   const r = run, y = r.nextY, ri = r.rows++;
@@ -1749,7 +1768,7 @@ function update(dt) {
   } else if (r.state === "rise") {
     const amt = Math.min(r.riseLeft, 70 * dt);
     r.riseLeft -= amt;
-    for (const k of r.blocks) k.y -= amt;
+    for (const k of r.blocks) k.y = k.core ? Math.max(H / 2 - CORE_R, k.y - amt) : k.y - amt;
     for (const c of r.caps) c.y -= amt;
     r.nextY -= amt;
     fill();
@@ -1757,7 +1776,7 @@ function update(dt) {
   } else if (r.state === "scroll") {
     const amt = Math.min(r.scrollLeft, (r.scrollLeft * 7 + 90) * dt);
     r.scrollLeft -= amt;
-    for (const k of r.blocks) k.y -= amt;
+    for (const k of r.blocks) k.y = k.core ? Math.max(H / 2 - CORE_R, k.y - amt) : k.y - amt;
     for (const p of r.parts) p.y -= amt;
     for (const c of r.caps) c.y -= amt;
     for (const k of r.falling) k.y -= amt;
@@ -1932,11 +1951,11 @@ function drawCore(k) {
   if (k.flash > 0) { ctx.globalAlpha = k.flash * .6; ctx.fillStyle = "#fff"; ctx.fillRect(k.x, k.y, k.w, k.h); ctx.globalAlpha = 1; }
   ctx.restore();
   // the number of hits it still takes
-  ctx.font = "800 " + (k.hp > 999 ? 26 : 32) + "px 'Chakra Petch', sans-serif";
+  ctx.font = "800 " + (k.hp > 999 ? 34 : 42) + "px 'Chakra Petch', sans-serif";
   ctx.lineWidth = 5; ctx.strokeStyle = "rgba(0,0,0,.6)"; ctx.lineJoin = "round";
-  ctx.strokeText(k.hp, cx, cy + 4); ctx.fillStyle = "#fff"; ctx.fillText(k.hp, cx, cy + 4);
-  ctx.font = "700 10px 'Chakra Petch', sans-serif"; ctx.fillStyle = "rgba(255,255,255,.85)";
-  ctx.fillText("NÚCLEO", cx, cy - 22);
+  ctx.strokeText(k.hp, cx, cy + 6); ctx.fillStyle = "#fff"; ctx.fillText(k.hp, cx, cy + 6);
+  ctx.font = "700 12px 'Chakra Petch', sans-serif"; ctx.fillStyle = "rgba(255,255,255,.85)";
+  ctx.fillText("NÚCLEO", cx, cy - 28);
 }
 
 // fine dust rising slowly through the dark, seen through a lens with chromatic aberration:
@@ -2196,7 +2215,7 @@ function hud() {
   $("hLayer").style.color = "hsl(" + Math.round(hueAt(r.li, r.depth)) + ",90%,62%)";
 }
 
-const grad = (i, dir = "90deg") => "linear-gradient(" + dir + "," + phaseHues(i).map(h => "hsl(" + h + ",88%,62%)").join(",") + ")";
+const grad = (i, dir = "90deg") => { const [a, b] = phaseHues(i).map(h => "hsl(" + h + ",88%,62%)"); return "linear-gradient(" + dir + "," + a + " 0%," + a + " " + HOLD * 100 + "%," + b + " 100%)"; };
 const starsOf = i => "★".repeat(Math.min(5, diff(i).stars)) + (diff(i).stars > 5 ? "+" + (diff(i).stars - 5) : "");
 function phaseCard() {
   const i = save.level, L = LV(i), st = i < save.maxLevel ? "Vencida" : "Próxima";
@@ -2240,6 +2259,18 @@ function menu() {
     cl.appendChild(li);
   }
   gallery();
+  const strip = $("mshop"); strip.innerHTML = "";
+  UPS.forEach(u => {
+    const n = u.lvl(), maxed = n >= u.max, c = u.cost(n), d = document.createElement("div");
+    d.className = "ms"; d.title = u.desc;
+    d.innerHTML = '<span class="ms__ic">' + upIcon(u.ic) + '</span><span class="ms__n">' + u.name + '</span><span class="ms__now">' + u.now().replace("Agora: ", "") + "</span>";
+    const b = document.createElement("button"); b.type = "button";
+    if (maxed) b.textContent = "Máximo"; else b.innerHTML = '<span class="pearl" aria-hidden="true"></span> ' + c;
+    b.setAttribute("aria-label", "Comprar " + u.name + (maxed ? "" : " por " + c + " moedas"));
+    b.disabled = maxed || save.gems < c;
+    b.onclick = () => { if (save.gems < c) return; save.gems -= c; u.buy(); store(); sfx.buy(); newRun(save.level); menu(); };
+    d.appendChild(b); strip.appendChild(d);
+  });
   const ups1 = $("ups"), ups2 = $("ups2"); ups1.innerHTML = ""; ups2.innerHTML = "";
   UPS.forEach((u, i) => {
     const ups = i < 4 ? ups1 : ups2;
