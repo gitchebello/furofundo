@@ -236,6 +236,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
           <summary>Como jogar</summary>
           <div class="fold__in">
             <ul class="howto">
+            <li>Para passar de fase, cave até o fundo e <b>quebre o núcleo</b>: a bola grande no fim do poço. O número nela é quantas batidas ela aguenta.</li>
             <li>Como no Holedown, a <b>broca vai até cada bola que volta</b> e fica onde a <b>última</b> entrou: o próximo tiro sai dali.</li>
             <li><b>Segure</b> o dedo na tela para mirar: a linha reta pontilhada aponta da broca até o seu dedo. <b>Solte</b> para atirar. Para cancelar, solte o dedo em cima da broca.</li>
             <li>No mouse, a mira segue o cursor e o clique atira.</li>
@@ -960,6 +961,11 @@ function newRun(li) {
     px: LX, dx: LX, caps: [], falling: [], fx: { fire: 0, wide: 0, slim: 0, rain: 0 }, lv: { fire: 0, wide: 0, slim: 0, rain: 0 }, bonus: 0, rebounds: 0, extra: layerBalls(li)
   };
   CAPS.ball.w = 1.5 + li * 2.5;
+  // like Holedown: the bottom of the phase is a big round core. It sits a little past the goal depth,
+  // and the phase is only won once it is broken. Its rows are booked so no piece overlaps it.
+  run.coreRow = Math.ceil(L.goal / MPR) + 1;
+  run.occ = new Set();
+  for (let q = 0; q < CORE_ROWS; q++) for (let c = 1; c < COLS - 1; c++) run.occ.add(c + "," + (run.coreRow + q));
   // two stones per colour of this phase, drawn fresh every time the phase starts
   run.texSets = phaseHues(li).map(() => { const a = pickStone(); let b = pickStone(); for (let t = 0; t < 8 && b === a; t++) b = pickStone(); return [a, b]; });
   fill();
@@ -1009,9 +1015,18 @@ function mk(x, y, cells, hp, col0, row0) {
     cap: Math.random() < (big ? .4 : .14) + save.capRate * .03 ? pickCap() : null };
 }
 
+const CORE_ROWS = 3, CORE_R = 60;
+function coreHp(li) { return Math.max(30, Math.round(hpBase(run.coreRow) * 12)); }
 function genRow() {
   const r = run, y = r.nextY, ri = r.rows++;
   if (!r.occ) r.occ = new Set();
+  if (ri === r.coreRow) {
+    const hp = coreHp(r.li), cy = y + CORE_ROWS * RH / 2;
+    r.blocks.push({ core: true, x: W / 2 - CORE_R, y: cy - CORE_R, w: CORE_R * 2, h: CORE_R * 2, hp, max: hp, flash: 0,
+      cells: [], col0: 1, row0: ri, st: stoneAt(ri), hue: hueAt(r.li, r.L.goal), gem: 0, cap: null, holds: 0,
+      geo: { ox: Math.floor(rnd(0, TX - CORE_R * 2)), oy: Math.floor(rnd(0, TY - CORE_R * 2)) }, spin: rnd(0, 6) });
+  }
+  if (ri > r.coreRow + CORE_ROWS - 1) { r.nextY += RH; return; }   // solid bedrock under the core: nothing more to dig
   const dens = Math.min(.26, .09 + ri * .0015 + diff(r.li).dens);   // sparse floors: a few bars per row, not a wall
   const base = hpBase(ri);
   const total = PIECES.reduce((a, p) => a + p.w, 0);
@@ -1146,12 +1161,24 @@ function hitCell(px, py, x0, y0, x1, y1, rad) {
 // the floor of the shaft sits on the lowest row line that is fully on screen, so pieces are never cut
 function floorY() { const r = run; return r ? r.nextY - Math.ceil((r.nextY - H) / RH) * RH : H; }
 const onScreen = k => k.y + k.h <= floorY() + .5;
+function coreHit(b, k) {
+  const cx = k.x + CORE_R, cy = k.y + CORE_R, dx = b.x - cx, dy = b.y - cy, d = Math.hypot(dx, dy) || .001;
+  return d >= CORE_R + R ? null : [dx / d, dy / d, CORE_R + R - d];
+}
 function touches(b, k) {
+  if (k.core) return !!coreHit(b, k);
   if (b.x < k.x - R || b.y < k.y - R || b.x > k.x + k.w + R || b.y > k.y + k.h + R) return false;
   return k.cells.some(c => { const ox = k.x + c.cx * CELL, oy = k.y + c.cy * RH; return hitCell(b.x, b.y, ox + c.x0, oy + c.y0, ox + c.x1, oy + c.y1, c.rad); });
 }
 function collide(b, k) {
   if (b.x < k.x - R || b.y < k.y - R || b.x > k.x + k.w + R || b.y > k.y + k.h + R) return false;
+  if (k.core) {   // the core is a true circle: plain reflection off its surface
+    const h = coreHit(b, k); if (!h) return false;
+    const [nx, ny, pen] = h; b.x += nx * pen; b.y += ny * pen;
+    const vn = b.vx * nx + b.vy * ny;
+    if (vn < 0) { b.vx -= 2 * vn * nx; b.vy -= 2 * vn * ny; return true; }
+    return false;
+  }
   let hit = false;
   for (const c of k.cells) {
     const ox = k.x + c.cx * CELL, oy = k.y + c.cy * RH;
@@ -1198,7 +1225,11 @@ function step(h) {
     move(b, h);
     b.age += h;
     if (r.fx.rain > 0) {   // rainbow balls: anything they touch is gone, and they keep flying straight
-      for (const k of r.blocks) if (k.hp > 0 && onScreen(k) && touches(b, k)) { k.hp = 0; k.flash = 1; breakBlock(k); }
+      for (const k of r.blocks) {
+        if (k.hp <= 0 || !onScreen(k)) continue;
+        if (k.core) { if (collide(b, k)) { k.hp = Math.max(0, k.hp - 3); k.flash = 1; sfx.hit(k.hp); if (k.hp <= 0) breakBlock(k); } }
+        else if (touches(b, k)) { k.hp = 0; k.flash = 1; breakBlock(k); }
+      }
     } else for (const k of r.blocks) {
       if (k.hp <= 0 || !onScreen(k) || !collide(b, k)) continue;
       k.hp = Math.max(0, k.hp - (1 + 2 * r.lv.fire)); k.flash = 1;
@@ -1235,6 +1266,7 @@ function step(h) {
 function breakBlock(k) {
   const r = run, cx = k.x + k.w / 2, cy = k.y + k.h / 2, col = neonOf(k.st, k);
   r.broken++;
+  if (k.core) return breakCore(k, cx, cy, col);
   const n = reduceMotion ? 6 : 12 + (k.w > CELL ? 14 : 0);
   for (let i = 0; i < n; i++) {
     const a = Math.random() * Math.PI * 2, s = 40 + Math.random() * 160;
@@ -1249,6 +1281,23 @@ function breakBlock(k) {
     sfx.coin();
     hud();
   }
+}
+
+// the core bursts: a big ring of shards, every ball floats home as a bubble and the phase is won
+function breakCore(k, cx, cy, col) {
+  const r = run;
+  r.coreDown = true;
+  for (let i = 0; i < (reduceMotion ? 24 : 90); i++) {
+    const a = Math.random() * Math.PI * 2, s = 80 + Math.random() * 380;
+    r.parts.push({ x: cx + Math.cos(a) * CORE_R * .5, y: cy + Math.sin(a) * CORE_R * .5, vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+      life: .7 + Math.random() * .8, col: i % 3 ? col : "#fff", s: 2 + Math.random() * 4 });
+  }
+  r.coreBlast = { x: cx, y: cy, t: 0 };
+  if (!reduceMotion) r.shake = 14;
+  r.texts.push({ x: W / 2, y: clamp(cy - 20, 120, H - 80), t: "Núcleo quebrado!", life: 2.2, col: "#ffe58a", big: true });
+  sfx.smash(true); sfx.win();
+  r.spawnLeft = 0;
+  if (r.balls.length && !r.hole) { r.cleared = true; openHole(); }
 }
 
 function takeCap(c) {
@@ -1454,11 +1503,12 @@ function fire() {
 const DANGER = LY + 26;
 function endTurn() {
   const r = run;
+  if (r.coreDown) return finish(true);
   r.riseLeft = diff(r.li).rise;
   r.state = "rise";
   sfx.rise();
 }
-function topOf() { let t = Infinity; for (const k of run.blocks) t = Math.min(t, k.y + Math.min(...k.cells.map(c => c.cy * RH + c.y0))); return t; }
+function topOf() { let t = Infinity; for (const k of run.blocks) t = Math.min(t, k.core ? k.y : k.y + Math.min(...k.cells.map(c => c.cy * RH + c.y0))); return t; }
 function afterRise() {
   const r = run;
   if (topOf() < DANGER) return finish(false, true);
@@ -1472,7 +1522,7 @@ function afterScroll() {
   const r = run;
   r.state = "aim";
   hud();
-  if (r.depth >= r.L.goal - 0.01) return finish(true);
+  if (r.coreDown) return finish(true);
   if (r.shots <= 0) return finish(false);
 }
 
@@ -1499,7 +1549,7 @@ function finish(won, eaten) {
   $("eKicker").textContent = won ? "Fase concluída" : eaten ? "Engolido" : "Sem tiros";
   $("eTitle").textContent = won
     ? "Você atravessou: " + r.L.name
-    : eaten ? "As pedras subiram até a broca" : "Faltaram " + Math.ceil(r.L.goal - r.depth) + " m";
+    : eaten ? "As pedras subiram até a broca" : r.depth >= r.L.goal - .01 ? "Faltou quebrar o núcleo" : "Faltaram " + Math.ceil(r.L.goal - r.depth) + " m";
   $("eDepth").textContent = Math.floor(r.depth) + " m";
   $("eGems").innerHTML = '<span class="pearl" aria-hidden="true"></span> ' + r.gemsRun;
   $("eShots").textContent = r.used;
@@ -1749,6 +1799,50 @@ function drawStone(k) {
   ctx.restore();
 }
 
+// the core: a big glowing sphere cut from the phase's stone, with cracks that spread as it weakens
+function drawCore(k) {
+  const cx = k.x + CORE_R, cy = k.y + CORE_R, t = performance.now() / 1000, hue = Math.round(k.hue);
+  const dmg = 1 - k.hp / k.max, pulse = .5 + .5 * Math.sin(t * 2.4);
+  // halo
+  const halo = ctx.createRadialGradient(cx, cy, CORE_R * .8, cx, cy, CORE_R * 1.7);
+  halo.addColorStop(0, "hsla(" + hue + ",100%,60%," + (.35 + pulse * .2) + ")"); halo.addColorStop(1, "hsla(" + hue + ",100%,50%,0)");
+  ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(cx, cy, CORE_R * 1.7, 0, Math.PI * 2); ctx.fill();
+  // neon rim
+  ctx.strokeStyle = "hsl(" + hue + ",100%,65%)"; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.arc(cx, cy, CORE_R, 0, Math.PI * 2); ctx.stroke();
+  // the stone, slowly turning
+  ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, CORE_R - 1, 0, Math.PI * 2); ctx.clip();
+  ctx.translate(cx, cy); ctx.rotate(k.spin + t * .08); ctx.translate(-cx, -cy);
+  ctx.drawImage(k.st.tex, k.geo.ox, k.geo.oy, CORE_R * 2, CORE_R * 2, k.x - 6, k.y - 6, CORE_R * 2 + 12, CORE_R * 2 + 12);
+  ctx.restore(); ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, CORE_R - 1, 0, Math.PI * 2); ctx.clip();
+  ctx.globalCompositeOperation = "color"; ctx.globalAlpha = .8;
+  ctx.fillStyle = "hsl(" + hue + ",95%,50%)"; ctx.fillRect(k.x, k.y, k.w, k.h);
+  ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1;
+  // sphere shading
+  const sh = ctx.createRadialGradient(cx - CORE_R * .35, cy - CORE_R * .4, CORE_R * .1, cx, cy, CORE_R);
+  sh.addColorStop(0, "rgba(255,255,255,.35)"); sh.addColorStop(.45, "rgba(255,255,255,0)"); sh.addColorStop(1, "rgba(0,0,0,.55)");
+  ctx.fillStyle = sh; ctx.fillRect(k.x, k.y, k.w, k.h);
+  // cracks grow with the damage
+  if (dmg > .05) {
+    ctx.strokeStyle = "rgba(255,255,255," + (.35 + dmg * .5) + ")"; ctx.lineWidth = 1.6; ctx.lineCap = "round";
+    const n = 3 + Math.floor(dmg * 7);
+    for (let i = 0; i < n; i++) {
+      let a = k.spin * 3 + i * 2.39, x = cx, y = cy, len = CORE_R * (.35 + dmg * .7);
+      ctx.beginPath(); ctx.moveTo(x, y);
+      for (let j = 0; j < 4; j++) { a += Math.sin(i * 7 + j * 3) * .5; x += Math.cos(a) * len / 4; y += Math.sin(a) * len / 4; ctx.lineTo(x, y); }
+      ctx.stroke();
+    }
+  }
+  if (k.flash > 0) { ctx.globalAlpha = k.flash * .6; ctx.fillStyle = "#fff"; ctx.fillRect(k.x, k.y, k.w, k.h); ctx.globalAlpha = 1; }
+  ctx.restore();
+  // the number of hits it still takes
+  ctx.font = "800 " + (k.hp > 999 ? 26 : 32) + "px 'Chakra Petch', sans-serif";
+  ctx.lineWidth = 5; ctx.strokeStyle = "rgba(0,0,0,.6)"; ctx.lineJoin = "round";
+  ctx.strokeText(k.hp, cx, cy + 4); ctx.fillStyle = "#fff"; ctx.fillText(k.hp, cx, cy + 4);
+  ctx.font = "700 10px 'Chakra Petch', sans-serif"; ctx.fillStyle = "rgba(255,255,255,.85)";
+  ctx.fillText("NÚCLEO", cx, cy - 22);
+}
+
 // fine dust rising slowly through the dark, seen through a lens with chromatic aberration:
 // red and blue split away from the centre of the screen, more toward the edges
 const dust = Array.from({ length: 110 }, () => ({
@@ -1810,6 +1904,7 @@ function draw() {
     if (!onScreen(k) || k.y + k.h < 0) continue;
     const f = k.fade ?? 1;
     ctx.globalAlpha = f;
+    if (k.core) { drawCore(k); ctx.globalAlpha = 1; continue; }
     drawStone(k);
     if (k.flash > 0) {
       ctx.globalAlpha = k.flash * .7 * f; ctx.fillStyle = "#fff";
@@ -1977,7 +2072,12 @@ function draw() {
 
   // floating crystal text
   ctx.font = "700 16px 'Chakra Petch', sans-serif";
-  for (const t of r.texts) { ctx.globalAlpha = clamp(t.life * 1.5, 0, 1); ctx.fillStyle = t.col || "#f4efe8"; ctx.fillText(t.t, t.x, t.y); if (t.pearl) coin(ctx, t.x + 18, t.y, 7); }
+  for (const t of r.texts) {
+    ctx.globalAlpha = clamp(t.life * 1.5, 0, 1); ctx.fillStyle = t.col || "#f4efe8";
+    if (t.big) { ctx.save(); ctx.font = "800 24px 'Chakra Petch', sans-serif"; ctx.fillText(t.t, t.x, t.y); ctx.restore(); }
+    else ctx.fillText(t.t, t.x, t.y);
+    if (t.pearl) coin(ctx, t.x + 18, t.y, 7);
+  }
   ctx.globalAlpha = 1;
 }
 
