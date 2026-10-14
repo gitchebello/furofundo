@@ -117,6 +117,21 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .stat b{display:block;font-size:24px;font-variant-numeric:tabular-nums}
 .stat small{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}
 .caps__intro{margin-bottom:10px}
+/* power-up cards: big icon, coloured name, what it does in a chip, details below */
+.caps.caps{display:flex;flex-direction:column;gap:8px}
+.caps .pu{display:flex;grid-template-columns:none}
+.pu{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;border:1px solid var(--line);
+  background:linear-gradient(160deg,color-mix(in srgb,var(--c) 16%,transparent),transparent 65%),var(--rock-2);position:relative;overflow:hidden}
+.pu::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--c)}
+.pu__top{display:flex;align-items:center;gap:12px}
+.pu__ic{width:44px;height:44px;display:block;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--c) 55%,transparent))}
+.pu__n{display:block;font-size:14px;line-height:1.2;color:var(--c)}
+.pu__chip{display:inline-block;margin-top:5px;font-size:11px;font-weight:700;line-height:1.3;padding:3px 7px;border-radius:6px;
+  background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--ink)}
+.pu__d{margin:0;font-size:11.5px;line-height:1.45;color:var(--ink-dim)}
+.pu--bad{border-color:color-mix(in srgb,var(--c) 55%,transparent)}
+.pu--rain::before{background:var(--rainbow);background-size:200% 100%;animation:rb 3s linear infinite}
+.pu--rain .pu__n{background:var(--rainbow);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rb 3s linear infinite}
 .caps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .caps li{display:grid;grid-template-columns:40px 1fr;gap:2px 10px;align-items:start;padding:9px 10px;border-radius:10px;background:var(--rock-2);border:1px solid var(--line)}
 .caps__pill{grid-row:1/3;width:34px;height:34px;display:block}
@@ -174,6 +189,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .mtiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0}
 .mtile{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:30px 1fr;grid-template-rows:auto auto;gap:1px 10px;align-items:center;
   padding:11px 12px;border-radius:12px;background:var(--rock-2);border:1px solid var(--line)}
+.mtile--wide{grid-column:1/-1}
 .mtile:hover{border-color:var(--crystal)}
 .mtile:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
 .mtile__ic{grid-row:1/3;width:28px;height:28px;fill:none;stroke:var(--crystal);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -274,18 +290,15 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
         </section>
 
         <nav class="mtiles" aria-label="Mais opções">
-          <button class="mtile" type="button" data-panel="pShop">
+          <button class="mtile mtile--wide" type="button" data-panel="pShop">
             <svg class="mtile__ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8Z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></svg>
             <b>Lojinha</b><small><span class="pearl" aria-hidden="true"></span> <span id="mGems">0</span> moedas</small></button>
           <button class="mtile" type="button" data-panel="pCaps">
             <svg class="mtile__ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-35 12 12)"/><path d="M9.7 8.7l4.6 6.6"/></svg>
-            <b>Cápsulas</b><small>o que cada uma faz</small></button>
+            <b>Power-ups</b><small>o que cada um faz</small></button>
           <button class="mtile" type="button" data-panel="pHelp">
             <svg class="mtile__ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .9-1 1.6v.7M12 17h.01"/></svg>
             <b>Todas as regras</b><small>dicas e detalhes</small></button>
-          <button class="mtile" type="button" data-panel="pMin">
-            <svg class="mtile__ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10l4 6-9 10L3 10Z"/><path d="M3 10h18M12 20 8.5 10 11 4M12 20l3.5-10L13 4"/></svg>
-            <b>Minerais</b><small>a coleção do poço</small></button>
         </nav>
 
         <!-- sub-pages: open over the menu and come back with Voltar -->
@@ -294,13 +307,13 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
           <p class="lede">Gaste as moedas que caem das pedras. Tudo o que você compra vale para sempre.</p>
           <h3 class="mpanel__sub">Melhorias</h3>
           <div class="ups" id="ups"></div>
-          <h3 class="mpanel__sub">Cápsulas mais (ou menos) frequentes</h3>
+          <h3 class="mpanel__sub">Power-ups mais (ou menos) frequentes</h3>
           <div class="ups" id="ups2"></div>
         </div>
         <div class="mpanel" id="pCaps" hidden>
-          <header class="mpanel__h"><button class="mpanel__back" type="button">← Voltar</button><h2>Cápsulas de poder</h2></header>
+          <header class="mpanel__h"><button class="mpanel__back" type="button">← Voltar</button><h2>Power-ups</h2></header>
 
-            <p class="lede caps__intro">Pedras com uma <b>cápsula desenhada</b> soltam aquela cápsula ao quebrar. Ela sobe devagar: <b>encoste a barra nela</b> para pegar. Os tempos só correm com bolas em jogo, e <b>tudo se soma</b>.</p>
+            <p class="lede caps__intro">Quebre a pedra que tem um <b>power-up desenhado</b>. Ele sobe devagar: <b>encoste a barrinha</b> para pegar. Pegar outro igual <b>soma</b> tempo e força.</p>
             <ul class="caps" id="capList"></ul>
         </div>
 
@@ -313,23 +326,18 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
             <li><b>Segure</b> o dedo na tela para mirar: a linha reta pontilhada aponta da broca até o seu dedo. <b>Solte</b> para atirar. Para cancelar, solte o dedo em cima da broca.</li>
             <li>No mouse, a mira segue o cursor e o clique atira.</li>
             <li>No teclado: setas ← → giram a mira (e movem a barrinha durante a jogada), A/D movem a barrinha, espaço atira.</li>
-            <li>Cada bloco é um mineral cortado ao meio (veja a coleção abaixo). O número em cada um é quantas batidas ela aguenta. No zero, ela quebra.</li>
+            <li>Cada bloco é um mineral cortado ao meio. O número em cada um é quantas batidas ela aguenta. No zero, ela quebra.</li>
             <li>As bolas andam em linha reta, quicam nas paredes, no fundo e nas pedras até subir de novo. <b>Mova o rebatedor</b> (arraste, mouse ou setas) para mandá-las de novo para baixo. A ponta do rebatedor dá ângulo. A barrinha é separada da broca e segue o dedo ou o mouse o tempo todo, com ou sem bolas em campo.</li>
             <li><b>Dois cliques</b> ou <b>dois toques</b> rápidos com as bolas em jogo aceleram a jogada (6×). Mais dois cliques ou toques voltam à velocidade normal.</li>
             <li>O botão <b>Juntar</b> (a linha reta) (ao lado do » lá em cima, ou tecla R) junta todas as bolas em jogo numa <b>linha só</b> de novo, atrás da bola que está na frente. Bom para salvar as bolas quando elas estão espalhadas.</li>
-            <li>Cada fase é <b>mais funda</b> que a anterior e começa com <b>4 tiros a mais</b>. Durante a fase os tiros não aumentam (só com cápsula, tela limpa ou loja).</li>
+            <li>Cada fase é <b>mais funda</b> que a anterior e começa com <b>4 tiros a mais</b>. Durante a fase os tiros não aumentam (só com power-up, tela limpa ou lojinha).</li>
             <li>Se você limpar todas as pedras da tela com bolas ainda em jogo, elas voltam sozinhas para a broca e você <b>ganha o tiro de volta</b>.</li>
             <li>O poço só desce quando o bloco mais alto sai do caminho. Toda vez que as bolas passam pela barra e a vez acaba, <b>as pedras sobem</b> um pouco. Se encostarem na linha vermelha embaixo da broca, você é engolido.</li>
             <li>Cada camada é mais difícil (estrelas no menu): pedras mais duras, mais peças e pedras subindo mais rápido.</li>
-            <li>Quanto mais funda a camada, mais bolas: cada camada começa com 2 bolas extras a mais que a anterior, e a cápsula de <b>bola extra</b> aparece mais.</li>
+            <li>Quanto mais funda a camada, mais bolas: cada camada começa com 2 bolas extras a mais que a anterior, e o power-up de <b>bola extra</b> aparece mais.</li>
             <li>Peça com <b>aura preta</b> tem outras grudadas em cima dela. Destrua a de baixo e tudo o que está empilhado em cima desaba junto.</li>
             <li>Pedras com uma <span class="pearl" aria-hidden="true"></span> moeda desenhada soltam moedas para a lojinha.</li>
           </ul>
-        </div>
-
-        <div class="mpanel" id="pMin" hidden>
-          <header class="mpanel__h"><button class="mpanel__back" type="button">← Voltar</button><h2>Minerais do poço</h2></header>
-          <div class="minerals" id="minList"></div>
         </div>
 
       </div>
@@ -378,13 +386,13 @@ const CAPS = {
   multi: { w: 3, col: "#ffd166", tx: "M",  name: "Multibola", short: "Cada bola vira três", stack: "",
            desc: "Cada bola em jogo se divide em três, e pegar outra divide de novo. Sem bola em jogo, o próximo tiro sai com 4 bolas a mais, e isso também soma." },
   fire:  { w: 2, col: "#ff5a3c", tx: "F",  name: "Bola de fogo", short: "Dano ×3 por 8 s", stack: "Somou: mais dano e +8 s",
-           desc: "Por 8 segundos as bolas ficam em brasa e cada batida tira 3 pontos em vez de 1. Somando: 5 e depois 7 pontos por batida, e +8 s a cada cápsula." },
+           desc: "Por 8 segundos as bolas ficam em brasa e cada batida tira 3 pontos em vez de 1. Somando: 5 e depois 7 pontos por batida, e +8 s a cada power-up." },
   wide:  { w: 3, col: "#7ee081", tx: "L",  name: "Rebatedor largo", short: "Rebatedor maior por 15 s", stack: "Somou: ainda mais largo e +15 s",
-           desc: "O rebatedor fica 50% mais largo por 15 segundos e fica verde. Somando: +50% de novo (até 3 vezes) e +15 s a cada cápsula." },
+           desc: "O rebatedor fica 50% mais largo por 15 segundos e fica verde. Somando: +50% de novo (até 3 vezes) e +15 s a cada power-up." },
   shot:  { w: 1, col: "#f4e7d4", tx: "+1", name: "Tiro extra", short: "+1 tiro nesta camada", stack: "",
            desc: "Ganha mais um tiro na camada atual." },
   slim:  { w: 2, col: "#a970ff", tx: "C",  name: "Rebatedor curto", short: "Rebatedor menor por 10 s", stack: "Somou: ainda mais curto e +10 s",
-           desc: "Cápsula ruim: o rebatedor encolhe 30% por 10 segundos e fica roxo. Também soma, então desvie dela. Se você tiver L ao mesmo tempo, um compensa o outro." },
+           desc: "Power-up ruim: o rebatedor encolhe 30% por 10 segundos e fica roxo. Também soma, então desvie dele. Se você tiver L ao mesmo tempo, um compensa o outro." },
   ball:  { w: 2, col: "#ffffff", tx: "B",  name: "Bola extra", short: "+1 bola nesta camada", stack: "",
            desc: "Mais uma bola em todos os tiros até o fim da camada. Aparece mais vezes nas camadas mais fundas." },
   rain:  { w: .3, col: "#ffffff", tx: "★", name: "Bola arco-íris", short: "Destrói tudo por 5 s", stack: "Somou: +5 s de arco-íris",
@@ -883,19 +891,19 @@ const UPS = [
     now: () => save.pad ? "Agora: +" + save.pad * 8 + " px de largura" : "Agora: tamanho normal", lvl: () => save.pad, max: 6,
     cost: n => Math.round(14 * Math.pow(1.5, n)), buy: () => { save.pad++; } },
   // power-up odds
-  { ic: "caps", name: "Mais cápsulas de poder", desc: "Mais pedras trazem uma cápsula de poder quando quebram.",
-    now: () => save.capRate ? "Agora: +" + save.capRate * 3 + "% de pedras com cápsula" : "Agora: chance normal", lvl: () => save.capRate, max: 6,
+  { ic: "caps", name: "Mais power-ups", desc: "Mais pedras trazem um power-up quando quebram.",
+    now: () => save.capRate ? "Agora: +" + save.capRate * 3 + "% de pedras com power-up" : "Agora: chance normal", lvl: () => save.capRate, max: 6,
     cost: n => Math.round(24 * Math.pow(1.55, n)), buy: () => { save.capRate++; } },
-  { ic: "multi", name: "Mais Multibola (M)", desc: "A cápsula M, que divide cada bola em três, aparece mais vezes.",
+  { ic: "multi", name: "Mais Multibola (M)", desc: "O power-up M, que divide cada bola em três, aparece mais vezes.",
     now: () => save.capM ? "Agora: nível " + save.capM + " de 5" : "Agora: chance normal", lvl: () => save.capM, max: 5,
     cost: n => Math.round(19 * Math.pow(1.5, n)), buy: () => { save.capM++; } },
-  { ic: "fire", name: "Mais Bola de fogo (F)", desc: "A cápsula F, que faz cada batida tirar 3 em vez de 1, aparece mais vezes.",
+  { ic: "fire", name: "Mais Bola de fogo (F)", desc: "O power-up F, que faz cada batida tirar 3 em vez de 1, aparece mais vezes.",
     now: () => save.capF ? "Agora: nível " + save.capF + " de 5" : "Agora: chance normal", lvl: () => save.capF, max: 5,
     cost: n => Math.round(19 * Math.pow(1.5, n)), buy: () => { save.capF++; } },
-  { ic: "ball2", name: "Mais Bola extra (B)", desc: "A cápsula B, que dá uma bola a mais até o fim da fase, aparece mais vezes.",
+  { ic: "ball2", name: "Mais Bola extra (B)", desc: "O power-up B, que dá uma bola a mais até o fim da fase, aparece mais vezes.",
     now: () => save.capB ? "Agora: nível " + save.capB + " de 5" : "Agora: chance normal", lvl: () => save.capB, max: 5,
     cost: n => Math.round(22 * Math.pow(1.55, n)), buy: () => { save.capB++; } },
-  { ic: "slim", name: "Menos Barrinha curta (C)", desc: "A cápsula ruim C, que encolhe a barrinha, aparece menos vezes.",
+  { ic: "slim", name: "Menos Barrinha curta (C)", desc: "O power-up ruim C, que encolhe a barrinha, aparece menos vezes.",
     now: () => save.capC ? "Agora: nível " + save.capC + " de 5" : "Agora: chance normal", lvl: () => save.capC, max: 5,
     cost: n => Math.round(16 * Math.pow(1.5, n)), buy: () => { save.capC++; } }
 ];
@@ -1821,15 +1829,17 @@ function capIcon(g, type, x, y, R, glow) {
   } else if (type === "slim") {
     g.fillRect(-1.6 * u, -1.3 * u, 3.2 * u, 2.6 * u);
     tri(7.6 * u, -3.4 * u, 4 * u, 0, 7.6 * u, 3.4 * u); tri(-7.6 * u, -3.4 * u, -4 * u, 0, -7.6 * u, 3.4 * u);
-  } else if (type === "shot") {
-    tri(-4.6 * u, -5 * u, 4.6 * u, -5 * u, 0, 2 * u);
-    g.lineWidth = 1.8 * u; g.lineCap = "round";
-    g.beginPath(); g.moveTo(-3 * u, 5 * u); g.lineTo(3 * u, 5 * u); g.moveTo(0, 2.6 * u); g.lineTo(0, 7.4 * u); g.stroke();
+  } else if (type === "shot") {   // one more shot: a big "+1" over a little dotted aim line
+    g.font = "800 " + (9.5 * u) + "px 'Chakra Petch', sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText("+1", 0, -1.6 * u);
+    for (const px of [-3.2, 0, 3.2]) { g.beginPath(); g.arc(px * u, 5.4 * u, .95 * u, 0, Math.PI * 2); g.fill(); }
   } else if (type === "rain") {   // little rainbow
     g.lineWidth = 1.5 * u; g.lineCap = "round";
-    ["#ff3b3b", "#ff9a2e", "#ffe23a", "#4dff7a", "#2ee6ff", "#4a6aff", "#b45cff", "#ff5fb8"].forEach((col, i) => {
+    const tt = performance.now() / 1000;   // the colours keep sliding through the arcs
+    for (let i = 0; i < 8; i++) {
+      const col = "hsl(" + Math.round((i * 45 - tt * 160) % 360 + 360) % 360 + ",100%,58%)";
       g.strokeStyle = col; g.beginPath(); g.arc(0, 4 * u, (7.4 - i * .78) * u, Math.PI * 1.05, Math.PI * 1.95); g.stroke();
-    });
+    }
   } else if (type === "ball") {
     g.beginPath(); g.arc(-1.6 * u, 1.4 * u, 4.2 * u, 0, Math.PI * 2); g.fill();
     g.lineWidth = 1.8 * u; g.lineCap = "round";
@@ -2217,10 +2227,15 @@ function menu() {
   const cl = $("capList");
   if (!cl.childElementCount) for (const key of CAP_KEYS) {
     const C = CAPS[key], li = document.createElement("li");
-    const ic = document.createElement("canvas"); ic.width = ic.height = 68;
-    capIcon(ic.getContext("2d"), key, 34, 34, 28, false);
-    li.innerHTML = '<img class="caps__pill" alt="" src="' + ic.toDataURL() + '"><span class="caps__n" style="color:' + C.col + '">' + C.name +
-      '</span><span class="caps__d">' + C.desc + "</span>";
+    li.className = "pu" + (key === "slim" ? " pu--bad" : "") + (key === "rain" ? " pu--rain" : "");
+    li.style.setProperty("--c", C.col);
+    const ic = document.createElement("canvas"); ic.width = ic.height = 96; ic.className = "pu__ic";
+    const paint = () => { const g = ic.getContext("2d"); g.clearRect(0, 0, 96, 96); capIcon(g, key, 48, 48, 40, false); };
+    paint();
+    if (key === "rain") (function loop() { if (!$("pCaps").hidden) paint(); requestAnimationFrame(loop); })();   // the rainbow keeps moving
+    li.innerHTML = '<div class="pu__top"><div class="pu__t"><b class="pu__n">' + C.name + '</b><span class="pu__chip">' +
+      (key === "slim" ? "Ruim · " : "") + C.short + '</span></div></div><p class="pu__d">' + C.desc + "</p>";
+    li.querySelector(".pu__top").prepend(ic);
     cl.appendChild(li);
   }
   gallery();
@@ -2244,7 +2259,7 @@ function menu() {
 const upIcCache = {};
 function upIcon(k) {
   if (upIcCache[k]) return upIcCache[k];
-  const capKey = { multi: "multi", fire: "fire", ball2: "ball", slim: "slim", caps: "shot" }[k];
+  const capKey = { multi: "multi", fire: "fire", ball2: "ball", slim: "slim" }[k];
   let html;
   if (capKey) {
     const c = document.createElement("canvas"); c.width = c.height = 52;
@@ -2252,21 +2267,23 @@ function upIcon(k) {
     html = '<img alt="" src="' + c.toDataURL() + '">';
   } else html = {
     ball: '<svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="8" fill="#fff6e8"/><path d="M20 4v6M17 7h6" stroke="#ffd23a" stroke-width="2.2" stroke-linecap="round"/></svg>',
-    shots: '<svg viewBox="0 0 26 26"><path d="M7 4h12l-6 18z" fill="#ff5a3c"/><path d="M9 9h8M10 13h6" stroke="#7a2a10" stroke-width="1.6"/></svg>',
+    shots: '<svg viewBox="0 0 26 26"><path d="M2 8l6 3M3 14l5 1" stroke="#f4e7d4" stroke-width="1.6" stroke-linecap="round" opacity=".6"/><circle cx="12" cy="14" r="5" fill="#fff6e8"/>' +
+      '<text x="19.5" y="9" text-anchor="middle" font-size="10" font-weight="800" fill="#ffd23a" font-family="Chakra Petch, sans-serif">+2</text></svg>',
+    caps: '<svg viewBox="0 0 26 26"><circle cx="8" cy="15" r="5.5" fill="#ff5a3c"/><circle cx="18" cy="15" r="5.5" fill="#7ee081"/><circle cx="13" cy="7.5" r="5.5" fill="#ffd166"/>' +
+      '<g stroke="#1a110c" stroke-width="1.2" fill="none"><circle cx="8" cy="15" r="5.5"/><circle cx="18" cy="15" r="5.5"/><circle cx="13" cy="7.5" r="5.5"/></g></svg>',
     coin: '<span class="pearl" style="width:20px;height:20px"></span>',
     pad: '<svg viewBox="0 0 26 26"><rect x="2" y="11" width="22" height="5" rx="2.5" fill="#7ee081"/><path d="M5 7 2 9.5 5 12M21 7l3 2.5-3 2.5" stroke="#f4e7d4" stroke-width="1.6" fill="none" stroke-linecap="round" transform="translate(0 2)"/></svg>'
   }[k] || "";
   return upIcCache[k] = html;
 }
 
-// menu sub-pages (Lojinha, Cápsulas, Regras, Minerais): open over the menu, Voltar or Esc closes
+// menu sub-pages (Lojinha, Power-ups, Regras): open over the menu, Voltar or Esc closes
 function openPanel(id) {
   const m = $("ovMenu");
   for (const p of m.querySelectorAll(".mpanel")) p.hidden = p.id !== id;
   m.scrollTop = 0; m.classList.add("has-panel");
   const p = $(id); p.scrollTop = 0;
   p.querySelector(".mpanel__back").focus({ preventScroll: true });
-  if (id === "pMin") gallery();
 }
 function closePanel() {
   const m = $("ovMenu"), open = m.querySelector(".mpanel:not([hidden])");
@@ -2281,6 +2298,7 @@ window.addEventListener("keydown", e => { if (e.key === "Escape" && !$("ovMenu")
 
 function gallery() {
   const ml = $("minList");
+  if (!ml) return;
   for (const m of MINERALS) {
     if (!m.tex || m.shown) continue;
     m.shown = true;
