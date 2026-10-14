@@ -932,6 +932,7 @@ const sfx = {
     tone(820, 1850, .07, "sine", .09);
     tone(1150, 2500, .05, "sine", .05, .07);
   },
+  plop() { tone(rnd(520, 640), rnd(1100, 1400), .045, "sine", .07, 0, direct); },
   bubbles() { for (let i = 0; i < 5; i++) tone(rnd(300, 400) + i * 90, rnd(700, 950) + i * 120, .05, "sine", .06, i * .05); },
   bad() { tone(260, 180, .3, "triangle", .1); tone(195, 140, .3, "triangle", .07, .08); },
   ff() { for (let i = 0; i < 3; i++) tone(300 + i * 120, 700 + i * 160, .06, "sine", .05, i * .05); },
@@ -1329,108 +1330,83 @@ function ringUpdate() {
   el.style.background = "conic-gradient(from var(--ga)," + stops.join(",") + ")";
 }
 
-// ---------- drain: when the screen is cleared the balls swirl down a drain and pop back out of the drill ----------
+// ---------- bubbles: when the screen is cleared every ball turns into a soap bubble that wobbles up
+// to the drill and pops on it ----------
 function openHole() {
-  const r = run, hx = W / 2, hy = clamp((LY + floorY()) / 2, LY + 120, H - 120);
-  r.hole = { x: hx, y: hy, t: 0, size: 0, phase: "swirl", spin: 0, rip: [], pops: [] };
+  const r = run;
+  r.hole = { t: 0, pops: [] };
   r.balls.forEach((b, i) => {
     b.home = true; b.miss = true;
-    b.ang = Math.atan2(b.y - hy, b.x - hx); b.rad = Math.hypot(b.x - hx, b.y - hy);
-    b.wait = 0; b.inHole = false; b.order = i;
+    b.bub = 0; b.bt = -i * .03;            // each ball turns into a bubble a moment after the one before
+    b.bx = b.x; b.vb = rnd(90, 140);       // base x drifts toward the drill, rise speed builds up
+    b.ph = rnd(0, 6.3); b.amp = rnd(6, 14); b.rb = rnd(1.7, 2.3);
   });
 }
 function holeStep(h) {
-  const r = run, o = r.hole;
-  o.t += h; o.spin += h * (o.phase === "swirl" ? 7 : 3);
-  for (const q of o.rip) q.t += h;
+  const o = run.hole;
+  o.t += h;
   for (const q of o.pops) q.t += h;
-  o.rip = o.rip.filter(q => q.t < .45); o.pops = o.pops.filter(q => q.t < .35);
-  const home = r.balls.filter(b => b.home);
-  // everything gone down the drain: the balls come back out of the drill one after another
-  if (o.phase === "swirl" && (home.every(b => b.inHole) || o.t > 1.1)) {
-    o.phase = "pipe";
-    home.forEach((b, i) => { b.inHole = true; b.wait = .12 + i * .035; });
-    sfx.bubbles();
-  }
-  const want = o.phase === "swirl" ? 34 : 0;
-  o.size += (want - o.size) * Math.min(1, h * (want ? 10 : 6));
-  if (o.phase === "pipe" && !home.length && o.size < 1 && !o.pops.length) r.hole = null;
+  o.pops = o.pops.filter(q => q.t < .4);
+  if (!run.balls.some(b => b.home) && !o.pops.length) run.hole = null;
 }
 function holeBall(b, h) {
   const r = run, o = r.hole;
   if (!o) { b.done = true; return; }
-  if (o.phase === "swirl") {
-    if (b.inHole) return;
-    // like water down a plughole: the circle tightens and the spin speeds up as it closes in
-    b.rad = Math.max(0, b.rad - (140 + b.rad * 3.6) * h);
-    b.ang -= h * (3 + 520 / (b.rad + 14));
-    b.x = o.x + Math.cos(b.ang) * b.rad; b.y = o.y + Math.sin(b.ang) * b.rad;
-    if (b.rad < 5) { b.inHole = true; o.rip.push({ t: 0 }); }
-    return;
+  b.bt += h;
+  if (b.bt < 0) return;
+  b.bub = Math.min(1, b.bub + h * 4);   // ball -> bubble in a quarter of a second
+  if (b.bub < 1) return;
+  b.vb = Math.min(520, b.vb + 380 * h);
+  b.y -= b.vb * h;
+  b.bx += (r.dx - b.bx) * Math.min(1, h * 2.2);
+  const near = clamp((b.y - LY) / 120, 0, 1);   // the wobble calms down right before the pop
+  b.x = b.bx + Math.sin(b.bt * 6 + b.ph) * b.amp * near;
+  if (b.y <= LY - 10) {
+    b.done = true;
+    o.pops.push({ x: b.x, y: LY - 12, t: 0, s: R * b.rb });
+    sfx.plop();
   }
-  b.wait -= h;
-  if (b.wait <= 0) { b.done = true; o.pops.push({ t: 0 }); }
+}
+function drawBubble(b) {
+  const k = b.bub, rr = R * (1 + (b.rb - 1) * k), t = performance.now() / 1000;
+  // the solid ball fades out inside as the bubble grows around it
+  if (k < 1) {
+    ctx.globalAlpha = 1 - k; ctx.fillStyle = "#fff6e8";
+    ctx.beginPath(); ctx.arc(b.x, b.y, R * (1 - k * .5), 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = .25 + .75 * k;
+  // thin film: almost clear inside, a soft tint toward the edge
+  const g = ctx.createRadialGradient(b.x - rr * .3, b.y - rr * .3, rr * .1, b.x, b.y, rr);
+  g.addColorStop(0, "rgba(255,255,255,.05)"); g.addColorStop(.75, "rgba(180,220,255,.08)"); g.addColorStop(1, "rgba(255,200,255,.28)");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, rr, 0, Math.PI * 2); ctx.fill();
+  // rim with a shifting rainbow sheen
+  ctx.lineWidth = 1.2; ctx.strokeStyle = "rgba(255,255,255,.75)";
+  ctx.beginPath(); ctx.arc(b.x, b.y, rr, 0, Math.PI * 2); ctx.stroke();
+  const sh = t * 2 + b.ph;
+  ctx.lineWidth = 1.6;
+  ctx.strokeStyle = "rgba(255,120,220,.55)"; ctx.beginPath(); ctx.arc(b.x, b.y, rr - 1.2, sh, sh + 1.3); ctx.stroke();
+  ctx.strokeStyle = "rgba(90,230,255,.55)"; ctx.beginPath(); ctx.arc(b.x, b.y, rr - 1.2, sh + 2.4, sh + 3.6); ctx.stroke();
+  // highlight
+  ctx.fillStyle = "rgba(255,255,255,.85)";
+  ctx.beginPath(); ctx.ellipse(b.x - rr * .38, b.y - rr * .42, rr * .22, rr * .13, -.6, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
 }
 function drawHole() {
-  const r = run, o = r.hole;
+  const o = run.hole;
   if (!o) return;
-  const s = o.size, hue = Math.round(hueAt(r.li, r.depth));
-  ctx.save();
-  if (s > .5) {
-    ctx.save(); ctx.translate(o.x, o.y);
-    // the water dips into a dark funnel
-    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, s * 2.3);
-    g.addColorStop(0, "rgba(0,0,0,.97)"); g.addColorStop(.3, "rgba(4,14,20,.85)");
-    g.addColorStop(.7, "hsla(" + hue + ",60%,30%,.25)"); g.addColorStop(1, "hsla(" + hue + ",60%,30%,0)");
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, s * 2.3, 0, Math.PI * 2); ctx.fill();
-    // rings of water sliding toward the hole
-    ctx.lineWidth = 1;
-    for (let j = 0; j < 3; j++) {
-      const f = 1 - ((o.t * 1.3 + j / 3) % 1), rr = s * (.5 + f * 1.7);
-      ctx.strokeStyle = "rgba(220,240,255," + (.22 * (1 - f) + .04) + ")";
-      ctx.beginPath(); ctx.arc(0, 0, rr, 0, Math.PI * 2); ctx.stroke();
-    }
-    // streaks of the whirlpool, thinner and brighter near the drain
-    ctx.lineCap = "round";
-    for (let k = 0; k < 8; k++) {
-      let px = 0, py = 0;
-      for (let j = 0; j <= 16; j++) {
-        const u = j / 16, rr = s * (2.1 - u * 1.6), a = o.spin + k * Math.PI / 4 - u * 4.2;
-        const x = Math.cos(a) * rr, y = Math.sin(a) * rr;
-        if (j) {
-          ctx.strokeStyle = "rgba(225,245,255," + (.08 + u * .5) + ")";
-          ctx.lineWidth = 2.6 - u * 1.6;
-          ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(x, y); ctx.stroke();
-        }
-        px = x; py = y;
-      }
-    }
-    // the drain grate
-    const gr = s * .42, mg = ctx.createRadialGradient(-gr * .3, -gr * .3, 0, 0, 0, gr);
-    mg.addColorStop(0, "#c9d1d5"); mg.addColorStop(1, "#59636a");
-    ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(0, 0, gr, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = "#20262a"; ctx.lineWidth = 1.4; ctx.stroke();
-    ctx.save(); ctx.rotate(o.spin * .15);
-    ctx.strokeStyle = "#0b0e10"; ctx.lineWidth = 2.2;
-    for (let k = 0; k < 6; k++) {
-      const a = k * Math.PI / 3;
-      ctx.beginPath(); ctx.moveTo(Math.cos(a) * gr * .28, Math.sin(a) * gr * .28); ctx.lineTo(Math.cos(a) * gr * .8, Math.sin(a) * gr * .8); ctx.stroke();
-    }
-    ctx.fillStyle = "#0b0e10"; ctx.beginPath(); ctx.arc(0, 0, gr * .16, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
-    // a little splash ring each time a ball goes down
-    for (const q of o.rip) {
-      ctx.strokeStyle = "rgba(235,250,255," + (1 - q.t / .45) * .8 + ")"; ctx.lineWidth = 1.6;
-      ctx.beginPath(); ctx.arc(0, 0, gr + q.t * 50, 0, Math.PI * 2); ctx.stroke();
-    }
-    ctx.restore();
-  }
-  // each ball pops back out of the drill with a small ring
+  // pops on the drill: a ring and a few droplets flying out
   for (const q of o.pops) {
-    ctx.strokeStyle = "rgba(255,246,232," + (1 - q.t / .35) + ")"; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(r.dx, LY - 14, 8 + q.t * 60, 0, Math.PI * 2); ctx.stroke();
+    const f = q.t / .4;
+    ctx.globalAlpha = 1 - f;
+    ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(q.x, q.y, q.s * (1 + f * 1.4), 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = "#e8f6ff";
+    for (let i = 0; i < 6; i++) {
+      const a = i * Math.PI / 3 + q.s, d = q.s * (1 + f * 2.4);
+      ctx.beginPath(); ctx.arc(q.x + Math.cos(a) * d, q.y + Math.sin(a) * d, 1.6 * (1 - f) + .4, 0, Math.PI * 2); ctx.fill();
+    }
   }
-  ctx.restore();
+  ctx.globalAlpha = 1;
 }
 
 // regroup button: every ball still in play lines up behind the lead one again, Holedown style
@@ -1622,7 +1598,7 @@ function update(dt) {
     if (!r.cleared && r.balls.length && !r.blocks.some(onScreen)) {
       r.cleared = true; r.spawnLeft = 0; r.shots++;
       openHole();
-      r.texts.push({ x: W / 2, y: r.hole.y - 80, t: "Tela limpa! +1 tiro", life: 1.6, col: "#ffe58a" });
+      r.texts.push({ x: W / 2, y: H / 2 - 40, t: "Tela limpa! +1 tiro", life: 1.6, col: "#ffe58a" });
       sfx.bubbles(); hud();
     }
     if (r.spawnLeft === 0 && r.balls.length === 0 && !r.regroup) endTurn();
@@ -1958,15 +1934,16 @@ function draw() {
   if (r.fx.rain > 0) {
     const t0 = performance.now() / 3;
     r.balls.forEach((b, i) => {
-      if (b.inHole) return;
+      if (b.home) return;
       const hh = (t0 + i * 40) % 360;
       ctx.globalAlpha = .35; ctx.fillStyle = "hsl(" + ((hh + 60) % 360) + ",100%,60%)";
       ctx.beginPath(); ctx.arc(b.x - b.vx * .02, b.y - b.vy * .02, R * 1.4, 0, Math.PI * 2); ctx.fill();
       ctx.globalAlpha = 1; ctx.fillStyle = "hsl(" + hh + ",100%,62%)"; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 16;
       ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, Math.PI * 2); ctx.fill();
     });
-  } else for (const b of r.balls) { if (b.inHole) continue; ctx.beginPath(); ctx.arc(b.x, b.y, b.home && r.hole?.phase === "swirl" ? R * clamp(b.rad / 70, .3, 1) : R, 0, Math.PI * 2); ctx.fill(); }
+  } else for (const b of r.balls) { if (b.home) continue; ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, Math.PI * 2); ctx.fill(); }
   ctx.shadowBlur = 0;
+  for (const b of r.balls) if (b.home) drawBubble(b);
   // returning balls rolling over the surface into the drill, with a short streak behind them
   for (const g of r.homing) {
     const dir = Math.sign(r.dx - g.x) || 1;
