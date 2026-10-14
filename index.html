@@ -59,10 +59,10 @@ body{background:var(--rock);color:var(--ink);font-family:var(--body);font-size:1
 .ibtn:focus-visible,.btn:focus-visible,.up button:focus-visible,.layer:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
 /* game name on top while playing with the phase number beside it, in the height of the buttons so the pit keeps its size */
 .hud__title{display:flex;align-items:baseline;gap:8px;min-width:0}
-.hud__brand{font-family:var(--display);font-size:20px;line-height:1;color:var(--ink);white-space:nowrap}
+.hud__brand{font-family:var(--display);font-size:27px;line-height:1;color:var(--ink);white-space:nowrap}
 .hud__brand span{background:var(--rainbow);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rb 8s linear infinite}
 @media (prefers-reduced-motion:reduce){.hud__brand span{animation:none}}
-.hud__layer{font-family:var(--display);font-size:13px;line-height:1;letter-spacing:.04em;color:var(--magma);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hud__layer{font-family:var(--display);font-size:18px;line-height:1;letter-spacing:.04em;color:var(--magma);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .hud__btns{display:flex;gap:6px}
 .stage{flex:1;min-height:0;width:100%;display:flex;justify-content:center;align-items:flex-start;gap:8px}
 /* the depth gauge: a shaft down the side that the drill digs into */
@@ -249,6 +249,15 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .ms__ic{width:22px;height:22px}
 .ms__ic img,.ms__ic svg{width:22px;height:22px;display:block}
 .ms__n{font-size:10.5px;font-weight:700;line-height:1.15;min-height:2.3em;display:flex;align-items:center}
+/* the card you just bought lights up like a power-up: comets race round its edge and it flashes gold */
+.ms,.up{position:relative}
+.is-bought{animation:boughtflash 1.1s ease-out}
+.is-bought::after{content:"";position:absolute;inset:-2px;border-radius:inherit;padding:2px;pointer-events:none;opacity:0;
+  background:conic-gradient(from var(--ga),transparent 0 8%,var(--crystal) 16%,#fff 18%,var(--crystal) 22%,transparent 30% 50%,var(--crystal) 58%,#fff 60%,var(--crystal) 64%,transparent 72% 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+  animation:glowrun 1.6s cubic-bezier(.3,.6,.4,1) forwards}
+@keyframes boughtflash{0%{box-shadow:0 0 0 0 rgba(255,210,58,0)}15%{box-shadow:0 0 22px 3px rgba(255,210,58,.65),inset 0 0 14px rgba(255,210,58,.35)}100%{box-shadow:0 0 0 0 rgba(255,210,58,0)}}
+@media (prefers-reduced-motion:reduce){.is-bought::after{animation:none}}
 .ms__lv{font-size:10px;font-weight:700;color:var(--ink-dim);font-variant-numeric:tabular-nums}
 .ms__lv--max{color:var(--crystal)}
 .ms button{all:unset;box-sizing:border-box;cursor:pointer;margin-top:auto;width:100%;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px 4px;border-radius:7px;
@@ -2611,6 +2620,7 @@ function carFx() {
     c.style.setProperty("--d", d.toFixed(3)); c.style.setProperty("--ad", Math.min(1, Math.abs(d)).toFixed(3));
   }
 }
+let bought = -1;   // index in UPS of the upgrade just bought, lit up once when the shop is rebuilt
 function menu() {
   const core = $("core"); core.innerHTML = "";
   for (let i = 0, n = Math.max(8, save.maxLevel + 2); i < n; i++) {
@@ -2678,29 +2688,30 @@ function menu() {
   }
   gallery();
   const strip = $("mshop"); strip.innerHTML = "";
-  UPS.forEach(u => {
+  const lit = bought; bought = -1;
+  UPS.forEach((u, i) => {
     const n = u.lvl(), maxed = n >= u.max, c = u.cost(n), d = document.createElement("div");
-    d.className = "ms";
+    d.className = "ms" + (i === lit ? " is-bought" : "");
     d.title = u.name + ": " + u.desc + " " + u.now();
     d.innerHTML = '<span class="ms__ic">' + upIcon(u.ic) + '</span><span class="ms__n">' + u.short + '</span><span class="ms__lv' + (maxed ? " ms__lv--max" : "") + '" aria-label="Nível ' + n + " de " + u.max + '">' + n + "/" + u.max + "</span>";
     const b = document.createElement("button"); b.type = "button";
     if (maxed) b.textContent = "Máximo"; else b.innerHTML = '<span class="pearl" aria-hidden="true"></span> ' + c;
     b.setAttribute("aria-label", "Comprar " + u.name + (maxed ? "" : " por " + c + " moedas"));
     b.disabled = maxed || save.gems < c;
-    b.onclick = () => { if (save.gems < c) return; save.gems -= c; u.buy(); store(); sfx.buy(); newRun(save.level); menu(); };
+    b.onclick = () => { if (save.gems < c) return; save.gems -= c; u.buy(); store(); sfx.buy(); bought = i; newRun(save.level); menu(); };
     d.appendChild(b); strip.appendChild(d);
   });
   const ups1 = $("ups"), ups2 = $("ups2"); ups1.innerHTML = ""; ups2.innerHTML = "";
   UPS.forEach((u, i) => {
     const ups = i < 4 ? ups1 : ups2;
     const n = u.lvl(), maxed = n >= u.max, c = u.cost(n);
-    const d = document.createElement("div"); d.className = "up";
+    const d = document.createElement("div"); d.className = "up" + (i === lit ? " is-bought" : "");
     d.innerHTML = '<div class="up__top"><span class="up__ic">' + upIcon(u.ic) + '</span><div class="up__n">' + u.name + '<small aria-label="Nível ' + n + " de " + u.max + '">' + n + "/" + u.max + '</small></div></div><div class="up__d">' + u.desc + '<span class="up__now">' + u.now() + '</span></div><div class="pips" aria-label="Nível ' + n + " de " + u.max + '">' +
       Array.from({ length: u.max }, (_, j) => "<i" + (j < n ? ' class="on"' : "") + "></i>").join("") + "</div>";
     const btn = document.createElement("button"); btn.type = "button";
     if (maxed) btn.textContent = "Máximo"; else btn.innerHTML = '<span class="pearl" aria-hidden="true"></span> ' + c;
     btn.disabled = maxed || save.gems < c;
-    btn.onclick = () => { if (save.gems < c) return; save.gems -= c; u.buy(); store(); sfx.buy(); newRun(save.level); menu(); };
+    btn.onclick = () => { if (save.gems < c) return; save.gems -= c; u.buy(); store(); sfx.buy(); bought = i; newRun(save.level); menu(); };
     d.appendChild(btn); ups.appendChild(d);
   });
   hud();
