@@ -67,8 +67,9 @@ body{background:var(--rock);color:var(--ink);font-family:var(--body);font-size:1
 .stage{flex:1;min-height:0;width:100%;display:flex;justify-content:center;align-items:flex-start;gap:8px}
 /* the depth gauge: a shaft down the side that the drill digs into */
 .shaft{position:relative;flex:0 0 20px;border-radius:10px;background:#0b0b0d;box-shadow:inset 0 0 0 1px var(--line),inset 0 6px 10px rgba(0,0,0,.8);overflow:visible}
-.shaft::before{content:"";position:absolute;inset:0;border-radius:10px;background:repeating-linear-gradient(180deg,transparent 0 calc(10% - 1px),rgba(255,255,255,.09) calc(10% - 1px) 10%);pointer-events:none}
-.shaft__fill{position:absolute;left:3px;right:3px;top:3px;height:0;border-radius:7px 7px 3px 3px;transition:height .35s;box-shadow:0 0 10px rgba(255,255,255,.12)}
+.shaft__fill{position:absolute;left:3px;right:3px;top:3px;height:0;border-radius:7px 7px 3px 3px;transition:height .35s,top .35s;box-shadow:0 0 10px rgba(255,255,255,.12)}
+/* the stretch dug in earlier phases, dark, in their colours, squeezed into the top of the shaft */
+.shaft__past{position:absolute;left:3px;right:3px;top:3px;height:0;border-radius:7px 7px 0 0;opacity:.45;transition:height .35s}
 .shaft__tip{position:absolute;left:50%;top:3px;width:0;height:0;transform:translate(-50%,0);transition:top .35s}
 .shaft__tip::before{content:"";position:absolute;left:-8px;top:-4px;width:16px;height:16px;border-radius:50%;background:var(--tip-dk,#7a2a10);box-shadow:0 0 8px var(--tip,#ff7a2f)}
 .shaft__tip::after{content:"";position:absolute;left:-7px;top:4px;border-left:7px solid transparent;border-right:7px solid transparent;border-top:14px solid var(--tip,#ff7a2f);animation:drillwob .18s steps(2) infinite}
@@ -298,7 +299,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .fold__in{padding:0 14px 14px}
 .howto{margin:0;padding-left:18px;color:var(--ink-dim);font-size:13px;line-height:1.55}
 .howto b{color:var(--ink)}
-@media (prefers-reduced-motion:reduce){.shaft__fill,.shaft__tip{transition:none}.shaft__tip::after{animation:none}.brand span,.btn{animation:none}.pill--low,.pill--bump,#bRegroup:not(:disabled){animation:none}}
+@media (prefers-reduced-motion:reduce){.shaft__fill,.shaft__past,.shaft__tip{transition:none}.shaft__tip::after{animation:none}.brand span,.btn{animation:none}.pill--low,.pill--bump,#bRegroup:not(:disabled){animation:none}}
 </style>
 
 <div class="app">
@@ -320,6 +321,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 
   <div class="stage" id="stage">
     <div class="shaft" id="shaft" role="progressbar" aria-label="Profundidade" aria-valuemin="0">
+      <div class="shaft__past" id="hPast"></div>
       <div class="shaft__fill" id="hBar"></div>
       <div class="shaft__tip" id="hTip"></div>
     </div>
@@ -2573,11 +2575,27 @@ function hud() {
   const r = run;
   $("hDepth").textContent = Math.floor(r.depth);
   $("hGoal").textContent = r.L.goal;
-  // the shaft fills downward and the drill tip sits at the bottom of the hole dug so far
-  const f = clamp(r.depth / r.L.goal, 0, 1), sh = $("shaft").clientHeight - 6, dh = Math.round(hueAt(r.li, r.depth));
-  $("hBar").style.height = (f * sh) + "px";
-  $("hBar").style.background = grad(r.li, "180deg") + " 0 0/100% " + sh + "px no-repeat";   // colours spread over the whole shaft
-  $("hTip").style.top = (3 + f * sh) + "px";
+  // the shaft fills downward and the drill tip sits at the bottom of the hole dug so far. The earlier phases take the
+  // top of it, a share that grows fast at first and then ever slower (never past 60%), so each phase sits deeper than
+  // the last even after a hundred of them; the rest is this phase, and it fills to the very end as the core rises into place
+  const sh = $("shaft").clientHeight - 6, dh = Math.round(hueAt(r.li, r.depth));
+  const past = .6 * (1 - 1 / (1 + r.li * .15)), room = 1 - past;
+  let f = clamp(r.depth / r.L.goal, 0, 1);
+  const core = r.blocks.find(k => k.core);
+  if (core) f += (1 - f) * clamp((H - core.y) / (H - (H / 2 - CORE_R)), 0, 1);
+  if (r.coreDown) f = 1;
+  const pastEl = $("hPast");
+  pastEl.style.height = (past * sh) + "px";
+  if (r.li && pastEl.dataset.li !== String(r.li)) {   // earlier phases' colours, darkened, a dozen samples at most
+    const n = Math.min(r.li, 12), hs = Array.from({ length: n }, (_, k) => phaseHues(Math.floor(k * r.li / n))[0]);
+    pastEl.style.background = "linear-gradient(180deg," + (n > 1 ? hs : hs.concat(hs)).map(h => "hsl(" + h + ",70%,40%)").join(",") + ")";
+    pastEl.dataset.li = r.li;
+  }
+  $("hBar").style.top = (3 + past * sh) + "px";
+  $("hBar").style.borderRadius = r.li ? "0 0 3px 3px" : "";
+  $("hBar").style.height = (f * room * sh) + "px";
+  $("hBar").style.background = grad(r.li, "180deg") + " 0 0/100% " + (room * sh) + "px no-repeat";   // colours spread over this phase's stretch
+  $("hTip").style.top = (3 + (past + f * room) * sh) + "px";
   $("hTip").style.setProperty("--tip", "hsl(" + dh + ",92%,58%)");
   $("hTip").style.setProperty("--tip-dk", "hsl(" + dh + ",80%,30%)");
   $("shaft").setAttribute("aria-valuemax", r.L.goal); $("shaft").setAttribute("aria-valuenow", Math.floor(r.depth));
