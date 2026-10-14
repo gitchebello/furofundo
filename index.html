@@ -1090,25 +1090,36 @@ const sfx = {
   },
   smash(big) {   // the stone pops like a bubble: a quick upward "blup" with a soft muffled puff, then a few smaller bubbles, nothing sharp or high
     const f = big ? 170 : 230;
-    tone(f, f * 3.2, .07, "sine", .22, 0, direct);
-    hiss(.04, "lowpass", 700, 300, .12, 0, .7, direct);
+    tone(f, f * 3.2, .07, "sine", .34, 0, direct);
+    hiss(.04, "lowpass", 700, 300, .18, 0, .7, direct);
     for (let i = 0; i < (big ? 3 : 2); i++) {
       const g = rnd(260, 360);
-      tone(g, g * 2.4, .045, "sine", .07, .06 + i * rnd(.04, .07), direct);
+      tone(g, g * 2.4, .045, "sine", .1, .06 + i * rnd(.04, .07), direct);
     }
   },
-  collapse() {
-    for (let i = 0; i < 4; i++) tone(rnd(700, 1100), rnd(1600, 2400), .07, "sine", .06, .35 + i * rnd(.15, .35));
-    hiss(.8, "bandpass", 420, 300, .35, 0, .8);
-    tone(70, 62, .5, "sine", .3, 0, direct);
-    for (let i = 0; i < 10; i++) hiss(.03, "bandpass", rnd(700, 2000), 600, .1, rnd(.05, .9), 4);
+  collapse() {   // a cave-in: a crack, a long low rumble in the cave, heavy rocks thudding down one after another, then gravel trickling
+    hiss(.03, "bandpass", 1800, 1200, .2, 0, 1, direct);
+    hiss(1.6, "lowpass", 380, 90, .5, 0, .7);
+    hiss(1.3, "lowpass", 260, 80, .4, .25, .7);
+    let when = .05;
+    for (let i = 0; i < 6; i++) {
+      tone(rnd(65, 95), 45, .09, "sine", .28, when, direct);
+      hiss(.05, "lowpass", 900, 300, .25, when, .7, direct);
+      when += rnd(.1, .2);
+    }
+    for (let i = 0; i < 18; i++) hiss(.02, "bandpass", rnd(900, 2400), 700, rnd(.04, .09), rnd(.2, 1.6), 4);
   },
   rise() {   // a soft grinding of stone sliding upward
     hiss(.7, "bandpass", 170, 280, .07, 0, 1.5);
     tone(58, 72, .6, "sine", .07);
   },
   rebound() { tone(330, 300, .06, "triangle", .12, 0, direct); hiss(.02, "bandpass", 1200, 1000, .08, 0, 2, direct); },
-  shoot() { hiss(.16, "bandpass", 700, 1400, .12, 0, .8); tone(150, 135, .08, "triangle", .12, 0, direct); },
+  shoot() {   // a stone leaving a slingshot: the band and pouch snap, a short rubber twang, then a whoosh of air dropping away as the stone flies off
+    hiss(.015, "bandpass", 1500, 1200, .25, 0, 1, direct);
+    tone(300, 120, .12, "triangle", .15, 0, direct);
+    tone(420, 330, .2, "sine", .05, .005, direct);
+    hiss(.75, "bandpass", 1800, 300, .12, .02, 2, direct);
+  },
   coin() {   // water drops
     tone(820, 1850, .07, "sine", .09);
     tone(1150, 2500, .05, "sine", .05, .07);
