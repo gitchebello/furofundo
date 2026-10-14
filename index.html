@@ -110,6 +110,9 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .row{display:flex;gap:8px;flex-wrap:wrap}
 .row .btn{flex:1 1 140px}
 .end{justify-content:center;text-align:center}
+.btn--shop{animation:none;background:var(--crystal);color:#1a1205;box-shadow:0 4px 0 #9a7a10;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  font-size:19px;padding:15px 18px;flex-basis:100%!important}
+.btn--shop:active{transform:translateY(2px);box-shadow:0 2px 0 #9a7a10}
 .end__k{font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;background:var(--rainbow);-webkit-background-clip:text;background-clip:text;color:transparent;justify-self:center;align-self:center}
 .end h3{font-family:var(--display);font-size:clamp(26px,8vw,34px);line-height:1;margin:0;text-wrap:balance;font-weight:400}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -193,13 +196,12 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .mshop__h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .mshop__all{all:unset;cursor:pointer;font:700 12px var(--body);color:var(--crystal)}
 .mshop__all:focus-visible{outline:2px solid var(--crystal);outline-offset:2px;border-radius:4px}
-.mshop{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;scroll-snap-type:x proximity;scrollbar-width:thin}
-.ms{flex:0 0 112px;scroll-snap-align:start;display:flex;flex-direction:column;gap:5px;padding:9px;border-radius:12px;background:var(--rock-2);border:1px solid var(--line)}
-.ms__ic{width:24px;height:24px}
-.ms__ic img,.ms__ic svg{width:24px;height:24px;display:block}
-.ms__n{font-size:11.5px;font-weight:700;line-height:1.2;min-height:2.4em}
-.ms__now{font-size:10px;color:var(--crystal);line-height:1.2;min-height:2.4em}
-.ms button{all:unset;box-sizing:border-box;cursor:pointer;margin-top:auto;display:flex;align-items:center;justify-content:center;gap:4px;padding:5px 6px;border-radius:8px;
+.mshop{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ms{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:8px 5px 6px;border-radius:10px;background:var(--rock-2);border:1px solid var(--line);min-width:0}
+.ms__ic{width:22px;height:22px}
+.ms__ic img,.ms__ic svg{width:22px;height:22px;display:block}
+.ms__n{font-size:10.5px;font-weight:700;line-height:1.15;min-height:2.3em;display:flex;align-items:center}
+.ms button{all:unset;box-sizing:border-box;cursor:pointer;margin-top:auto;width:100%;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px 4px;border-radius:7px;
   border:1px solid var(--crystal);color:var(--crystal);font:700 12px var(--body);font-variant-numeric:tabular-nums}
 .ms button:disabled{border-color:var(--line);color:var(--ink-dim);cursor:not-allowed}
 .ms button:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
@@ -381,7 +383,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
         <div class="row">
           <button class="btn" id="eBuy" type="button" hidden>+3 tiros</button>
           <button class="btn" id="eMain" type="button">Próxima camada</button>
-          <button class="btn btn--ghost" id="eShop" type="button">Lojinha</button>
+          <button class="btn btn--shop" id="eShop" type="button"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8Z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></svg>Lojinha</button>
         </div>
       </div>
     </div>
@@ -898,32 +900,32 @@ function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catc
 // the shop: each item says plainly what it does and what you have now
 const pct = v => Math.round(v * 100) + "%";
 const UPS = [
-  { ic: "ball", name: "+1 bola por tiro", desc: "Todo tiro sai com uma bola a mais, em todas as fases.",
+  { ic: "ball", name: "+1 bola por tiro", short: "+1 bola", desc: "Todo tiro sai com uma bola a mais, em todas as fases.",
     now: () => "Agora: " + save.balls + " bolas por tiro", lvl: () => save.balls - 4, max: 14,
     cost: n => Math.round(19 * Math.pow(1.5, n)), buy: () => { save.balls++; } },
-  { ic: "shots", name: "+2 tiros por fase", desc: "Cada fase começa com 2 tiros a mais para você usar.",
+  { ic: "shots", name: "+2 tiros por fase", short: "+2 tiros", desc: "Cada fase começa com 2 tiros a mais para você usar.",
     now: () => save.xShots ? "Agora: +" + save.xShots * 2 + " tiros em cada fase" : "Agora: nenhum tiro extra", lvl: () => save.xShots, max: 20,
     cost: n => Math.round(16 * Math.pow(1.45, n)), buy: () => { save.xShots++; } },
-  { ic: "coin", name: "Mais moedas nas pedras", desc: "Mais pedras trazem moedas para gastar aqui na lojinha.",
+  { ic: "coin", name: "Mais moedas nas pedras", short: "Mais moedas", desc: "Mais pedras trazem moedas para gastar aqui na lojinha.",
     now: () => "Agora: " + pct(.05 + save.luck * .02) + " das pedras com moeda", lvl: () => save.luck, max: 8,
     cost: n => Math.round(22 * Math.pow(1.6, n)), buy: () => { save.luck++; } },
-  { ic: "pad", name: "Barrinha mais larga", desc: "A barrinha que rebate as bolas fica mais larga, então fica mais fácil salvar as bolas.",
+  { ic: "pad", name: "Barrinha mais larga", short: "Barrinha larga", desc: "A barrinha que rebate as bolas fica mais larga, então fica mais fácil salvar as bolas.",
     now: () => save.pad ? "Agora: +" + save.pad * 8 + " px de largura" : "Agora: tamanho normal", lvl: () => save.pad, max: 6,
     cost: n => Math.round(14 * Math.pow(1.5, n)), buy: () => { save.pad++; } },
   // power-up odds
-  { ic: "caps", name: "Mais power-ups", desc: "Mais pedras trazem um power-up quando quebram.",
+  { ic: "caps", name: "Mais power-ups", short: "Mais power-ups", desc: "Mais pedras trazem um power-up quando quebram.",
     now: () => save.capRate ? "Agora: +" + save.capRate * 3 + "% de pedras com power-up" : "Agora: chance normal", lvl: () => save.capRate, max: 6,
     cost: n => Math.round(24 * Math.pow(1.55, n)), buy: () => { save.capRate++; } },
-  { ic: "multi", name: "Mais Multibola (M)", desc: "O power-up M, que divide cada bola em três, aparece mais vezes.",
+  { ic: "multi", name: "Mais Multibola (M)", short: "Mais Multibola", desc: "O power-up M, que divide cada bola em três, aparece mais vezes.",
     now: () => save.capM ? "Agora: nível " + save.capM + " de 5" : "Agora: chance normal", lvl: () => save.capM, max: 5,
     cost: n => Math.round(19 * Math.pow(1.5, n)), buy: () => { save.capM++; } },
-  { ic: "fire", name: "Mais Bola de fogo (F)", desc: "O power-up F, que faz cada batida tirar 3 em vez de 1, aparece mais vezes.",
+  { ic: "fire", name: "Mais Bola de fogo (F)", short: "Mais Bola de fogo", desc: "O power-up F, que faz cada batida tirar 3 em vez de 1, aparece mais vezes.",
     now: () => save.capF ? "Agora: nível " + save.capF + " de 5" : "Agora: chance normal", lvl: () => save.capF, max: 5,
     cost: n => Math.round(19 * Math.pow(1.5, n)), buy: () => { save.capF++; } },
-  { ic: "ball2", name: "Mais Bola extra (B)", desc: "O power-up B, que dá uma bola a mais até o fim da fase, aparece mais vezes.",
+  { ic: "ball2", name: "Mais Bola extra (B)", short: "Mais Bola extra", desc: "O power-up B, que dá uma bola a mais até o fim da fase, aparece mais vezes.",
     now: () => save.capB ? "Agora: nível " + save.capB + " de 5" : "Agora: chance normal", lvl: () => save.capB, max: 5,
     cost: n => Math.round(22 * Math.pow(1.55, n)), buy: () => { save.capB++; } },
-  { ic: "slim", name: "Menos Barrinha curta (C)", desc: "O power-up ruim C, que encolhe a barrinha, aparece menos vezes.",
+  { ic: "slim", name: "Menos Barrinha curta (C)", short: "Menos Barra curta", desc: "O power-up ruim C, que encolhe a barrinha, aparece menos vezes.",
     now: () => save.capC ? "Agora: nível " + save.capC + " de 5" : "Agora: chance normal", lvl: () => save.capC, max: 5,
     cost: n => Math.round(16 * Math.pow(1.5, n)), buy: () => { save.capC++; } }
 ];
@@ -2262,8 +2264,9 @@ function menu() {
   const strip = $("mshop"); strip.innerHTML = "";
   UPS.forEach(u => {
     const n = u.lvl(), maxed = n >= u.max, c = u.cost(n), d = document.createElement("div");
-    d.className = "ms"; d.title = u.desc;
-    d.innerHTML = '<span class="ms__ic">' + upIcon(u.ic) + '</span><span class="ms__n">' + u.name + '</span><span class="ms__now">' + u.now().replace("Agora: ", "") + "</span>";
+    d.className = "ms";
+    d.title = u.name + ": " + u.desc + " " + u.now();
+    d.innerHTML = '<span class="ms__ic">' + upIcon(u.ic) + '</span><span class="ms__n">' + u.short + "</span>";
     const b = document.createElement("button"); b.type = "button";
     if (maxed) b.textContent = "Máximo"; else b.innerHTML = '<span class="pearl" aria-hidden="true"></span> ' + c;
     b.setAttribute("aria-label", "Comprar " + u.name + (maxed ? "" : " por " + c + " moedas"));
