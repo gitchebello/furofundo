@@ -34,6 +34,10 @@ body{background:var(--rock);color:var(--ink);font-family:var(--body);font-size:1
 .pearl{display:inline-block;width:.85em;height:.85em;border-radius:50%;vertical-align:-.08em;background:radial-gradient(circle at 34% 30%,#fff6b0 0 14%,#ffd23a 45%,#d99a12 72%,#a8700c 73%);box-shadow:0 0 6px rgba(255,200,60,.35)}
 .ibtn{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--rock-2);color:var(--ink);font:700 14px var(--body);cursor:pointer;display:grid;place-items:center;padding:0}
 .ibtn:disabled{opacity:.35;cursor:default}
+/* each top button says what it does in a word under the icon */
+.hud__btns .ibtn{width:auto;min-width:46px;height:40px;padding:3px 6px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1}
+.ibtn__ic{display:grid;place-items:center;height:20px;font-size:15px}
+.ibtn__lb{font:600 9px var(--body);letter-spacing:.02em;opacity:.8;white-space:nowrap}
 .ibtn[aria-pressed="true"]{background:var(--rainbow);background-size:300% 100%;color:var(--rock);border-color:transparent}
 .ibtn:focus-visible,.btn:focus-visible,.up button:focus-visible,.layer:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
 .hud__tools{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -95,6 +99,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .up__n{font-weight:700}
 .up__n small{color:var(--ink-dim);font-weight:600;margin-left:6px;font-variant-numeric:tabular-nums}
 .up__d{grid-column:1;font-size:12px;color:var(--ink-dim)}
+.up__now{display:block;margin-top:3px;font-size:11.5px;font-weight:700;color:var(--crystal);opacity:.9}
 .up button{grid-row:1/3;grid-column:2;border:1px solid var(--crystal);background:transparent;color:var(--crystal);border-radius:8px;padding:7px 10px;font:700 14px var(--body);cursor:pointer;font-variant-numeric:tabular-nums;white-space:nowrap}
 .up button:disabled{border-color:var(--line);color:var(--ink-dim);cursor:not-allowed}
 .btn{border:0;border-radius:12px;padding:14px 18px;font:400 17px var(--display);letter-spacing:.03em;cursor:pointer;background:var(--rainbow);background-size:200% 100%;animation:rb 10s linear infinite;color:#0a0a0b;box-shadow:0 4px 0 rgba(255,255,255,.18)}
@@ -182,10 +187,10 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
     <div class="hud__tools">
       <div class="hud__layer" id="hLayer">Primeira Picareta em Brasa</div>
       <div class="hud__btns">
-        <button class="ibtn" id="bRegroup" type="button" disabled title="Reordenar: junta todas as bolas numa linha só" aria-label="Reordenar as bolas numa linha">⋮</button>
-        <button class="ibtn" id="bFast" type="button" aria-pressed="false" title="Acelerar bolas">»</button>
-        <button class="ibtn" id="bSound" type="button" aria-pressed="true" title="Som">♪</button>
-        <button class="ibtn" id="bMenu" type="button" title="Pausar">II</button>
+        <button class="ibtn" id="bRegroup" type="button" disabled title="Reordenar: junta todas as bolas numa linha só" aria-label="Reordenar as bolas numa linha"><span class="ibtn__ic"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 19 19 5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg></span><span class="ibtn__lb">Reordenar</span></button>
+        <button class="ibtn" id="bFast" type="button" aria-pressed="false" title="Acelerar bolas"><span class="ibtn__ic">»</span><span class="ibtn__lb">Acelerar</span></button>
+        <button class="ibtn" id="bSound" type="button" aria-pressed="true" title="Som"><span class="ibtn__ic">♪</span><span class="ibtn__lb">Som</span></button>
+        <button class="ibtn" id="bMenu" type="button" title="Pausar"><span class="ibtn__ic">II</span><span class="ibtn__lb">Pausar</span></button>
       </div>
     </div>
   </div>
@@ -221,7 +226,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
         </section>
 
         <section>
-          <h2>Oficina <span class="gem shopcoins"><span class="pearl" aria-hidden="true"></span> <span id="mGems">0</span></span></h2>
+          <h2>Lojinha <span class="gem shopcoins"><span class="pearl" aria-hidden="true"></span> <span id="mGems">0</span></span></h2>
           <div class="ups" id="ups"></div>
         </section>
 
@@ -244,14 +249,14 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
             <li>Cada bloco é um mineral cortado ao meio (veja a coleção abaixo). O número em cada um é quantas batidas ela aguenta. No zero, ela quebra.</li>
             <li>As bolas andam em linha reta, quicam nas paredes, no fundo e nas pedras até subir de novo. <b>Mova o rebatedor</b> (arraste, mouse ou setas) para mandá-las de novo para baixo. A ponta do rebatedor dá ângulo. A barrinha é separada da broca e segue o dedo ou o mouse o tempo todo, com ou sem bolas em campo.</li>
             <li><b>Dois cliques</b> ou <b>dois toques</b> rápidos com as bolas em jogo aceleram a jogada (6×). Mais dois cliques ou toques voltam à velocidade normal.</li>
-            <li>O botão <b>⋮ Reordenar</b> (ao lado do » lá em cima, ou tecla R) junta todas as bolas em jogo numa <b>linha só</b> de novo, atrás da bola que está na frente. Bom para salvar as bolas quando elas estão espalhadas.</li>
+            <li>O botão <b>Reordenar</b> (a linha reta) (ao lado do » lá em cima, ou tecla R) junta todas as bolas em jogo numa <b>linha só</b> de novo, atrás da bola que está na frente. Bom para salvar as bolas quando elas estão espalhadas.</li>
             <li>Cada fase é <b>mais funda</b> que a anterior e começa com <b>4 tiros a mais</b>. Durante a fase os tiros não aumentam (só com cápsula, tela limpa ou loja).</li>
             <li>Se você limpar todas as pedras da tela com bolas ainda em jogo, elas voltam sozinhas para a broca e você <b>ganha o tiro de volta</b>.</li>
             <li>O poço só desce quando o bloco mais alto sai do caminho. Toda vez que as bolas passam pela barra e a vez acaba, <b>as pedras sobem</b> um pouco. Se encostarem na linha vermelha embaixo da broca, você é engolido.</li>
             <li>Cada camada é mais difícil (estrelas no menu): pedras mais duras, mais peças e pedras subindo mais rápido.</li>
             <li>Quanto mais funda a camada, mais bolas: cada camada começa com 2 bolas extras a mais que a anterior, e a cápsula de <b>bola extra</b> aparece mais.</li>
             <li>Peça com <b>aura preta</b> tem outras grudadas em cima dela. Destrua a de baixo e tudo o que está empilhado em cima desaba junto.</li>
-            <li>Pedras com uma <span class="pearl" aria-hidden="true"></span> moeda desenhada soltam moedas para a oficina.</li>
+            <li>Pedras com uma <span class="pearl" aria-hidden="true"></span> moeda desenhada soltam moedas para a lojinha.</li>
           </ul>
           </div>
         </details>
@@ -284,7 +289,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
         <div class="row">
           <button class="btn" id="eBuy" type="button" hidden>+3 tiros</button>
           <button class="btn" id="eMain" type="button">Próxima camada</button>
-          <button class="btn btn--ghost" id="eShop" type="button">Oficina</button>
+          <button class="btn btn--ghost" id="eShop" type="button">Lojinha</button>
         </div>
       </div>
     </div>
@@ -794,25 +799,36 @@ function load() {
 }
 function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} }
 
+// the shop: each item says plainly what it does and what you have now
+const pct = v => Math.round(v * 100) + "%";
 const UPS = [
-  { name: "Mais uma bola", desc: "Cada tiro lança uma bola a mais.", lvl: () => save.balls - 4, max: 14,
+  { name: "+1 bola por tiro", desc: "Todo tiro sai com uma bola a mais, em todas as fases.",
+    now: () => "Agora: " + save.balls + " bolas por tiro", lvl: () => save.balls - 4, max: 14,
     cost: n => Math.round(19 * Math.pow(1.5, n)), buy: () => { save.balls++; } },
-  { name: "Brocas extras", desc: "+2 tiros em toda camada.", lvl: () => save.xShots, max: 20,
+  { name: "+2 tiros por fase", desc: "Cada fase começa com 2 tiros a mais para você usar.",
+    now: () => save.xShots ? "Agora: +" + save.xShots * 2 + " tiros em cada fase" : "Agora: nenhum tiro extra", lvl: () => save.xShots, max: 20,
     cost: n => Math.round(16 * Math.pow(1.45, n)), buy: () => { save.xShots++; } },
-  { name: "Faro de tesouro", desc: "Mais pedras com moedas.", lvl: () => save.luck, max: 8,
+  { name: "Mais moedas nas pedras", desc: "Mais pedras trazem moedas para gastar aqui na lojinha.",
+    now: () => "Agora: " + pct(.05 + save.luck * .02) + " das pedras com moeda", lvl: () => save.luck, max: 8,
     cost: n => Math.round(22 * Math.pow(1.6, n)), buy: () => { save.luck++; } },
-  { name: "Rebatedor reforçado", desc: "Rebatedor 8 px mais largo.", lvl: () => save.pad, max: 6,
+  { name: "Barrinha mais larga", desc: "A barrinha que rebate as bolas fica mais larga, então fica mais fácil salvar as bolas.",
+    now: () => save.pad ? "Agora: +" + save.pad * 8 + " px de largura" : "Agora: tamanho normal", lvl: () => save.pad, max: 6,
     cost: n => Math.round(14 * Math.pow(1.5, n)), buy: () => { save.pad++; } },
   // power-up odds
-  { name: "Mais cápsulas", desc: "Mais pedras carregam cápsulas de poder.", lvl: () => save.capRate, max: 6,
+  { name: "Mais cápsulas de poder", desc: "Mais pedras trazem uma cápsula de poder quando quebram.",
+    now: () => save.capRate ? "Agora: +" + save.capRate * 3 + "% de pedras com cápsula" : "Agora: chance normal", lvl: () => save.capRate, max: 6,
     cost: n => Math.round(24 * Math.pow(1.55, n)), buy: () => { save.capRate++; } },
-  { name: "Ímã de multibola", desc: "A multibola (M) aparece mais.", lvl: () => save.capM, max: 5,
+  { name: "Mais Multibola (M)", desc: "A cápsula M, que divide cada bola em três, aparece mais vezes.",
+    now: () => save.capM ? "Agora: nível " + save.capM + " de 5" : "Agora: chance normal", lvl: () => save.capM, max: 5,
     cost: n => Math.round(19 * Math.pow(1.5, n)), buy: () => { save.capM++; } },
-  { name: "Brasa", desc: "A bola de fogo (F) aparece mais.", lvl: () => save.capF, max: 5,
+  { name: "Mais Bola de fogo (F)", desc: "A cápsula F, que faz cada batida tirar 3 em vez de 1, aparece mais vezes.",
+    now: () => save.capF ? "Agora: nível " + save.capF + " de 5" : "Agora: chance normal", lvl: () => save.capF, max: 5,
     cost: n => Math.round(19 * Math.pow(1.5, n)), buy: () => { save.capF++; } },
-  { name: "Sorte de bola", desc: "A bola extra (B) aparece mais.", lvl: () => save.capB, max: 5,
+  { name: "Mais Bola extra (B)", desc: "A cápsula B, que dá uma bola a mais até o fim da fase, aparece mais vezes.",
+    now: () => save.capB ? "Agora: nível " + save.capB + " de 5" : "Agora: chance normal", lvl: () => save.capB, max: 5,
     cost: n => Math.round(22 * Math.pow(1.55, n)), buy: () => { save.capB++; } },
-  { name: "Afastar o curto", desc: "A cápsula ruim (C) aparece menos.", lvl: () => save.capC, max: 5,
+  { name: "Menos Barrinha curta (C)", desc: "A cápsula ruim C, que encolhe a barrinha, aparece menos vezes.",
+    now: () => save.capC ? "Agora: nível " + save.capC + " de 5" : "Agora: chance normal", lvl: () => save.capC, max: 5,
     cost: n => Math.round(16 * Math.pow(1.5, n)), buy: () => { save.capC++; } }
 ];
 
@@ -1387,8 +1403,8 @@ function openHole() {
   r.balls.forEach((b, i) => {
     b.home = true; b.miss = true;
     b.bub = 0; b.bt = -i * .03;            // each ball turns into a bubble a moment after the one before
-    b.bx = b.x; b.vb = rnd(90, 140);       // base x drifts toward the drill, rise speed builds up
-    b.ph = rnd(0, 6.3); b.amp = rnd(6, 14); b.rb = rnd(1.7, 2.3);
+    b.bx = b.x; b.vb = rnd(40, 80);        // base x drifts toward the drill, rise speed builds up slowly
+    b.ph = rnd(0, 6.3); b.ph2 = rnd(0, 6.3); b.amp = rnd(14, 26); b.fq = rnd(3.6, 5.2); b.rb = rnd(1.7, 2.3);
   });
 }
 function holeStep(h) {
@@ -1405,11 +1421,12 @@ function holeBall(b, h) {
   if (b.bt < 0) return;
   b.bub = Math.min(1, b.bub + h * 4);   // ball -> bubble in a quarter of a second
   if (b.bub < 1) return;
-  b.vb = Math.min(520, b.vb + 380 * h);
-  b.y -= b.vb * h;
-  b.bx += (r.dx - b.bx) * Math.min(1, h * 2.2);
-  const near = clamp((b.y - LY) / 120, 0, 1);   // the wobble calms down right before the pop
-  b.x = b.bx + Math.sin(b.bt * 6 + b.ph) * b.amp * near;
+  // a lazy dance on the way up: a wide sway plus a quicker little wiggle, and a bob in the rise
+  b.vb = Math.min(420, b.vb + 230 * h);
+  b.y -= b.vb * h * (1 + .35 * Math.sin(b.bt * b.fq * 1.3 + b.ph2));
+  b.bx += (r.dx - b.bx) * Math.min(1, h * 1.6);
+  const near = clamp((b.y - LY) / 70, 0, 1);   // the dance calms down only right before the pop
+  b.x = b.bx + (Math.sin(b.bt * b.fq + b.ph) * b.amp + Math.sin(b.bt * b.fq * 2.3 + b.ph2) * b.amp * .35) * near;
   if (b.y <= LY - 10) {
     b.done = true;
     o.pops.push({ x: b.x, y: LY - 12, t: 0, s: R * b.rb });
@@ -2145,7 +2162,7 @@ function menu() {
   UPS.forEach(u => {
     const n = u.lvl(), maxed = n >= u.max, c = u.cost(n);
     const d = document.createElement("div"); d.className = "up";
-    d.innerHTML = '<div class="up__n">' + u.name + '</div><div class="up__d">' + u.desc + '</div><div class="pips" aria-label="Nível ' + n + " de " + u.max + '">' +
+    d.innerHTML = '<div class="up__n">' + u.name + '</div><div class="up__d">' + u.desc + '<span class="up__now">' + u.now() + '</span></div><div class="pips" aria-label="Nível ' + n + " de " + u.max + '">' +
       Array.from({ length: u.max }, (_, j) => "<i" + (j < n ? ' class="on"' : "") + "></i>").join("") + "</div>";
     const btn = document.createElement("button"); btn.type = "button";
     if (maxed) btn.textContent = "Máximo"; else btn.innerHTML = '<span class="pearl" aria-hidden="true"></span> ' + c;
