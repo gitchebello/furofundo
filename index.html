@@ -23,25 +23,41 @@ html,body{height:100%}
 [hidden]{display:none!important}
 body{background:var(--rock);color:var(--ink);font-family:var(--body);font-size:15px;overflow:hidden;-webkit-tap-highlight-color:transparent}
 .app{height:100%;box-sizing:border-box;padding-inline:16px;padding-block:10px;display:flex;flex-direction:column;align-items:center;gap:8px}
-.hud{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;max-width:100%}
-.hud__depth{min-width:0}
-.hud__row{display:flex;justify-content:space-between;gap:8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim)}
-.hud__row b{color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:0}
-.hud__stats{display:flex;gap:6px;align-items:center}
-.pill{display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;background:var(--rock-2);border:1px solid var(--line);font-weight:700;font-variant-numeric:tabular-nums;font-size:14px;white-space:nowrap}
-.pill small{font-weight:600;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}
+.hud{display:flex;flex-direction:column;gap:7px;max-width:100%}
+.hud__top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.hud__stats{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pill{display:flex;align-items:center;justify-content:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--rock-2);border:1px solid var(--line);font-weight:700;font-variant-numeric:tabular-nums;font-size:16px;white-space:nowrap;min-width:0}
+.pill b{font-weight:800}
+.pill svg{flex:none;color:var(--ink-dim)}
+.pill small{font-weight:600;font-size:12px;color:var(--ink-dim)}
+.pill--shots svg{color:var(--magma)}
+/* running out of shots: the pill turns red and breathes */
+.pill--low{border-color:#ff4a3a;color:#ffb3a8;animation:lowpulse 1s ease-in-out infinite}
+.pill--low svg{color:#ff4a3a}
+@keyframes lowpulse{50%{box-shadow:0 0 0 4px rgba(255,74,58,.22)}}
+.pill--bump{animation:bump .35s cubic-bezier(.3,1.8,.5,1)}
+@keyframes bump{40%{transform:scale(1.18)}}
 .gem{color:var(--crystal)}
 .pearl{display:inline-block;width:.85em;height:.85em;border-radius:50%;vertical-align:-.08em;background:radial-gradient(circle at 34% 30%,#fff6b0 0 14%,#ffd23a 45%,#d99a12 72%,#a8700c 73%);box-shadow:0 0 6px rgba(255,200,60,.35)}
 .ibtn{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--rock-2);color:var(--ink);font:700 14px var(--body);cursor:pointer;display:grid;place-items:center;padding:0}
 .ibtn:disabled{opacity:.35;cursor:default}
 /* each top button says what it does in a word under the icon */
-.hud__btns .ibtn{width:auto;min-width:46px;height:40px;padding:3px 6px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1}
-.ibtn__ic{display:grid;place-items:center;height:20px;font-size:15px}
-.ibtn__lb{font:600 9px var(--body);letter-spacing:.02em;opacity:.8;white-space:nowrap}
+.hud__btns .ibtn{width:40px;height:40px;border-radius:12px;transition:transform .12s,opacity .2s}
+.hud__btns .ibtn:active:not(:disabled){transform:scale(.9)}
 .ibtn[aria-pressed="true"]{background:var(--rainbow);background-size:300% 100%;color:var(--rock);border-color:transparent}
+#bSound[aria-pressed="true"]{background:var(--rock-2);color:var(--ink);border-color:var(--line)}
+#bSound[aria-pressed="true"] .snd-off,#bSound[aria-pressed="false"] .snd-on{display:none}
+#bSound[aria-pressed="false"]{color:var(--ink-dim)}
+/* "juntar" lights up the moment it can be used */
+#bRegroup:not(:disabled){border-color:var(--crystal);color:var(--crystal);animation:ready 1.4s ease-in-out infinite}
+/* "juntar" floats see-through in the bottom-right corner of the pit, easy to reach with a thumb; it doesn't catch taps while it can't be used */
+.fab{position:absolute;right:8px;bottom:8px;width:38px;height:38px;border-radius:50%;background:rgba(20,16,14,.42);border-color:rgba(255,255,255,.16);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);transition:opacity .2s,transform .12s}
+.fab:active:not(:disabled){transform:scale(.9)}
+#bRegroup.fab:disabled{opacity:.18;pointer-events:none}
+@keyframes ready{50%{box-shadow:0 0 0 4px rgba(255,210,58,.2)}}
 .ibtn:focus-visible,.btn:focus-visible,.up button:focus-visible,.layer:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
-.hud__tools{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.hud__layer{font-family:var(--display);font-size:13px;letter-spacing:.04em;color:var(--magma);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hud__layer{font-family:var(--display);font-size:14px;letter-spacing:.04em;color:var(--magma);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .hud__btns{display:flex;gap:6px}
 .stage{flex:1;min-height:0;width:100%;display:flex;justify-content:center;align-items:flex-start;gap:8px}
 /* the depth gauge: a shaft down the side that the drill digs into */
@@ -189,6 +205,19 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .how b{font-size:12.5px;line-height:1.2}
 .how span{font-size:11px;line-height:1.3;color:var(--ink-dim)}
 /* four big tiles instead of a long scroll: each opens its own page */
+.legend{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.legend h2{margin:4px 0 0}
+.lg{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.lg li{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:10px;background:var(--rock-2);border:1px solid var(--line);min-width:0}
+.lg__ic{flex:none;width:30px;height:30px;display:grid;place-items:center;border-radius:9px;border:1px solid var(--line);background:#0b0b0e;color:var(--ink)}
+.lg canvas.lg__ic{border:0;background:none;border-radius:50%}
+.lg b{display:block;font-size:12.5px;line-height:1.2}
+.lg small{display:block;font-size:11px;line-height:1.3;color:var(--ink-dim)}
+.lg li.bad{border-color:rgba(255,74,58,.55)}
+.lg li.bad b{color:#ff8a7a}
+.lg__note{margin:0;font-size:11.5px;line-height:1.4;color:var(--ink-dim);display:flex;align-items:center;gap:8px}
+.lg__chip{flex:none;width:44px;height:14px;border-radius:7px;background:rgba(19,14,12,.85);border:1.5px solid #ff5a3c;display:flex;align-items:center;padding:0 5px;box-sizing:border-box}
+.lg__chip i{display:block;height:4px;width:60%;border-radius:2px;background:#ff5a3c}
 .mtiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0}
 .mtile{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:30px 1fr;grid-template-rows:auto auto;gap:1px 10px;align-items:center;
   padding:11px 12px;border-radius:12px;background:var(--rock-2);border:1px solid var(--line)}
@@ -244,26 +273,23 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .fold__in{padding:0 14px 14px}
 .howto{margin:0;padding-left:18px;color:var(--ink-dim);font-size:13px;line-height:1.55}
 .howto b{color:var(--ink)}
-@media (prefers-reduced-motion:reduce){.shaft__fill,.shaft__tip{transition:none}.shaft__tip::after{animation:none}.brand span,.btn{animation:none}}
+@media (prefers-reduced-motion:reduce){.shaft__fill,.shaft__tip{transition:none}.shaft__tip::after{animation:none}.brand span,.btn{animation:none}.pill--low,.pill--bump,#bRegroup:not(:disabled){animation:none}}
 </style>
 
 <div class="app">
   <div class="hud" id="hud">
-    <div class="hud__depth">
-      <div class="hud__row"><span>Profundidade</span><span><b id="hDepth">0</b> / <b id="hGoal">100</b> m</span></div>
-    </div>
-    <div class="hud__stats">
-      <div class="pill" title="Tiros restantes"><small>Tiros</small><span id="hShots">0</span></div>
-      <div class="pill gem" title="Moedas"><span class="pearl" aria-hidden="true"></span><span id="hGems">0</span></div>
-    </div>
-    <div class="hud__tools">
+    <div class="hud__top">
       <div class="hud__layer" id="hLayer">Primeira Picareta em Brasa</div>
       <div class="hud__btns">
-        <button class="ibtn" id="bRegroup" type="button" disabled title="Juntar: junta todas as bolas numa linha só" aria-label="Juntar as bolas numa linha"><span class="ibtn__ic"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 19 19 5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg></span><span class="ibtn__lb">Juntar</span></button>
-        <button class="ibtn" id="bFast" type="button" aria-pressed="false" title="Acelerar bolas"><span class="ibtn__ic">»</span><span class="ibtn__lb">Acelerar</span></button>
-        <button class="ibtn" id="bSound" type="button" aria-pressed="true" title="Som"><span class="ibtn__ic">♪</span><span class="ibtn__lb">Som</span></button>
-        <button class="ibtn" id="bMenu" type="button" title="Pausar"><span class="ibtn__ic">II</span><span class="ibtn__lb">Pausar</span></button>
+        <button class="ibtn" id="bFast" type="button" aria-pressed="false" title="Acelerar as bolas" aria-label="Acelerar as bolas"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="currentColor"><path d="M3 5.5v13l8.5-6.5zM12.5 5.5v13L21 12z"/></svg></button>
+        <button class="ibtn" id="bSound" type="button" aria-pressed="true" title="Som" aria-label="Som"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path class="snd-on" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="snd-off" d="m16 9.5 5 5m0-5-5 5"/></svg></button>
+        <button class="ibtn" id="bMenu" type="button" title="Pausar" aria-label="Pausar"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="currentColor"><rect x="6" y="5" width="4.2" height="14" rx="1.4"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.4"/></svg></button>
       </div>
+    </div>
+    <div class="hud__stats">
+      <div class="pill pill--depth" title="Profundidade"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13m-5-5 5 5 5-5M5 21h14"/></svg><span class="sr">Profundidade</span><b id="hDepth">0</b><small>/ <span id="hGoal">100</span> m</small></div>
+      <div class="pill pill--shots" id="pShots" title="Tiros restantes"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/><path d="M12 1.5v3.5M12 19v3.5M1.5 12H5M19 12h3.5"/></svg><span class="sr">Tiros</span><b id="hShots">0</b></div>
+      <div class="pill gem" title="Moedas"><span class="pearl" aria-hidden="true"></span><span class="sr">Moedas</span><b id="hGems">0</b></div>
     </div>
   </div>
 
@@ -277,6 +303,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
       <div class="glow" id="fxGlow" aria-hidden="true"></div>
       <div class="ring" id="fxRing" aria-hidden="true"></div>
       <canvas id="cv" aria-label="Poço de escavação. Segure para mirar e solte para atirar. Teclado: setas miram, espaço atira."></canvas>
+      <button class="ibtn fab" id="bRegroup" type="button" disabled title="Juntar as bolas numa linha (R)" aria-label="Juntar as bolas numa linha"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="6" cy="18" r="2.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/><circle cx="18" cy="6" r="2.2" fill="currentColor" stroke="none"/></svg></button>
 
       <div class="ov menu" id="ovMenu">
         <header class="m-hero">
@@ -305,6 +332,14 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 
         <section class="phase" id="phaseCard" aria-live="polite"></section>
         <button class="btn btn--big" id="bPlay" type="button">Cavar</button>
+
+        <section class="legend" aria-label="Legenda">
+          <h2>Botões</h2>
+          <ul class="lg lg--btns" id="lgBtns"></ul>
+          <h2>Power-ups</h2>
+          <ul class="lg" id="lgCaps"></ul>
+          <p class="lg__note"><span class="lg__chip" aria-hidden="true"><i></i></span>No canto do jogo, a barrinha mostra quanto tempo ainda resta. Pontinhos = força.</p>
+        </section>
 
         <section>
           <h2>Fases</h2>
@@ -827,18 +862,20 @@ const MINERALS = [
   } }
 ];
 const neonOf = (m, k) => "hsl(" + Math.round(k.hue) + ",100%,62%)";
-// the whole dig is one rainbow: each layer is mostly one colour and slides into the next as you go down
-// eight-colour rainbow (with pink). Phases walk the rainbow in windows: first every pair of
-// neighbouring colours (red-orange, orange-yellow ... pink-red), then every run of three
-// (red-orange-yellow, orange-yellow-green ... pink-red-orange), then four, and so on up to all eight
-const RAINBOW8 = [0, 30, 55, 125, 185, 225, 275, 325];   // red orange yellow green cyan blue violet pink
-// every phase is a gradient between two neighbouring colours of the rainbow, never more
+// the whole dig is one rainbow of 8 colours in a circle: red, pink, orange, yellow, green, blue,
+// indigo, violet, then red again. Every phase is a gradient of 2 to 8 neighbouring colours,
+// starting at any of the 8 and running forwards or backwards: 7 sizes x 8 starts x 2 ways = 112.
+// Phases go by size (2 colours first); in each size, 8 forwards (from red ... violet), then 8 backwards
+// hues unwrapped round the circle so a gradient never takes the long way between two neighbours
+const PAL8 = [0, -30, 28, 52, 125, 215, 245, 280];   // red pink orange yellow green blue indigo violet
+const PHASES = 112;
+const palHue = k => PAL8[((k % 8) + 8) % 8] + 360 * Math.floor(k / 8);
 function phaseHues(li) {
-  const w = 2, st = li % 8, out = [];
-  for (let j = 0; j < w; j++) { const i = st + j; out.push(RAINBOW8[i % 8] + 360 * Math.floor(i / 8)); }
+  const j = li % PHASES, n = 2 + Math.floor(j / 16), dir = j % 16 < 8 ? 1 : -1, st = j % 8, out = [];
+  for (let c = 0; c < n; c++) out.push(palHue(st + dir * c));
   return out;
 }
-// the first colour holds for the first part of the dig, then blends smoothly into the second
+// the first colour holds for the first part of the dig, then blends smoothly through the rest
 const HOLD = .4;
 function hueAt(li, meters) {
   const t = clamp((clamp(meters / LV(li).goal, 0, 1) - HOLD) / (1 - HOLD), 0, 1), e = t * t * (3 - 2 * t);
@@ -854,31 +891,51 @@ const EARTH = [
   { name: "Núcleo externo", km: "2.890 – 5.150 km", bg: ["#2a1d06", "#4a320b"], blk: ["#ffe08a", "#f2a531", "#b26a10"] },
   { name: "Núcleo interno", km: "5.150 – 6.371 km", bg: ["#0c1b22", "#123744"], blk: ["#b5f5ff", "#4fc6e0", "#1f7a9c"] }
 ];
-// one name per phase of the rainbow cycle (56), each about digging, stone or falling and
-// matching that phase's colours: 8 two-colour phases, 8 three-colour phases ... 8 full-rainbow ones.
-// After the last one the names come round again as II, III ...
+// one name per phase (112), each about digging, stone or falling and matching its colours,
+// in the same order as phaseHues. After the last one the names come round again as II, III ...
 const NAMES = [
-  // 2 colours: red-orange, orange-yellow, yellow-green, green-cyan, cyan-blue, blue-violet, violet-pink, pink-red
-  "Primeira Picareta em Brasa", "Poço de Âmbar", "Veio de Enxofre", "Gruta de Malaquita",
-  "Cachoeira Gelada", "Queda Azul-Noite", "Fenda de Ametista", "Desabamento Rubi",
-  // 3 colours
-  "Fornalha Desabada", "Galeria do Ouro Falso", "Mina de Jade", "Gruta Turquesa",
-  "Abismo de Safira", "Despenhadeiro do Crepúsculo", "Câmara de Quartzo Rosa", "Coral Petrificado",
-  // 4 colours
-  "Veio do Pôr do Sol", "Poço das Lascas Douradas", "Túnel do Musgo Luminoso", "Gruta da Aurora",
-  "Catedral de Gelo", "Queda da Meia-Noite", "Geodo Incandescente", "Escadaria de Rodocrosita",
-  // 5 colours
-  "Vulcão Afogado", "Areia Movediça", "Mina do Arco Velho", "Floresta Fossilizada",
-  "Glaciar em Chamas", "Fosso Oceânico", "Câmara do Relâmpago", "Jardim de Geodos",
-  // 6 colours
-  "Grande Desabamento", "Precipício do Crepúsculo", "Veio da Aurora Boreal", "Selva de Cristal",
-  "Lago de Lava Fria", "Noite das Faíscas", "Abismo de Fluorita", "Recife Petrificado",
-  // 7 colours
-  "Coração da Montanha", "Avalanche Colorida", "Sol Enterrado", "Raízes do Mundo",
-  "Cachoeira de Prismas", "Mar Subterrâneo", "Eco das Profundezas", "Queda Sem Fim",
-  // all 8
-  "Prisma Enterrado", "Mina do Arco-Íris", "Escadaria de Luz", "Floresta de Cristais",
-  "Rio de Opala", "Abismo Estrelado", "Catedral Prismática", "Mergulho no Arco-Íris"];
+  // 2 colours, forwards: red-pink, pink-orange, orange-yellow, yellow-green, green-blue, blue-indigo, indigo-violet, violet-red
+  "Primeira Picareta em Brasa", "Poço de Quartzo Rosa", "Poço de Âmbar", "Veio de Enxofre",
+  "Gruta de Malaquita", "Queda Azul-Noite", "Fenda de Ametista", "Desabamento Rubi",
+  // 2 colours, backwards: red-violet, pink-red, orange-pink, yellow-orange, green-yellow, blue-green, indigo-blue, violet-indigo
+  "Brasa Arroxeada", "Coral Petrificado", "Cobre Rosado", "Mina de Ouro Velho",
+  "Túnel do Musgo Luminoso", "Gruta Turquesa", "Abismo de Safira", "Despenhadeiro do Crepúsculo",
+  // 3 colours, forwards
+  "Fornalha Desabada", "Geodo Incandescente", "Galeria do Ouro Falso", "Mina de Jade",
+  "Cachoeira Gelada", "Queda da Meia-Noite", "Câmara de Granada", "Escadaria de Rodocrosita",
+  // 3 colours, backwards
+  "Lava sob a Noite", "Jardim de Turmalina", "Forja Rosada", "Areia do Deserto Rosa",
+  "Floresta Fossilizada", "Lagoa de Enxofre", "Fosso Oceânico", "Gruta da Aurora",
+  // 4 colours, forwards
+  "Veio do Pôr do Sol", "Pomar de Cristal", "Poço das Lascas Douradas", "Glaciar Esmeralda",
+  "Catedral de Gelo", "Câmara do Relâmpago", "Abismo de Fluorita", "Vulcão Afogado",
+  // 4 colours, backwards
+  "Mergulho na Lava Fria", "Noite das Faíscas", "Brasas do Crepúsculo", "Sol Enterrado",
+  "Selva de Cristal", "Areia Movediça", "Mar Subterrâneo", "Veio da Aurora Boreal",
+  // 5 colours, forwards
+  "Grande Desabamento", "Mina do Arco Velho", "Raízes do Mundo", "Cachoeira de Prismas",
+  "Glaciar em Chamas", "Recife Petrificado", "Precipício do Crepúsculo", "Coração da Montanha",
+  // 5 colours, backwards
+  "Avalanche Colorida", "Eco das Profundezas", "Fornalha da Meia-Noite", "Jardim de Geodos",
+  "Floresta em Brasa", "Rio de Cobre", "Caverna dos Vaga-lumes", "Gruta do Limo Dourado",
+  // 6 colours, forwards
+  "Escadaria de Luz", "Túnel das Pedras Preciosas", "Vale dos Cristais", "Queda Sem Fim",
+  "Labirinto de Opala", "Mina das Mil Cores", "Poço do Feiticeiro", "Galeria dos Vitrais",
+  // 6 colours, backwards
+  "Fenda do Dragão", "Abismo Estrelado", "Gruta do Pavão", "Cascata de Gemas",
+  "Câmara do Tesouro", "Ninho de Cristal", "Rio de Opala", "Caverna do Eco Colorido",
+  // 7 colours, forwards
+  "Prisma Partido", "Ponte do Arco-Íris", "Templo Soterrado", "Coroa de Pedras",
+  "Floresta de Cristais", "Mosaico Profundo", "Trono de Ametista", "Farol Subterrâneo",
+  // 7 colours, backwards
+  "Espiral das Cores", "Caleidoscópio de Pedra", "Garganta do Vulcão", "Lagoa Prismática",
+  "Cripta dos Vitrais", "Salão dos Espelhos", "Caminho das Gemas", "Vórtice de Quartzo",
+  // all 8, forwards
+  "Prisma Enterrado", "Mina do Arco-Íris", "Catedral Prismática", "Coração de Opala",
+  "Roda das Cores", "Fonte de Luz", "Mar de Prismas", "Mergulho no Arco-Íris",
+  // all 8, backwards
+  "Arco-Íris Invertido", "Prisma ao Contrário", "Espelho do Abismo", "Volta ao Mundo",
+  "Avesso da Terra", "Reflexo Profundo", "Eclipse Colorido", "Centro da Terra"];
 const ROMAN = ["", " II", " III", " IV", " V", " VI", " VII", " VIII", " IX", " X"];
 // every phase digs deeper than the last: 150 m, 185 m, 220 m ... and a little more each lap
 const goalOf = i => 150 + i * 35 + Math.floor(i / 10) * 25;
@@ -1024,14 +1081,14 @@ function startAmbient() {
   ambient = g;
 }
 const sfx = {
-  hit(hp) {   // a dry knock of stone on stone: short, almost no pitch slide, lower for tougher rock
+  hit(hp) {   // a deep knock of stone on stone: a fast-dropping thump (reads as impact, not a note), lower for tougher rock
     if (!ac) return;
     const t = ac.currentTime; if (t - lastHit < .03) return; lastHit = t;
     const f = 190 - Math.min(hp, 60) * 1.2 + rnd(-8, 8);
-    tone(f, f * .88, .07, "triangle", .3, 0, direct);
-    tone(f * .5, f * .45, .09, "sine", .26, 0, direct);
-    hiss(.018, "bandpass", 1900, 1500, .24, 0, 1.4, direct);
-    tone(f * .5, f * .45, .12, "sine", .1);
+    tone(f * 1.4, f * .38, .055, "sine", .34, 0, direct);
+    hiss(.045, "bandpass", f * 3, f * 2, .3, 0, 2.5, direct);
+    hiss(.012, "bandpass", 2400, 1800, .2, 0, 1.2, direct);
+    hiss(.1, "lowpass", 500, 200, .12);
   },
   smash(big) {   // the stone cracks apart: a sharp crack and gravel, with a short low thud
     hiss(.05, "bandpass", 1400, 900, .3, 0, 1.2, direct);
@@ -1079,7 +1136,7 @@ function newRun(li) {
     depth: 0, rows: 0, nextY: REST, carry: new Set(),
     shots: L.shots + save.xShots * 2, used: 0, gemsRun: 0, broken: 0,
     state: "aim", spawnLeft: 0, spawnT: 0, shotT: 0, dir: [0, 1],
-    scrollLeft: 0, aimA: Math.PI / 2, aimOn: false, fast: false, shake: 0, hpRef: 1,
+    scrollLeft: 0, aimA: Math.PI / 2, aimOn: false, fast: false, trauma: 0, cam: { x: 0, y: 0, vx: 0, vy: 0 }, pops: [], icons: [], fxMax: { fire: 0, wide: 0, slim: 0, rain: 0 }, seen: {}, padT: 9, drillT: 9, hpRef: 1,
     px: LX, dx: LX, caps: [], falling: [], fx: { fire: 0, wide: 0, slim: 0, rain: 0 }, lv: { fire: 0, wide: 0, slim: 0, rain: 0 }, bonus: 0, rebounds: 0, extra: layerBalls(li)
   };
   CAPS.ball.w = 1.5 + li * 2.5;
@@ -1092,7 +1149,6 @@ function newRun(li) {
   run.texSets = phaseHues(li).map(() => { const a = pickStone(); let b = pickStone(); for (let t = 0; t < 8 && b === a; t++) b = pickStone(); return [a, b]; });
   fill();
   hud();
-  if (isHard(li)) { run.texts.push({ x: W / 2, y: H / 2 - 40, t: "🔥 Fase difícil!", life: 2.4, col: "#ff8a4a", big: true }); }
 }
 
 function hpBase(ri) { return (1.5 + run.li * .7 + ri * .05 + save.balls * .35) * 1.2 * diff(run.li).hp; }
@@ -1255,10 +1311,10 @@ function collapseAbove(dead) {
   const r = run, m = cellMap(r.blocks.concat(dead)), loose = [...stackAbove(dead, m)].filter(k => k.hp > 0);
   if (!loose.length) return;
   r.blocks = r.blocks.filter(k => !loose.includes(k));
-  for (const k of loose) { k.vy = rnd(-30, 20); k.spin = rnd(-1.5, 1.5); k.fallT = 0; k.flash = 1; r.falling.push(k); }
-  r.texts.push({ x: clamp(loose[0].x + loose[0].w / 2, 60, W - 60), y: clamp(loose[0].y, 90, H - 40), t: loose.length > 1 ? "Desabou ×" + loose.length : "Desabou!", life: 1.2, col: "#ff9a5a" });
+  // a little hop up first (anticipation), then a falling arc that drifts sideways
+  for (const k of loose) { k.vy = rnd(-90, -40); k.vx = rnd(-50, 50); k.spin = rnd(-1.5, 1.5); k.fallT = 0; k.flash = 1; r.falling.push(k); }
   sfx.collapse();
-  if (!reduceMotion) r.shake = Math.max(r.shake, 5);
+  kick(.35, 0, 1, 90);
 }
 function fill() {
   let grew = false;
@@ -1268,6 +1324,33 @@ function fill() {
 
 // ---------- physics ----------
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+
+// ---------- motion ----------
+// squash & stretch along a unit direction: a along it, 1/a across it, so the area never changes
+function sqMat(ux, uy, a) {
+  const b = 1 / a, c = (a - b) * ux * uy;
+  return [a * ux * ux + b * uy * uy, c, c, a * uy * uy + b * ux * ux];
+}
+const mulM = (m, n) => [m[0] * n[0] + m[1] * n[2], m[0] * n[1] + m[1] * n[3], m[2] * n[0] + m[3] * n[2], m[2] * n[1] + m[3] * n[3]];
+// a damped spring: full at t = 0, overshoots once the other way, then settles
+const spring = (t, f = 34, d = 13) => Math.exp(-t * d) * Math.cos(t * f);
+const easeOut = t => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+const easeBack = t => { t = clamp(t, 0, 1) - 1; return 1 + 2.9 * t * t * t + 1.9 * t * t; };
+// a hit squashes the ball flat against the surface it touched (n points from the surface to the ball)
+function squash(b, nx, ny, k = 1) { b.sqT = 0; b.snx = nx; b.sny = ny; b.sqK = k; }
+// the camera: trauma that dies out (shaken by smooth noise, trauma²) plus a directional kick on a spring
+function kick(trauma, dx = 0, dy = 0, push = 0) {
+  if (reduceMotion || !run) return;
+  const r = run;
+  r.trauma = Math.min(1, (r.trauma || 0) + trauma);
+  r.cam.vx += dx * push; r.cam.vy += dy * push;
+}
+// a short slow-motion beat on the big hits, with a cooldown so a chain of breaks doesn't crawl
+function hitstop(s) {
+  const r = run;
+  if (reduceMotion || r.ff || (r.hsCool || 0) > 0) return;
+  r.hitstop = Math.max(r.hitstop || 0, s); r.hsCool = s + .3;
+}
 
 // circle against one cell: a rectangle whose open corners are rounded
 function hitCell(px, py, x0, y0, x1, y1, rad) {
@@ -1305,7 +1388,7 @@ function collide(b, k) {
     const h = coreHit(b, k); if (!h) return false;
     const [nx, ny, pen] = h; b.x += nx * pen; b.y += ny * pen;
     const vn = b.vx * nx + b.vy * ny;
-    if (vn < 0) { b.vx -= 2 * vn * nx; b.vy -= 2 * vn * ny; return true; }
+    if (vn < 0) { b.vx -= 2 * vn * nx; b.vy -= 2 * vn * ny; b.hnx = nx; b.hny = ny; return true; }
     return false;
   }
   let hit = false;
@@ -1313,13 +1396,11 @@ function collide(b, k) {
     const ox = k.x + c.cx * CELL, oy = k.y + c.cy * RH;
     const h = hitCell(b.x, b.y, ox + c.x0, oy + c.y0, ox + c.x1, oy + c.y1, c.rad);
     if (!h) continue;
-    const [nx0, ny0, pen] = h;
-    b.x += nx0 * pen; b.y += ny0 * pen;
-    // rounded corners bounce mostly like a flat side, so a stream of balls stays together instead of fanning out
-    const ax = Math.abs(nx0) > Math.abs(ny0) ? Math.sign(nx0) : 0, ay = ax ? 0 : Math.sign(ny0);
-    let nx = nx0 * .15 + ax * .85, ny = ny0 * .15 + ay * .85; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
+    const [nx, ny, pen] = h;
+    b.x += nx * pen; b.y += ny * pen;
+    // rounded corners are real curves: the ball reflects off the curve's own normal, so where it lands on the arc sets the new angle
     const vn = b.vx * nx + b.vy * ny;
-    if (vn < 0) { b.vx -= 2 * vn * nx; b.vy -= 2 * vn * ny; hit = true; }
+    if (vn < 0) { b.vx -= 2 * vn * nx; b.vy -= 2 * vn * ny; b.hnx = nx; b.hny = ny; hit = true; }
   }
   return hit;
 }
@@ -1333,10 +1414,10 @@ function move(b, h) {
     b.vx = (b.vx < 0 ? -1 : 1) * Math.sqrt(sp * sp - minVy * minVy);
   }
   b.x += b.vx * h; b.y += b.vy * h;
-  if (b.x < R) { b.x = R; b.vx = Math.abs(b.vx); }
-  else if (b.x > W - R) { b.x = W - R; b.vx = -Math.abs(b.vx); }
+  if (b.x < R) { b.x = R; b.vx = Math.abs(b.vx); squash(b, 1, 0, .75); }
+  else if (b.x > W - R) { b.x = W - R; b.vx = -Math.abs(b.vx); squash(b, -1, 0, .75); }
   const fl = floorY() - GV;
-  if (b.y > fl - R) { b.y = fl - R; b.vy = -Math.abs(b.vy); }
+  if (b.y > fl - R) { b.y = fl - R; b.vy = -Math.abs(b.vy); squash(b, 0, -1, .85); }
 }
 
 function step(h) {
@@ -1356,12 +1437,13 @@ function step(h) {
     if (r.fx.rain > 0) {   // rainbow balls: anything they touch is gone, and they keep flying straight
       for (const k of r.blocks) {
         if (k.hp <= 0 || !onScreen(k)) continue;
-        if (k.core) { if (collide(b, k)) { k.hp = Math.max(0, k.hp - 3); k.flash = 1; sfx.hit(k.hp); if (k.hp <= 0) breakBlock(k); } }
-        else if (touches(b, k)) { k.hp = 0; k.flash = 1; breakBlock(k); }
+        if (k.core) { if (collide(b, k)) { k.hp = Math.max(0, k.hp - 3); k.flash = 1; hitFx(b, k); sfx.hit(k.hp); if (k.hp <= 0) breakBlock(k); } }
+        else if (touches(b, k)) { k.hp = 0; k.flash = 1; const sp = Math.hypot(b.vx, b.vy) || 1; k.hnx = b.vx / sp; k.hny = b.vy / sp; breakBlock(k); }
       }
     } else for (const k of r.blocks) {
       if (k.hp <= 0 || !onScreen(k) || !collide(b, k)) continue;
       k.hp = Math.max(0, k.hp - (1 + 2 * r.lv.fire)); k.flash = 1;
+      hitFx(b, k);
       sfx.hit(k.hp);
       if (k.hp <= 0) breakBlock(k);
     }
@@ -1376,12 +1458,13 @@ function step(h) {
         if (r.rebT != null && r.simT - r.rebT < .8) a = a * .2 + r.rebA * .8;
         r.rebA = a; r.rebT = r.simT;
         b.vx = Math.cos(a) * SPEED; b.vy = Math.sin(a) * SPEED; b.y = BY; b.age = 0;
+        squash(b, 0, 1); if (r.padT > .08) r.padT = 0;
         r.rebounds++; sfx.rebound();
       } else b.miss = true;
     }
     if ((b.y < LY - 14 && b.vy < 0) || b.age > 25) {
       b.done = true;
-      if (b.y < LY) { r.homeX = b.x; r.homing.push({ x: b.x, y: b.y, t: 0 }); }   // every ball back moves the mark: the last one decides where the next shot leaves from
+      if (b.y < LY) { r.homeX = b.x; r.homing.push({ x: b.x, y: b.y, t: 0, d0: Math.abs(r.dx - b.x) }); }   // every ball back moves the mark: the last one decides where the next shot leaves from
     }
   }
   if (r.blocks.some(k => k.hp <= 0)) {
@@ -1392,21 +1475,32 @@ function step(h) {
   if (r.balls.some(b => b.done)) r.balls = r.balls.filter(b => !b.done);
 }
 
+// a ball lands on a piece: the ball flattens against it, the piece is shoved and springs back
+function hitFx(b, k) {
+  squash(b, b.hnx, b.hny);
+  if ((k.hitT ?? 9) > .05) { k.hitT = 0; k.hnx = -b.hnx; k.hny = -b.hny; }
+}
 function breakBlock(k) {
   const r = run, cx = k.x + k.w / 2, cy = k.y + k.h / 2, col = neonOf(k.st, k);
   r.broken++;
   if (k.core) return breakCore(k, cx, cy, col);
-  const n = reduceMotion ? 6 : 12 + (k.w > CELL ? 14 : 0);
+  const big = k.cells.length >= 4, dx = k.hnx ?? 0, dy = k.hny ?? 1;
+  // the shards fly on with the ball that broke the piece: a cone around its path, plus a few loose ones all around
+  const n = reduceMotion ? 6 : 14 + (big ? 14 : 0), base = Math.atan2(dy, dx);
   for (let i = 0; i < n; i++) {
-    const a = Math.random() * Math.PI * 2, s = 40 + Math.random() * 160;
-    r.parts.push({ x: cx + (Math.random() - .5) * k.w * .7, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: .5 + Math.random() * .4, col, s: 2 + Math.random() * 3 });
+    const cone = i % 3 !== 0, a = cone ? base + rnd(-.9, .9) : Math.random() * Math.PI * 2, s = cone ? rnd(160, 460) : rnd(60, 220);
+    r.parts.push({ x: cx + rnd(-.35, .35) * k.w, y: cy + rnd(-.25, .25) * k.h, vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+      life: rnd(.45, .85), max: .85, col, s: rnd(2.5, 5.5), rot: rnd(0, 6.3), vr: rnd(-14, 14), spark: Math.random() < .35 });
   }
-  if (!reduceMotion) r.shake = Math.max(r.shake, k.w > CELL ? 6 : 2.5);
-  sfx.smash(k.cells.length >= 4);
-  if (k.cap) r.caps.push({ x: cx, y: Math.min(cy, H - 20), type: k.cap });
+  if (!reduceMotion) r.pops.push({ k, t: 0, col, cx, cy, ring: Math.max(k.w, k.h) * .45 });
+  kick(big ? .3 : .18, dx, dy, big ? 130 : 70);
+  if (big) hitstop(.05);
+  sfx.smash(big);
+  // the capsule pops out of the stone, arcs down a little, and is then pulled up toward the paddle
+  if (k.cap) r.caps.push({ x: cx, y: Math.min(cy, H - 20), type: k.cap, vx: rnd(-110, 110), vy: rnd(90, 160), t: 0 });
   if (k.gem) {
     save.gems += k.gem; r.gemsRun += k.gem; store();
-    r.texts.push({ x: cx - 8, y: cy, t: "+" + k.gem, life: 1, pearl: true });
+    r.texts.push({ x: cx - 8, y: cy, t: "+" + k.gem, life: 1, pearl: true, vx: rnd(-40, 40), vy: -150 });
     sfx.coin();
     hud();
   }
@@ -1418,11 +1512,12 @@ function breakCore(k, cx, cy, col) {
   r.coreDown = true;
   for (let i = 0; i < (reduceMotion ? 24 : 90); i++) {
     const a = Math.random() * Math.PI * 2, s = 80 + Math.random() * 380;
-    r.parts.push({ x: cx + Math.cos(a) * CORE_R * .5, y: cy + Math.sin(a) * CORE_R * .5, vx: Math.cos(a) * s, vy: Math.sin(a) * s,
-      life: .7 + Math.random() * .8, col: i % 3 ? col : "#fff", s: 2 + Math.random() * 4 });
+    r.parts.push({ x: cx + Math.cos(a) * CORE_R * .5, y: cy + Math.sin(a) * CORE_R * .5, vx: Math.cos(a) * s * 1.8, vy: Math.sin(a) * s * 1.8,
+      life: .7 + Math.random() * .8, max: 1.5, col: i % 3 ? col : "#fff", s: 2 + Math.random() * 4, rot: rnd(0, 6.3), vr: rnd(-12, 12), spark: i % 2 === 0 });
   }
-  r.coreBlast = { x: cx, y: cy, t: 0 };
-  if (!reduceMotion) r.shake = 14;
+  r.coreBlast = { x: cx, y: cy, t: 0, col };
+  kick(.9);
+  hitstop(.16);
   r.texts.push({ x: W / 2, y: clamp(cy - 20, 120, H - 80), t: "Núcleo quebrado!", life: 2.2, col: "#ffe58a", big: true });
   sfx.smash(true); sfx.win();
   r.spawnLeft = 0;
@@ -1449,8 +1544,12 @@ function takeCap(c) {
   else if (c.type === "ball") r.extra++;
   else if (c.type === "gem") { save.gems += 3; r.gemsRun += 3; store(); }
   setPad(r.px);
-  const lvl = r.lv[c.type];
-  r.banner = { t: C.name + (lvl > 1 ? " ×" + lvl : ""), d: lvl > 1 ? C.stack : C.short, col: C.col, type: c.type, life: 2.4 };
+  if (TIMED.includes(c.type)) r.fxMax[c.type] = Math.max(r.fxMax[c.type], r.fx[c.type]);
+  // the icon jumps off the paddle; a timed one arcs into its slot in the corner, the rest float up and pop.
+  // The name shows only the first time a run meets that power-up.
+  const row = r.icons.filter(q => q.name).length;   // names caught together stack instead of overlapping
+  r.icons.push({ type: c.type, x: c.x, y: LY + 14, t: 0, rise: !TIMED.includes(c.type), name: r.seen[c.type] ? "" : C.name, row });
+  r.seen[c.type] = true;
   if (c.type !== "gem" && !TIMED.includes(c.type)) edgeGlow(c.type, C.col);
   else if (TIMED.includes(c.type)) flashOnly(c.type === "rain" ? "#b45cff" : C.col);
   ringUpdate();
@@ -1603,7 +1702,7 @@ function regroup() {
   r.regroup = { x: lead.x, y: lead.y, vx: lead.vx, vy: lead.vy, left: r.spawnLeft, t: .04 };
   r.spawnLeft = 0;   // balls not fired yet join the same line
   for (const b of live) if (b !== lead) b.gather = true;
-  r.texts.push({ x: clamp(lead.x, 70, W - 70), y: lead.y - 18, t: "Juntar", life: .8, col: "#f4e7d4" });
+  if (!reduceMotion) r.pops.push({ k: null, t: 0, col: "#ffd23a", cx: lead.x, cy: lead.y, ring: 4 });   // a ring marks where the line forms
   sfx.bubbles();
 }
 
@@ -1612,7 +1711,6 @@ function recall() {
   const r = run;
   if (r.state !== "shoot") return;
   r.ff = !r.ff;
-  r.texts.push({ x: clamp(r.px, 60, W - 60), y: LY + 40, t: r.ff ? "Avanço rápido ▸▸▸" : "Velocidade normal", life: .9, col: "#f4e7d4" });
   sfx.ff();
 }
 
@@ -1624,7 +1722,7 @@ function fire() {
   r.ff = false; r.cleared = false;
   r.state = "shoot"; r.spawnLeft = save.balls + r.extra + r.bonus; r.bonus = 0; r.spawnT = 0; r.shotT = 0; r.rebT = null;
   r.dir = [Math.cos(r.aimA), Math.sin(r.aimA)]; r.fireX = r.dx; r.homeX = null;
-  r.aimOn = false;
+  r.aimOn = false; r.drillT = 0;
   sfx.shoot();
   hud();
 }
@@ -1699,22 +1797,43 @@ function finish(won, eaten) {
 function update(dt) {
   const r = run;
   if (!r) return;
-  for (const p of r.parts) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy -= GRAV * .5 * dt; }
+  // shards burst out fast and slow down (ease out), drifting up on the way: arcs, not straight lines
+  const drag = Math.exp(-dt * 4.2);
+  for (const p of r.parts) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= drag; p.vy = p.vy * drag - GRAV * .5 * dt; p.rot = (p.rot || 0) + (p.vr || 0) * dt; }
   r.parts = r.parts.filter(p => p.life > 0);
-  for (const t of r.texts) { t.life -= dt; t.y -= 28 * dt; }
-  if (r.banner) { r.banner.life -= dt; if (r.banner.life <= 0) r.banner = null; }
+  for (const t of r.texts) {
+    t.life -= dt; t.age = (t.age || 0) + dt;
+    if (t.vy != null) { t.x += t.vx * dt; t.y += t.vy * dt; t.vx *= Math.exp(-dt * 3); t.vy = t.vy * Math.exp(-dt * 5) - 12 * dt; }   // pops up in an arc and floats
+    else t.y -= 28 * (1 + 2.5 * Math.exp(-t.age * 6)) * dt;
+  }
+  for (const q of r.pops) q.t += dt;
+  r.pops = r.pops.filter(q => q.t < .45);
+  if (r.coreBlast && (r.coreBlast.t += dt) > 1.4) r.coreBlast = null;
+  // camera: the kick springs back (underdamped, so it overshoots once), the trauma fades
+  const cam = r.cam;
+  cam.vx += (-cam.x * 420 - cam.vx * 18) * dt; cam.vy += (-cam.y * 420 - cam.vy * 18) * dt;
+  cam.x += cam.vx * dt; cam.y += cam.vy * dt;
+  r.trauma = Math.max(0, r.trauma - dt * 1.5);
+  r.padT += dt; r.drillT += dt; r.hsCool = Math.max(0, (r.hsCool || 0) - dt);
+  for (const b of r.balls) {
+    b.sqT = (b.sqT ?? 9) + dt;
+    // where the ball was the last few frames: drawn as a fading streak (motion blur)
+    b.tr = b.tr || []; b.tr.unshift(b.x, b.y); if (b.tr.length > 6) b.tr.length = 6;
+  }
+  for (const q of r.icons) q.t += dt;
+  r.icons = r.icons.filter(q => q.t < (q.name ? 1.6 : 1));
   r.texts = r.texts.filter(t => t.life > 0);
   for (const k of r.blocks) {
     if (k.flash > 0) k.flash = Math.max(0, k.flash - dt * 7);
+    if (k.hitT != null) k.hitT += dt;
     if (onScreen(k)) k.fade = Math.min(1, (k.fade ?? 0) + dt * 4); else k.fade = 0;
   }
   // pieces that lost their support drop and shatter
   for (const k of r.falling) {
-    k.fallT += dt; k.vy += 1100 * dt; k.y += k.vy * dt; k.flash = Math.max(0, k.flash - dt * 4);
+    k.fallT += dt; k.vy += 1100 * dt; k.y += k.vy * dt; k.x += (k.vx || 0) * dt; k.flash = Math.max(0, k.flash - dt * 4);
     if (k.fallT > .55 || k.y > H) { k.gone = true; k.hp = 0; k.y = Math.min(k.y, H - k.h * .5); breakBlock(k); }
   }
   if (r.falling.some(k => k.gone)) r.falling = r.falling.filter(k => !k.gone);
-  r.shake = Math.max(0, r.shake - dt * 20);
   ringUpdate();
   const rg = canRegroup();
   if ($("bRegroup").disabled === rg) $("bRegroup").disabled = !rg;
@@ -1746,7 +1865,13 @@ function update(dt) {
   if (kr) setPad(r.px + 420 * dt);
   const pw = padW();
   for (const c of r.caps) {
-    c.y -= 105 * dt;
+    c.t = (c.t || 0) + dt;
+    if (c.vy == null) c.y -= 105 * dt;
+    else {   // the pop: thrown down and sideways, then pulled up until it rises at its usual speed
+      c.vy = Math.max(-105, c.vy - 620 * dt); c.vx *= Math.exp(-dt * 3.5);
+      c.x = clamp(c.x + c.vx * dt, 14, W - 14); c.y += c.vy * dt;
+      if (c.y > H - 16) { c.y = H - 16; c.vy = Math.min(c.vy, 0); }
+    }
     if (c.y < BY + 6 && c.y > LY - 8 && Math.abs(c.x - r.px) < pw / 2 + 13) { c.got = true; takeCap(c); }
   }
   r.caps = r.caps.filter(c => !c.got && c.y > LY - 12);
@@ -1754,8 +1879,10 @@ function update(dt) {
   if (r.state === "shoot") {
     r.shotT += dt;
     const ts = r.ff ? 6 : r.fast ? 2.5 : 1;
-    let sim = dt * ts;
-    for (const f in r.fx) { r.fx[f] = Math.max(0, r.fx[f] - sim); if (!r.fx[f]) r.lv[f] = 0; }
+    // a hitstop slows the world right down for a beat, so the big breaks land
+    let sim = dt * ts * (r.hitstop > 0 ? .12 : 1);
+    if (r.hitstop > 0) r.hitstop -= dt;
+    for (const f in r.fx) { r.fx[f] = Math.max(0, r.fx[f] - sim); if (!r.fx[f]) { r.lv[f] = 0; r.fxMax[f] = 0; } }
     while (sim > 0) {
       const h = Math.min(STEP, sim); sim -= h;
       if (r.regroup && r.regroup.left > 0) {   // regrouped balls stream back out of one spot, in one line
@@ -1778,7 +1905,7 @@ function update(dt) {
     if (!r.cleared && r.balls.length && !r.blocks.some(onScreen)) {
       r.cleared = true; r.spawnLeft = 0; r.shots++;
       openHole();
-      r.texts.push({ x: W / 2, y: H / 2 - 40, t: "Tela limpa! +1 tiro", life: 1.6, col: "#ffe58a" });
+      r.icons.push({ type: "shot", x: W / 2, y: H / 2, t: 0, rise: true, big: true });   // screen cleared: a big +1 shot
       sfx.bubbles(); hud();
     }
     if (r.spawnLeft === 0 && r.balls.length === 0 && !r.regroup) endTurn();
@@ -2003,19 +2130,173 @@ function drawDust() {
   ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1;
 }
 
+// ---------- power-up chips ----------
+// timed power-ups sit in the top-left corner as chips: icon, a bar for the time left, a dot per level
+const CHIP_W = 62, CHIP_ORDER = ["rain", "fire", "wide", "slim"];
+const chipsOn = () => CHIP_ORDER.filter(f => run.fx[f] > 0);
+const chipX = f => 6 + chipsOn().indexOf(f) * (CHIP_W + 5);
+function drawChips() {
+  const r = run, tp = performance.now() / 1000;
+  ctx.textBaseline = "middle";
+  for (const f of chipsOn()) {
+    const x = chipX(f), y = 4, left = r.fx[f], fr = clamp(left / (r.fxMax[f] || left), 0, 1), ending = left < 2.5;
+    const fly = r.icons.find(q => q.type === f && !q.rise);   // its icon is still flying in: the slot waits, then pops
+    const land = fly ? fly.t - .55 : 9;
+    let sc = 1;
+    if (fly && land < 0) { ctx.globalAlpha = .25; }
+    else if (land < .4) sc = 1 + .25 * spring(land, 28, 10);
+    if (ending && !reduceMotion) { ctx.globalAlpha = .5 + .5 * Math.abs(Math.sin(tp * (left < 1 ? 14 : 8))); sc *= 1 + .05 * Math.sin(tp * 30); }
+    ctx.save(); ctx.translate(x + CHIP_W / 2, y + 11); ctx.scale(sc, sc); ctx.translate(-x - CHIP_W / 2, -y - 11);
+    ctx.fillStyle = "rgba(19,14,12,.85)"; rr(x, y, CHIP_W, 22, 11); ctx.fill();
+    const col = f === "rain" ? "hsl(" + (tp * 220 % 360) + ",100%,62%)" : f === "slim" ? "#ff4a3a" : CAPS[f].col;
+    ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.stroke();
+    capIcon(ctx, f, x + 11, y + 11, 8.5, false);
+    // the time bar: full when caught, it drains; turns red near the end
+    const bw = CHIP_W - 30;
+    ctx.fillStyle = "rgba(255,255,255,.12)"; rr(x + 23, y + 6, bw, 6, 3); ctx.fill();
+    if (f === "rain") { const g = ctx.createLinearGradient(x + 23, 0, x + 23 + bw, 0); RAINBOW_STOPS.forEach((c, i) => g.addColorStop(i / 7, c)); ctx.fillStyle = g; }
+    else ctx.fillStyle = ending ? "#ff4a3a" : CAPS[f].col;
+    rr(x + 23, y + 6, Math.max(6, bw * fr), 6, 3); ctx.fill();
+    ctx.fillStyle = "#f4e7d4";
+    for (let i = 0; i < r.lv[f]; i++) { ctx.beginPath(); ctx.arc(x + 25 + i * 6, y + 16.5, 1.7, 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore(); ctx.globalAlpha = 1;
+  }
+}
+// a caught power-up's icon: timed ones arc from the paddle into their chip, the others pop and float away
+function drawIcons() {
+  const r = run;
+  for (const q of r.icons) {
+    let x, y, R0 = q.big ? 22 : 13, sz, a = 1;
+    if (q.rise) {
+      const p = q.t / 1;
+      x = q.x; y = q.y + (q.big ? -50 : 30) * easeOut(p) - (q.big ? 0 : 10);
+      sz = R0 * (.3 + .7 * easeBack(q.t / .3)) * (1 - .3 * p); a = clamp((1 - p) * 3, 0, 1);
+    } else {
+      const p = easeOut(clamp(q.t / .55, 0, 1)), tx = chipX(q.type) + 11, ty = 15;
+      const cx = (q.x + tx) / 2, cy = Math.max(q.y, ty) + 90;   // control point below: it swoops down, then up into the slot
+      x = (1 - p) * (1 - p) * q.x + 2 * (1 - p) * p * cx + p * p * tx;
+      y = (1 - p) * (1 - p) * q.y + 2 * (1 - p) * p * cy + p * p * ty;
+      sz = q.t < .55 ? R0 * (.4 + .6 * easeBack(q.t / .25)) * (1 - .4 * p) : 0;
+    }
+    if (sz > .5) { ctx.globalAlpha = a; capIcon(ctx, q.type, x, y, sz, true); }
+    if (q.name) {   // first time this run: say what it is, small, where it was caught
+      ctx.globalAlpha = clamp((1.6 - q.t) * 2, 0, 1) * clamp(q.t * 6, 0, 1);
+      ctx.font = "700 12px 'Chakra Petch', sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.lineWidth = 3; ctx.strokeStyle = "rgba(0,0,0,.7)"; ctx.lineJoin = "round";
+      const nx = clamp(q.x, 50, W - 50), ny = LY + 46 + q.row * 17 - 8 * easeOut(q.t / .4);
+      ctx.strokeText(q.name, nx, ny); ctx.fillStyle = q.type === "slim" ? "#ff8a7a" : CAPS[q.type].col === "#ffffff" ? "#f4e7d4" : CAPS[q.type].col; ctx.fillText(q.name, nx, ny);
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ---------- motion drawing ----------
+// a ball: stretched along its flight, and for a moment after a hit squashed flat against what it hit
+function ballPath(b, rad = R) {
+  const sp = Math.hypot(b.vx, b.vy) || 1, t = b.sqT ?? 9;
+  let m = sqMat(b.vx / sp, b.vy / sp, 1 + .14 * (1 - Math.exp(-t * 9)));   // follow-through: the stretch comes back as it leaves
+  if (t < .3 && b.snx != null) m = mulM(sqMat(b.snx, b.sny, 1 - .4 * (b.sqK || 1) * spring(t, 38, 14)), m);
+  ctx.save(); ctx.transform(m[0], m[2], m[1], m[3], b.x, b.y);
+  ctx.beginPath(); ctx.arc(0, 0, rad, 0, Math.PI * 2);
+  ctx.restore();
+}
+// motion blur: each ball drags a tapering streak through where it was the last few frames
+function drawTrails() {
+  const r = run;
+  if (reduceMotion) return;
+  ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
+  ctx.strokeStyle = r.fx.rain > 0 ? "#d9b8ff" : r.fx.fire > 0 ? "#ff8a4a" : "#ffe6c8";
+  for (let i = 0; i < 3; i++) {
+    ctx.globalAlpha = [.26, .14, .06][i]; ctx.lineWidth = R * [1.5, 1.1, .7][i];
+    ctx.beginPath();
+    for (const b of r.balls) {
+      const tr = b.tr; if (b.home || b.gather || !tr || tr.length < 2 * i + 2) continue;
+      if (i) ctx.moveTo(tr[2 * i - 2], tr[2 * i - 1]); else ctx.moveTo(b.x, b.y);
+      ctx.lineTo(tr[2 * i], tr[2 * i + 1]);
+    }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over"; ctx.lineCap = "butt";
+}
+// a piece that was hit is shoved along the ball's path and squashed on that axis, then springs back;
+// a piece arriving on screen pops in from a little smaller. Returns true if it left a ctx.save() open.
+function blockXf(k, f) {
+  const t = k.hitT ?? 9, arrive = f < 1 ? .88 + .12 * easeBack(f) : 1;
+  if (t > .45 && arrive === 1) return false;
+  const cx = k.x + k.w / 2, cy = k.y + k.h / 2;
+  ctx.save(); ctx.translate(cx, cy);
+  if (t <= .45) {
+    const e = spring(t, 30, 11), ext = Math.abs(k.hnx) * k.w + Math.abs(k.hny) * k.h;
+    ctx.translate(k.hnx * 2.6 * e, k.hny * 2.6 * e);
+    const m = sqMat(k.hnx, k.hny, 1 - e * Math.min(k.core ? .05 : .09, 5 / ext));
+    ctx.transform(m[0], m[2], m[1], m[3], 0, 0);
+  }
+  if (arrive !== 1) ctx.scale(arrive, arrive);
+  ctx.translate(-cx, -cy);
+  return true;
+}
+// a broken piece leaves its ghost: a white flash in its shape that swells and fades, and a shockwave ring
+function drawPops() {
+  const r = run;
+  ctx.globalCompositeOperation = "lighter";
+  for (const q of r.pops) {
+    const p = q.t / .45, k = q.k, s = 1 + .3 * easeOut(p * 1.6);
+    if (k) {
+    ctx.save(); ctx.translate(q.cx, q.cy); ctx.scale(s, s); ctx.translate(-q.cx, -q.cy);
+    piecePath(k);
+    ctx.globalAlpha = Math.pow(clamp(1 - p * 2.2, 0, 1), 2) * .9; ctx.fillStyle = "#fff"; ctx.fill();
+    ctx.globalAlpha = Math.pow(1 - p, 2); ctx.strokeStyle = q.col; ctx.lineWidth = 3 / s; ctx.stroke();
+    ctx.restore();
+    }
+    ctx.globalAlpha = (1 - p) * .7; ctx.strokeStyle = q.col; ctx.lineWidth = 3 * (1 - p) + .5;
+    ctx.beginPath(); ctx.arc(q.cx, q.cy, q.ring + 46 * easeOut(p), 0, Math.PI * 2); ctx.stroke();
+  }
+  const cb = r.coreBlast;
+  if (cb) {   // the core: two big rings rolling out across the shaft and a flash of light
+    for (const [d, w] of [[0, 8], [.12, 4]]) {
+      const p = clamp((cb.t - d) / 1.1, 0, 1); if (p <= 0 || p >= 1) continue;
+      ctx.globalAlpha = (1 - p) * .85; ctx.strokeStyle = d ? "#fff" : cb.col; ctx.lineWidth = w * (1 - p) + 1;
+      ctx.beginPath(); ctx.arc(cb.x, cb.y, CORE_R + W * 1.1 * easeOut(p), 0, Math.PI * 2); ctx.stroke();
+    }
+    const fl = clamp(1 - cb.t / .3, 0, 1);
+    if (fl > 0) { ctx.globalAlpha = fl * fl * .55; ctx.fillStyle = "#fff"; ctx.fillRect(-20, -20, W + 40, H + 40); }
+  }
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
+}
+// shards: spinning triangles that shrink as they die, and sparks drawn as streaks along their speed (motion blur)
+function drawParts() {
+  const r = run;
+  ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
+  for (const p of r.parts) {
+    const life = clamp(p.life / (p.max || 1), 0, 1), a = clamp(p.life * 2.5, 0, 1);
+    ctx.globalAlpha = a; ctx.fillStyle = ctx.strokeStyle = p.col;
+    if (p.spark) {
+      ctx.lineWidth = p.s * .55;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * .045, p.y - p.vy * .045); ctx.stroke();
+    } else {
+      const sz = p.s * (.4 + .9 * life), c = Math.cos(p.rot || 0) * sz, s = Math.sin(p.rot || 0) * sz;
+      ctx.beginPath(); ctx.moveTo(p.x + c, p.y + s); ctx.lineTo(p.x - .5 * c - .87 * s, p.y - .5 * s + .87 * c); ctx.lineTo(p.x - .5 * c + .87 * s * .6, p.y - .5 * s - .87 * c * .6); ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over"; ctx.lineCap = "butt";
+}
+
 function draw() {
   const r = run;
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
   if (!r) return;
-  const sx = r.shake ? (Math.random() - .5) * r.shake : 0, sy = r.shake ? (Math.random() - .5) * r.shake : 0;
-  ctx.translate(sx, sy);
+  // camera: spring kick + smooth noise (layered sines, not a random jump every frame) and a hint of roll
+  const tq = r.trauma * r.trauma, tn = performance.now() / 1000;
+  const sx = r.cam.x + tq * 12 * (Math.sin(tn * 41) * .6 + Math.sin(tn * 23.3 + 1.7) * .4);
+  const sy = r.cam.y + tq * 12 * (Math.sin(tn * 37.7 + 3.1) * .6 + Math.sin(tn * 19.1 + .4) * .4);
+  ctx.translate(W / 2 + sx, H / 2 + sy); ctx.rotate(tq * .025 * Math.sin(tn * 29 + 2.2)); ctx.translate(-W / 2, -H / 2);
 
   // black void with fine theatre dust drifting through it
   // black, with a faint wash of the layer's colour rising from the depths
   const h0 = Math.round(hueAt(r.li, r.depth)), h1 = Math.round(hueAt(r.li, r.depth + 60));
   const bg = ctx.createLinearGradient(0, 0, 0, H);
   bg.addColorStop(0, "#000"); bg.addColorStop(.45, "hsl(" + h0 + ",60%,3%)"); bg.addColorStop(1, "hsl(" + h1 + ",70%,10%)");
-  ctx.fillStyle = bg; ctx.fillRect(-10, -10, W + 20, H + 20);
+  ctx.fillStyle = bg; ctx.fillRect(-40, -40, W + 80, H + 80);
   drawDust();
 
   // blocks
@@ -2024,7 +2305,8 @@ function draw() {
     if (!onScreen(k) || k.y + k.h < 0) continue;
     const f = k.fade ?? 1;
     ctx.globalAlpha = f;
-    if (k.core) { drawCore(k); ctx.globalAlpha = 1; continue; }
+    const moved = blockXf(k, f);
+    if (k.core) { drawCore(k); ctx.globalAlpha = 1; if (moved) ctx.restore(); continue; }
     drawStone(k);
     if (k.flash > 0) {
       ctx.globalAlpha = k.flash * .7 * f; ctx.fillStyle = "#fff";
@@ -2034,27 +2316,33 @@ function draw() {
     ctx.font = "700 " + (k.hp > 999 ? 13 : k.hp > 99 ? 15 : 17) + "px 'Chakra Petch', sans-serif";
     ctx.lineWidth = 3; ctx.strokeStyle = "rgba(0,0,0,.55)"; ctx.lineJoin = "round";
     const solo = !k.badgeCell, lx = k.x + k.label[0], ly = k.y + k.label[1] + 1;
+    const ps = 1 + .35 * Math.exp(-(k.hitT ?? 9) * 14);   // the number pops on each hit
+    if (ps > 1.01) { ctx.save(); ctx.translate(lx, ly); ctx.scale(ps, ps); ctx.translate(-lx, -ly); }
     ctx.strokeText(k.hp, lx, ly);
     ctx.fillStyle = "#fff"; ctx.fillText(k.hp, lx, ly);
+    if (ps > 1.01) ctx.restore();
     const bx = k.x + (solo ? k.label[0] - CELL / 2 : k.badgeCell[0] * CELL), by = k.y + (solo ? k.label[1] - RH / 2 : k.badgeCell[1] * RH);
     if (k.cap) capBadge(k.cap, bx + CELL / 2 - (k.gem ? 9 : 0), by + RH / 2);
     if (k.gem) coin(ctx, bx + CELL / 2 + (k.cap ? 12 : 0), by + RH / 2, 6);
     ctx.globalAlpha = 1;
+    if (moved) ctx.restore();
   }
+  drawPops();
 
   // bedrock under the floor line
   const fy = floorY() - GV;
   if (fy < H) {
     const bg2 = ctx.createLinearGradient(0, fy, 0, H);
     bg2.addColorStop(0, "rgba(0,0,0,0)"); bg2.addColorStop(1, "rgba(0,0,0,.55)");
-    ctx.fillStyle = bg2; ctx.fillRect(0, fy, W, H - fy + 10);
+    ctx.fillStyle = bg2; ctx.fillRect(-40, fy, W + 80, H - fy + 50);
   }
 
   // falling pieces
   for (const k of r.falling) {
     ctx.save();
     const cx = k.x + k.w / 2, cy = k.y + k.h / 2;
-    ctx.translate(cx, cy); ctx.rotate(k.spin * k.fallT); ctx.translate(-cx, -cy);
+    const st = 1 + clamp(k.vy / 3000, 0, .12);
+    ctx.translate(cx, cy); ctx.rotate(k.spin * k.fallT); ctx.scale(1 / st, st); ctx.translate(-cx, -cy);
     ctx.globalAlpha = clamp(1.4 - k.fallT * 2, 0, 1);
     drawStone(k);
     ctx.restore();
@@ -2062,12 +2350,11 @@ function draw() {
   ctx.globalAlpha = 1;
 
   // particles
-  for (const p of r.parts) { ctx.globalAlpha = clamp(p.life * 2, 0, 1); ctx.fillStyle = p.col; ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s); }
-  ctx.globalAlpha = 1;
+  drawParts();
 
   // surface band and drill
-  ctx.fillStyle = "#050505"; ctx.fillRect(-10, -10, W + 20, LY + 8);
-  ctx.fillStyle = "#1c1c20"; ctx.fillRect(-10, LY - 2, W + 20, 3);
+  ctx.fillStyle = "#050505"; ctx.fillRect(-40, -40, W + 80, LY + 38);
+  ctx.fillStyle = "#1c1c20"; ctx.fillRect(-40, LY - 2, W + 80, 3);
   if (r.state === "aim" && r.aimOn && !paused) {
     const pts = ghostPath();
     ctx.fillStyle = "rgba(244,231,212,.75)";
@@ -2078,16 +2365,37 @@ function draw() {
     ctx.globalAlpha = 1;
   }
   if (r.state === "aim" && !r.aimOn && !paused && r.shots > 0) {
-    ctx.globalAlpha = .45 + .3 * Math.sin(performance.now() / 300);
-    ctx.fillStyle = "#f4e7d4"; ctx.font = "600 12px 'Chakra Petch', sans-serif"; ctx.textAlign = "center";
-    ctx.fillText("segure para mirar · solte para atirar", W / 2, LY + 70);
+    // ready to fire: rings pulse out of the drill. The words only show on the very first shot of the game.
+    const tp = performance.now() / 1000;
+    if (!reduceMotion) for (const o of [0, .6]) {
+      const p = (tp * .85 + o) % 1;
+      ctx.globalAlpha = (1 - p) * .55; ctx.strokeStyle = "#f4e7d4"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(r.dx, LY - 10, 12 + 26 * easeOut(p), 0, Math.PI * 2); ctx.stroke();
+    }
+    if (save.level === 0 && save.maxLevel === 0 && r.used === 0) {
+      ctx.globalAlpha = .55 + .3 * Math.sin(tp * 3.3);
+      ctx.fillStyle = "#f4e7d4"; ctx.font = "600 12px 'Chakra Petch', sans-serif"; ctx.textAlign = "center";
+      ctx.fillText("segure para mirar · solte para atirar", W / 2, LY + 70);
+    }
     ctx.globalAlpha = 1;
   }
-  // capsules
-  ctx.font = "700 11px 'Chakra Petch', sans-serif";
+  // capsules: a marker on the paddle line shows where to catch them;
+  // the bad one gets a red ring spinning round it so it reads as "dodge me"
+  const tc = performance.now() / 1000;
   for (const c of r.caps) {
-    capIcon(ctx, c.type, c.x, c.y, 12, true);
+    const C = CAPS[c.type], bad = c.type === "slim", lined = Math.abs(c.x - r.px) < padW() / 2 + 13;
+    ctx.globalAlpha = lined ? 1 : .55 + .25 * Math.sin(tc * 8);
+    ctx.fillStyle = bad ? "#ff4a3a" : C.col;
+    ctx.beginPath(); ctx.moveTo(c.x, LY + 7); ctx.lineTo(c.x - 5, LY + 13); ctx.lineTo(c.x + 5, LY + 13); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1;
+    const cs = 12 * (c.vy == null ? 1 : .3 + .7 * easeBack((c.t || 0) / .35));
+    capIcon(ctx, c.type, c.x, c.y, cs, true);
+    if (bad) {
+      ctx.strokeStyle = "#ff4a3a"; ctx.lineWidth = 2; ctx.setLineDash([4, 4]); ctx.lineDashOffset = -tc * 20;
+      ctx.beginPath(); ctx.arc(c.x, c.y, cs + 4, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+    }
   }
+  drawChips();
 
   // danger line: glows red as the stone climbs toward it
   const near = clamp(1 - (topOf() - DANGER) / 140, 0, 1);
@@ -2103,7 +2411,12 @@ function draw() {
   // the drill stands on its own spot (where the last volley came back), apart from the paddle
   ctx.save();
   ctx.translate(r.dx, LY - 14);
-  ctx.rotate(r.state === "aim" ? r.aimA - Math.PI / 2 : 0);
+  // after the shot the drill swings back down from the firing angle instead of snapping
+  ctx.rotate(r.state === "aim" ? r.aimA - Math.PI / 2 : (Math.atan2(r.dir[1], r.dir[0]) - Math.PI / 2) * (1 - easeOut(r.drillT / .5)));
+  if (r.drillT < .5) {   // recoil: kicked back and squashed, then it springs out past its length and settles
+    const e = spring(r.drillT, 30, 9);
+    ctx.translate(0, -5 * e); ctx.scale(1 + .22 * e, 1 - .22 * e);
+  }
   // painted in the colour of the phase right now
   const dh = Math.round(hueAt(r.li, r.depth)), dDark = "hsl(" + dh + ",80%,36%)";
   ctx.shadowColor = "hsl(" + dh + ",100%,60%)"; ctx.shadowBlur = 10;
@@ -2114,36 +2427,43 @@ function draw() {
   ctx.strokeStyle = dDark; ctx.lineWidth = 2;
   for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(-7 + i * 2.3, 7 + i * 5.5); ctx.lineTo(7 - i * 2.3, 10 + i * 5.5); ctx.stroke(); }
   ctx.restore();
-  ctx.fillStyle = "#f4e7d4"; ctx.font = "700 13px 'Chakra Petch', sans-serif"; ctx.textAlign = "left";
+  // balls ready in the drill: a ball glyph and the count
   const ready = r.state === "aim" ? save.balls + r.extra + r.bonus : r.spawnLeft;
+  const ballCount = (x, y) => {
+    ctx.fillStyle = "#fff6e8"; ctx.beginPath(); ctx.arc(x, y, 3.2, 0, Math.PI * 2); ctx.fill();
+    ctx.font = "700 13px 'Chakra Petch', sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillStyle = "#f4e7d4"; ctx.fillText(ready, x + 6, y + 1);
+  };
   if (ready && r.state === "shoot") {   // the volley's mouth stays where you fired while balls are still coming out
     ctx.fillStyle = "rgba(255,246,232,.85)"; ctx.beginPath(); ctx.arc(r.fireX, BY, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#f4e7d4"; ctx.fillText("×" + ready, r.fireX + 14, BY + 12);
-  } else if (ready) ctx.fillText("×" + ready, r.dx + 14, LY - 22);
+    ballCount(r.fireX + 12, BY + 12);
+  } else if (ready) ballCount(r.dx + 15, LY - 26);
   ctx.textAlign = "center";
 
   // the paddle: follows the finger or mouse at all times, before and during a shot
   const pw = padW(), padCol = r.lv.wide > r.lv.slim ? "#7ee081" : r.lv.slim > r.lv.wide ? "#a970ff" : r.lv.wide ? "#d8c9a8" : "#f4e7d4";
+  const pe = r.padT < .45 ? spring(r.padT, 32, 11) : 0;   // a ball bounces off: the paddle gives way and springs back
+  ctx.save(); ctx.translate(r.px, LY - 3 * pe); ctx.scale(1 + .1 * pe, 1 - .3 * pe); ctx.translate(-r.px, -LY);
   ctx.fillStyle = padCol; rr(r.px - pw / 2, LY - 5, pw, 10, 5); ctx.fill();
   ctx.fillStyle = "rgba(255,255,255,.45)"; rr(r.px - pw / 2 + 5, LY - 3, pw - 10, 2.5, 1.2); ctx.fill();
+  ctx.restore();
   ctx.fillStyle = "rgba(244,231,212,.45)";
   for (const sd of [-1, 1]) {
     const ax = r.px + sd * (pw / 2 + 9);
     ctx.beginPath(); ctx.moveTo(ax + sd * 6, LY); ctx.lineTo(ax, LY - 5); ctx.lineTo(ax, LY + 5); ctx.closePath(); ctx.fill();
   }
-  // active power-ups, top-left
-  ctx.textAlign = "left"; ctx.font = "700 11px 'Chakra Petch', sans-serif";
-  let fxX = 8;
-  for (const f of ["rain", "fire", "wide", "slim"]) if (r.fx[f] > 0) {
-    ctx.fillStyle = CAPS[f].col; if (f === "rain") ctx.fillStyle = "hsl(" + (performance.now() / 4 % 360) + ",100%,65%)";
-    const lb = { rain: "Arco-íris", fire: "Fogo", wide: "Largo", slim: "Curto" }[f] + (r.lv[f] > 1 ? " ×" + r.lv[f] : "") + " " + Math.ceil(r.fx[f]) + "s";
-    ctx.fillText(lb, fxX, 14); fxX += ctx.measureText(lb).width + 10;
+  // rebounds, top-right: a little paddle and the count
+  if (r.rebounds) {
+    ctx.font = "700 12px 'Chakra Petch', sans-serif"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    ctx.fillStyle = "#b29a83"; ctx.fillText(r.rebounds, W - 8, 13);
+    const tw = ctx.measureText(String(r.rebounds)).width;
+    rr(W - 28 - tw, 10, 14, 5, 2.5); ctx.fill();
+    ctx.beginPath(); ctx.arc(W - 21 - tw, 5.5, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.textAlign = "center";
   }
-  ctx.textAlign = "right"; ctx.fillStyle = "#b29a83";
-  if (r.rebounds) ctx.fillText("Rebatidas " + r.rebounds, W - 8, 14);
-  ctx.textAlign = "center";
 
   drawHole();
+  drawTrails();
   // balls
   ctx.fillStyle = r.fx.fire > 0 ? "#ff8a4a" : "#fff6e8"; ctx.shadowColor = r.fx.fire > 0 ? "rgba(255,90,40,.95)" : "rgba(255,200,140,.8)"; ctx.shadowBlur = r.fx.fire > 0 ? 14 : 8;
   if (r.fx.rain > 0) {
@@ -2154,49 +2474,49 @@ function draw() {
       ctx.globalAlpha = .35; ctx.fillStyle = "hsl(" + ((hh + 60) % 360) + ",100%,60%)";
       ctx.beginPath(); ctx.arc(b.x - b.vx * .02, b.y - b.vy * .02, R * 1.4, 0, Math.PI * 2); ctx.fill();
       ctx.globalAlpha = 1; ctx.fillStyle = "hsl(" + hh + ",100%,62%)"; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 16;
-      ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, Math.PI * 2); ctx.fill();
+      ballPath(b); ctx.fill();
     });
-  } else for (const b of r.balls) { if (b.home) continue; ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, Math.PI * 2); ctx.fill(); }
+  } else for (const b of r.balls) { if (b.home) continue; ballPath(b); ctx.fill(); }
   ctx.shadowBlur = 0;
   for (const b of r.balls) if (b.home) drawBubble(b);
   // returning balls rolling over the surface into the drill, with a short streak behind them
   for (const g of r.homing) {
+    // they don't slide home, they hop: one arc over the distance, stretched going up, squashed coming down
+    const pr = g.d0 > 4 ? clamp(1 - Math.abs(r.dx - g.x) / g.d0, 0, 1) : 1, hop = Math.min(26, (g.d0 || 0) * .3) * Math.sin(Math.PI * pr);
     const dir = Math.sign(r.dx - g.x) || 1;
     const tr = ctx.createLinearGradient(g.x - dir * 22, 0, g.x, 0);
     tr.addColorStop(0, "rgba(255,246,232,0)"); tr.addColorStop(1, "rgba(255,246,232,.45)");
     ctx.fillStyle = tr; ctx.fillRect(Math.min(g.x, g.x - dir * 22), g.y - R * .6, 22, R * 1.2);
     ctx.fillStyle = "#fff6e8"; ctx.shadowColor = "rgba(255,200,140,.8)"; ctx.shadowBlur = 8;
-    ctx.beginPath(); ctx.arc(g.x, g.y, R * .8, 0, Math.PI * 2); ctx.fill();
+    const vs = 1 + .25 * Math.cos(Math.PI * pr) * Math.min(1, hop / 8);
+    ctx.beginPath(); ctx.ellipse(g.x, g.y - hop, R * .8 / vs, R * .8 * vs, 0, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
   }
 
-  // fast-forward badge
+  // fast-forward badge: just the arrows, sliding
   if (r.ff && r.state === "shoot") {
-    ctx.fillStyle = "rgba(19,14,12,.75)"; rr(W / 2 - 40, H - 40, 80, 26, 13); ctx.fill();
-    ctx.fillStyle = "#f4e7d4"; ctx.font = "700 14px 'Chakra Petch', sans-serif";
-    ctx.fillText("6× ▸▸▸", W / 2, H - 26);
+    ctx.fillStyle = "rgba(19,14,12,.75)"; rr(W / 2 - 30, H - 40, 60, 26, 13); ctx.fill();
+    const sl = reduceMotion ? 0 : (performance.now() / 400) % 1;
+    for (let i = 0; i < 3; i++) {
+      const x = W / 2 - 16 + i * 11;
+      ctx.globalAlpha = .45 + .55 * ((i / 3 + 1 - sl) % 1); ctx.fillStyle = "#f4e7d4";
+      ctx.beginPath(); ctx.moveTo(x, H - 33); ctx.lineTo(x + 9, H - 27); ctx.lineTo(x, H - 21); ctx.closePath(); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   }
 
-  // banner naming the capsule just caught
-  if (r.banner) {
-    const B = r.banner;
-    ctx.globalAlpha = clamp(B.life * 2, 0, 1);
-    ctx.fillStyle = "rgba(19,14,12,.88)"; rr(W / 2 - 120, 70, 240, 46, 10); ctx.fill();
-    ctx.strokeStyle = B.col; ctx.lineWidth = 2; ctx.stroke();
-    capIcon(ctx, B.type, W / 2 - 94, 93, 13, false);
-    ctx.textAlign = "left";
-    ctx.fillStyle = B.col; ctx.font = "700 15px 'Chakra Petch', sans-serif"; ctx.fillText(B.t, W / 2 - 70, 86);
-    ctx.fillStyle = "#f4e7d4"; ctx.font = "600 12px 'Chakra Petch', sans-serif"; ctx.fillText(B.d, W / 2 - 70, 103);
-    ctx.textAlign = "center"; ctx.globalAlpha = 1;
-  }
+  drawIcons();
 
   // floating crystal text
   ctx.font = "700 16px 'Chakra Petch', sans-serif";
   for (const t of r.texts) {
     ctx.globalAlpha = clamp(t.life * 1.5, 0, 1); ctx.fillStyle = t.col || "#f4efe8";
-    if (t.big) { ctx.save(); ctx.font = "800 24px 'Chakra Petch', sans-serif"; ctx.fillText(t.t, t.x, t.y); ctx.restore(); }
-    else ctx.fillText(t.t, t.x, t.y);
+    const ts = .4 + .6 * easeBack((t.age || 0) / .3);   // pop in with a little overshoot
+    ctx.save(); ctx.translate(t.x, t.y); ctx.scale(ts, ts); ctx.translate(-t.x, -t.y);
+    if (t.big) ctx.font = "800 24px 'Chakra Petch', sans-serif";
+    ctx.fillText(t.t, t.x, t.y);
     if (t.pearl) coin(ctx, t.x + 18, t.y, 7);
+    ctx.restore();
   }
   ctx.globalAlpha = 1;
 }
@@ -2214,13 +2534,20 @@ function hud() {
   $("hTip").style.setProperty("--tip", "hsl(" + dh + ",92%,58%)");
   $("hTip").style.setProperty("--tip-dk", "hsl(" + dh + ",80%,30%)");
   $("shaft").setAttribute("aria-valuemax", r.L.goal); $("shaft").setAttribute("aria-valuenow", Math.floor(r.depth));
+  const ps = $("pShots");
+  if ($("hShots").textContent !== String(r.shots)) { ps.classList.remove("pill--bump"); void ps.offsetWidth; ps.classList.add("pill--bump"); }
   $("hShots").textContent = r.shots;
+  ps.classList.toggle("pill--low", r.shots <= 2);
   $("hGems").textContent = save.gems;
   $("hLayer").textContent = (r.li + 1) + " · " + r.L.name;
   $("hLayer").style.color = "hsl(" + Math.round(hueAt(r.li, r.depth)) + ",90%,62%)";
 }
 
-const grad = (i, dir = "90deg") => { const [a, b] = phaseHues(i).map(h => "hsl(" + h + ",88%,62%)"); return "linear-gradient(" + dir + "," + a + " 0%," + a + " " + HOLD * 100 + "%," + b + " 100%)"; };
+// the first colour holds like in the dig, then the rest spread evenly to the end
+const grad = (i, dir = "90deg") => {
+  const hs = phaseHues(i), c = hs.map(h => "hsl(" + h + ",88%,62%)"), n = hs.length;
+  return "linear-gradient(" + dir + "," + c[0] + " 0%," + c.map((x, k) => x + " " + (HOLD + (1 - HOLD) * k / (n - 1)) * 100 + "%").join(",") + ")";
+};
 const starsOf = i => "★".repeat(Math.min(5, diff(i).stars)) + (diff(i).stars > 5 ? "+" + (diff(i).stars - 5) : "");
 function phaseCard() {
   const i = save.level, L = LV(i), st = i < save.maxLevel ? "Vencida" : "Próxima";
@@ -2249,6 +2576,23 @@ function menu() {
   phaseCard();
   $("bPlay").textContent = "Cavar";
   $("mGems").textContent = save.gems; $("mGems2").textContent = save.gems;
+  // legend: what each button and each power-up does, with the same icons as in the game
+  const lb = $("lgBtns");
+  if (!lb.childElementCount) for (const [id, n, d] of [["bRegroup", "Juntar", "põe as bolas numa linha só"], ["bFast", "Acelerar", "bolas mais rápidas"],
+    ["bSound", "Som", "liga e desliga"], ["bMenu", "Pausar", "pausa a partida"]]) {
+    const li = document.createElement("li");
+    li.innerHTML = '<span class="lg__ic" aria-hidden="true">' + $(id).querySelector("svg").outerHTML + "</span><span><b>" + n + "</b><small>" + d + "</small></span>";
+    li.querySelector(".snd-off")?.remove();
+    lb.appendChild(li);
+  }
+  const lc = $("lgCaps");
+  if (!lc.childElementCount) for (const key of CAP_KEYS) {
+    const C = CAPS[key], li = document.createElement("li"), ic = document.createElement("canvas");
+    ic.width = ic.height = 60; ic.className = "lg__ic"; capIcon(ic.getContext("2d"), key, 30, 30, 26, false);
+    if (key === "slim") li.className = "bad";
+    li.innerHTML = "<span><b>" + C.name + "</b><small>" + (key === "slim" ? "ruim: desvie! · " : "") + C.short + "</small></span>";
+    li.prepend(ic); lc.appendChild(li);
+  }
   const cl = $("capList");
   if (!cl.childElementCount) for (const key of CAP_KEYS) {
     const C = CAPS[key], li = document.createElement("li");
