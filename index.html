@@ -167,8 +167,8 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 /* menu */
 .menu{gap:16px;padding:22px 16px 28px}
 .m-hero{display:flex;flex-direction:column;gap:8px}
-.menu .brand{font-size:clamp(44px,14vw,58px)}
-.tag{margin:0;color:var(--ink-dim);font-size:14px;line-height:1.45;max-width:32ch;text-wrap:balance}
+.menu .brand{font-size:clamp(40px,13vw,56px);white-space:nowrap}
+.menu .brand span{display:inline}
 .phase{border-radius:16px;background:var(--rock-2);border:1px solid var(--line);overflow:hidden;flex-shrink:0}
 .phase__band{height:62px;display:flex;align-items:flex-end;justify-content:space-between;padding:8px 14px;box-sizing:border-box;color:#0a0a0b}
 .phase__num{font-family:var(--display);font-size:34px;line-height:.9}
@@ -185,14 +185,16 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .mstat{background:var(--rock-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .mstat small{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}
 .mstat b{font-size:20px;font-variant-numeric:tabular-nums}
-.phases{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity;scrollbar-width:thin}
-.ph{all:unset;box-sizing:border-box;flex:0 0 88px;scroll-snap-align:start;border-radius:12px;overflow:hidden;background:var(--rock-2);border:1px solid var(--line);cursor:pointer;display:flex;flex-direction:column}
-.ph__band{height:38px;display:grid;place-items:center;font-family:var(--display);font-size:17px;color:#0a0a0b}
-.ph__lbl{padding:5px 5px 6px;font-size:10.5px;overflow-wrap:anywhere;hyphens:auto;color:var(--ink-dim);text-align:center;line-height:1.2}
-.ph[aria-current="true"]{box-shadow:0 0 0 2px var(--ink)}
-.ph[disabled]{cursor:not-allowed}
-.ph[disabled] .ph__band{filter:grayscale(.85) brightness(.45)}
-.ph:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
+/* Holedown-style phase picker: big cards you swipe sideways; the one that settles in the middle is the phase you play */
+.pcar{position:relative;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 14% 10px;flex-shrink:0;scrollbar-width:none;overscroll-behavior-x:contain}
+.pcar::-webkit-scrollbar{display:none}
+.pcar:focus-visible{outline:2px solid var(--crystal);outline-offset:2px;border-radius:16px}
+.pcar .phase{flex:0 0 100%;scroll-snap-align:center;cursor:pointer;transform:scale(.9);opacity:.5;transition:transform .25s,opacity .25s}
+.pcar .phase.is-on{transform:none;opacity:1}
+/* phases already open keep their full colour off to the side; only locked ones stay dimmed */
+.pcar .phase:not(.phase--locked){opacity:1}
+.phase--locked .phase__band{filter:grayscale(.85) brightness(.45)}
+@media (prefers-reduced-motion:reduce){.pcar .phase{transition:none}}
 .shopcoins{font-family:var(--body);font-weight:700;letter-spacing:0;margin-left:6px;-webkit-text-fill-color:var(--crystal)}
 .menu .ups{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px}
 .menu .up{display:flex;flex-direction:column;align-items:stretch;gap:7px;padding:11px;border-radius:12px}
@@ -230,8 +232,6 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .phase__band{position:relative}
 .phase__hard{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:700 12px var(--body);letter-spacing:.06em;text-transform:uppercase;
   background:#1a0a06;color:#ff8a4a;padding:4px 9px;border-radius:999px;border:1px solid #ff5a3c;box-shadow:0 0 12px rgba(255,90,60,.5)}
-.ph__band{position:relative}
-.ph__hard{position:absolute;right:5px;top:3px;font-size:13px;filter:drop-shadow(0 0 4px rgba(255,90,60,.9))}
 .mshop__h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .mshop__all{all:unset;cursor:pointer;font:700 12px var(--body);color:var(--crystal)}
 .mshop__all:focus-visible{outline:2px solid var(--crystal);outline-offset:2px;border-radius:4px}
@@ -313,7 +313,6 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
       <div class="ov menu" id="ovMenu">
         <header class="m-hero">
           <h1 class="brand">Dx<span>Drill</span></h1>
-          <p class="tag">Cave o arco-íris, rebata as bolas e não deixe as pedras te engolirem.</p>
         </header>
 
         <ol class="how" aria-label="Como jogar">
@@ -335,13 +334,8 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
             <b>Quebre o núcleo</b><span>no fundo, para passar de fase</span></li>
         </ol>
 
-        <section class="phase" id="phaseCard" aria-live="polite"></section>
+        <div class="pcar" id="core" tabindex="0" aria-label="Fases: arraste para o lado para escolher"></div>
         <button class="btn btn--big" id="bPlay" type="button">Cavar</button>
-
-        <section>
-          <h2>Fases</h2>
-          <div class="phases" id="core"></div>
-        </section>
 
         <section class="mshopwrap">
           <div class="mshop__h"><h2>Lojinha <span class="gem shopcoins"><span class="pearl" aria-hidden="true"></span> <span id="mGems">0</span></span></h2>
@@ -396,7 +390,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
             <li><b>Dois cliques</b> ou <b>dois toques</b> rápidos com as bolas em jogo aceleram a jogada (6×). Mais dois cliques ou toques voltam à velocidade normal.</li>
             <li>O botão <b>Juntar</b> (a linha reta) (ao lado do » lá em cima, ou tecla R) junta todas as bolas em jogo numa <b>linha só</b> de novo, atrás da bola que está na frente. Bom para salvar as bolas quando elas estão espalhadas.</li>
             <li>De vez em quando aparece uma <b>fase difícil</b> (🔥 no menu): pedras mais duras, mais peças, pedras subindo mais rápido e um núcleo mais forte.</li>
-            <li>Cada fase é <b>mais funda</b> que a anterior e começa com <b>4 tiros a mais</b>. Durante a fase os tiros não aumentam (só com power-up, tela limpa ou lojinha).</li>
+            <li>Cada fase é <b>mais funda</b> que a anterior e começa com <b>2 tiros a mais</b>. Durante a fase os tiros não aumentam (só com power-up, tela limpa ou lojinha).</li>
             <li>Se você limpar todas as pedras da tela com bolas ainda em jogo, elas voltam sozinhas para a broca e você <b>ganha o tiro de volta</b>.</li>
             <li>O poço só desce quando o bloco mais alto sai do caminho. Toda vez que as bolas passam pela barra e a vez acaba, <b>as pedras sobem</b> um pouco. Se encostarem na linha vermelha embaixo da broca, você é engolido.</li>
             <li>Cada camada é mais difícil (estrelas no menu): pedras mais duras, mais peças e pedras subindo mais rápido.</li>
@@ -944,8 +938,8 @@ const NAMES = [
 const ROMAN = ["", " II", " III", " IV", " V", " VI", " VII", " VIII", " IX", " X"];
 // every phase digs deeper than the last: 150 m, 185 m, 220 m ... and a little more each lap
 const goalOf = i => 150 + i * 35 + Math.floor(i / 10) * 25;
-// the shots don't grow during a phase: each new phase starts with 4 more than the one before
-const shotsOf = i => 18 + i * 4;
+// the shots don't grow during a phase: each new phase starts with 2 more than the one before
+const shotsOf = i => 12 + i * 2;
 function LV(i) {
   const lap = Math.floor(i / NAMES.length);
   let start = 0; for (let j = 0; j < i; j++) start += goalOf(j);
@@ -1135,6 +1129,13 @@ const sfx = {
   },
   plop() { tone(rnd(520, 640), rnd(1100, 1400), .045, "sine", .07, 0, direct); },
   bubbles() { for (let i = 0; i < 5; i++) tone(rnd(300, 400) + i * 90, rnd(700, 950) + i * 120, .05, "sine", .06, i * .05); },
+  tick() {   // one small bubble per phase card passing the middle: a light, quick upward "blup" ringing in the cave, pitch nudged a little each time
+    if (!ac) return;
+    const g = rnd(380, 480);
+    tone(g, g * 2.2, .04, "sine", .12, 0, direct);
+    tone(g, g * 2.2, .04, "sine", .1);          // through the cave reverb
+    tone(g, g * 2.2, .04, "sine", .04, .15);    // a faint echo coming back
+  },
   bad() { tone(260, 180, .3, "triangle", .1); tone(195, 140, .3, "triangle", .07, .08); },
   ff() { for (let i = 0; i < 3; i++) tone(300 + i * 120, 700 + i * 160, .06, "sine", .05, i * .05); },
   buy() { sfx.coin(); tone(196, 190, .25, "triangle", .1, .05); },
@@ -2570,32 +2571,54 @@ const grad = (i, dir = "90deg") => {
   return "linear-gradient(" + dir + "," + c[0] + " 0%," + c.map((x, k) => x + " " + (HOLD + (1 - HOLD) * k / (n - 1)) * 100 + "%").join(",") + ")";
 };
 const starsOf = i => "★".repeat(Math.min(5, diff(i).stars)) + (diff(i).stars > 5 ? "+" + (diff(i).stars - 5) : "");
-function phaseCard() {
-  const i = save.level, L = LV(i), st = i < save.maxLevel ? "Vencida" : "Próxima";
-  $("phaseCard").innerHTML =
-    '<div class="phase__band" style="background:' + grad(i) + '"><span class="phase__num">' + String(i + 1).padStart(2, "0") +
+function phaseCard(i) {
+  const L = LV(i), locked = i > save.maxLevel, st = locked ? "🔒 Bloqueada" : i < save.maxLevel ? "Vencida" : "Próxima";
+  return '<div class="phase__band" style="background:' + grad(i) + '"><span class="phase__num">' + String(i + 1).padStart(2, "0") +
     '</span><span class="phase__state">' + st + "</span>" + (isHard(i) ? '<span class="phase__hard">🔥 Difícil</span>' : "") + '</div><div class="phase__body"><p class="phase__name">' + L.name +
     '</p><div class="phase__sub"><span class="stars" aria-label="Dificuldade ' + diff(i).stars + '">' + starsOf(i) + "</span><span>" + L.km +
     '</span></div><div class="chips"><span class="chip">' + L.goal + "<small>m de meta</small></span><span class=\"chip\">" + L.shots +
     "<small>tiros</small></span>" + (layerBalls(i) ? '<span class="chip">+' + layerBalls(i) + "<small>bolas</small></span>" : "") + "</div></div>";
 }
+// the card resting in the middle of the carousel is the chosen phase; a locked one can be looked at but not played
+function pickPhase(i) {
+  const core = $("core");
+  for (const c of core.children) c.classList.toggle("is-on", +c.dataset.i === i);
+  const locked = i > save.maxLevel;
+  $("bPlay").disabled = locked; $("bPlay").textContent = locked ? "🔒 Bloqueada" : "Cavar";
+  if (!locked && i !== save.level) { save.level = i; store(); newRun(i); }
+}
 function menu() {
   const core = $("core"); core.innerHTML = "";
   for (let i = 0, n = Math.max(8, save.maxLevel + 2); i < n; i++) {
-    const L = LV(i), b = document.createElement("button");
-    b.type = "button"; b.className = "ph";
-    b.disabled = i > save.maxLevel;
-    b.setAttribute("aria-current", i === save.level ? "true" : "false");
-    b.setAttribute("aria-label", "Fase " + (i + 1) + ", " + L.name + (b.disabled ? ", bloqueada" : ""));
-    b.innerHTML = '<span class="ph__band" style="background:' + grad(i) + '">' + (b.disabled ? "🔒" : i + 1) + (isHard(i) ? '<span class="ph__hard" title="Fase difícil">🔥</span>' : "") + '</span><span class="ph__lbl">' +
-      (i < save.maxLevel ? "✓ " : "") + L.name + "</span>";
-    b.onclick = () => { save.level = i; store(); newRun(i); menu(); };
-    core.appendChild(b);
+    const c = document.createElement("section");
+    c.className = "phase" + (i > save.maxLevel ? " phase--locked" : ""); c.dataset.i = i;
+    c.setAttribute("aria-label", "Fase " + (i + 1) + ", " + LV(i).name + (i > save.maxLevel ? ", bloqueada" : ""));
+    c.innerHTML = phaseCard(i);
+    c.onclick = () => c.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    core.appendChild(c);
   }
-  const cur = core.children[save.level];
-  if (cur) core.scrollLeft = Math.max(0, cur.offsetLeft - core.clientWidth / 2 + 44);
-  phaseCard();
-  $("bPlay").textContent = "Cavar";
+  if (!core.onscroll) {
+    let tm = 0;
+    const centred = () => {
+      const mid = core.scrollLeft + core.clientWidth / 2;
+      let best = 0, bd = 1e9;
+      for (const c of core.children) { const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - mid); if (d < bd) { bd = d; best = +c.dataset.i; } }
+      return best;
+    };
+    // a touch is a user gesture, so sound can start here and the very first swipe already ticks
+    core.addEventListener("pointerdown", audioInit);
+    core.onscroll = () => {
+      // roulette of bubbles: one every time a card passes the middle, fast on a flick and slowing as it settles
+      const now = centred();
+      if (now !== core.tickAt) { if (core.tickAt != null) sfx.tick(); core.tickAt = now; }
+      clearTimeout(tm);
+      tm = setTimeout(() => pickPhase(centred()), 90);
+    };
+  }
+  core.tickAt = save.level;
+  pickPhase(save.level);
+  // the menu may still be hidden here: centre the chosen card once it has a size
+  requestAnimationFrame(() => { const c = core.children[save.level]; if (c) core.scrollLeft = c.offsetLeft - (core.clientWidth - c.offsetWidth) / 2; });
   $("mGems").textContent = save.gems; $("mGems2").textContent = save.gems;
   // legend: what each button and each power-up does, with the same icons as in the game
   const lb = $("lgBtns");
