@@ -1081,16 +1081,13 @@ function startAmbient() {
   ambient = g;
 }
 const sfx = {
-  hit(hp) {   // a hollow stone struck like a low marimba bar: inharmonic partials, notes from a low A minor pentatonic so rallies form a tune, lower for tougher rock
+  hit(hp) {   // a single dry "toc": very short, straight to the output with no cave echo, lower for tougher rock
     if (!ac) return;
     const t = ac.currentTime; if (t - lastHit < .03) return; lastHit = t;
-    const notes = [110, 130.8, 146.8, 164.8, 196, 220];
-    const f = notes[Math.max(0, 5 - Math.floor(Math.min(hp, 60) / 12) - (Math.random() < .5 ? 1 : 0))];
-    tone(f, f * .99, .2, "sine", .3, 0, direct);
-    tone(f * 2.76, f * 2.74, .09, "sine", .13, 0, direct);
-    tone(f * 5.4, f * 5.35, .035, "sine", .06, 0, direct);
-    hiss(.01, "bandpass", 3000, 2500, .14, 0, 1, direct);
-    tone(f, f, .35, "sine", .05);
+    const f = 300 - Math.min(hp, 60) * 2 + rnd(-10, 10);
+    tone(f, f * .8, .035, "sine", .32, 0, master);
+    tone(f * 2.3, f * 2, .015, "sine", .1, 0, master);
+    hiss(.012, "bandpass", f * 6, f * 5, .18, 0, 2, master);
   },
   smash(big) {   // the stone cracks apart: a sharp crack and gravel, with a short low thud
     hiss(.05, "bandpass", 1400, 900, .3, 0, 1.2, direct);
