@@ -1150,14 +1150,16 @@ const sfx = {
   },
   bad() { tone(260, 180, .3, "triangle", .1); tone(195, 140, .3, "triangle", .07, .08); },
   ff() { for (let i = 0; i < 3; i++) tone(300 + i * 120, 700 + i * 160, .06, "sine", .05, i * .05); },
-  buy() {   // cash register "cha-ching": key clicks, the drawer thumping open, a bright bell and a jingle of coins
-    for (const w of [0, .045, .09]) hiss(.012, "bandpass", 2600, 2200, .12, w, 2, direct);
-    hiss(.12, "bandpass", 700, 350, .14, .13, 1, direct);
-    tone(150, 110, .05, "triangle", .12, .13, direct);
-    tone(2093, 2093, .7, "sine", .1, .15, direct);
-    tone(2093 * 2.4, 2093 * 2.4, .25, "sine", .03, .15, direct);
-    tone(2637, 2637, .6, "sine", .07, .17, direct);
-    for (let i = 0; i < 5; i++) { const f = rnd(3200, 4800); tone(f, f, .05, "sine", .025, rnd(.18, .4), direct); }
+  buy() {   // an old mechanical cash register on a worn record: just the ratchet clicks and the drawer clunk, squeezed through a narrow band with surface hiss and crackle
+    if (!ac || !soundOn) return;
+    const old = ac.createBiquadFilter(), lp = ac.createBiquadFilter();
+    old.type = "highpass"; old.frequency.value = 350; lp.type = "lowpass"; lp.frequency.value = 2200;
+    old.connect(lp).connect(direct);
+    hiss(.4, "bandpass", 1800, 1600, .035, 0, .5, old);
+    for (let i = 0; i < 4; i++) hiss(.004, "highpass", 1500, 1400, rnd(.05, .12), rnd(0, .35), .7, old);
+    for (const w of [0, .05, .1, .15]) hiss(.015, "bandpass", 1400, 1200, .14, w, 2, old);
+    hiss(.14, "bandpass", 500, 300, .18, .2, 1, old);
+    tone(120, 90, .06, "triangle", .16, .2, old);
   },
   win() { [196, 247, 294, 392].forEach((f, i) => tone(f, f, 1.1, "sine", .08, i * .1)); sfx.coin(); },
   lose() { [220, 196, 165].forEach((f, i) => tone(f, f, .5, "triangle", .1, i * .22)); }
