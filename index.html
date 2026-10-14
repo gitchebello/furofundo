@@ -163,6 +163,40 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .pips i{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.1)}
 .pips i.on{background:var(--crystal)}
 .menu .up button{grid-row:auto;grid-column:auto;width:100%;display:flex;justify-content:center;align-items:center;gap:6px}
+/* how-to strip: three pictures that explain the game at a glance */
+.how{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex-shrink:0}
+.how li{display:flex;flex-direction:column;gap:2px;min-width:0}
+.how svg{width:100%;height:auto;display:block;margin-bottom:4px}
+.how__bg{fill:#0b0b0e;stroke:var(--line)}
+.how b{font-size:12.5px;line-height:1.2}
+.how span{font-size:11px;line-height:1.3;color:var(--ink-dim)}
+/* four big tiles instead of a long scroll: each opens its own page */
+.mtiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0}
+.mtile{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:30px 1fr;grid-template-rows:auto auto;gap:1px 10px;align-items:center;
+  padding:11px 12px;border-radius:12px;background:var(--rock-2);border:1px solid var(--line)}
+.mtile:hover{border-color:var(--crystal)}
+.mtile:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
+.mtile__ic{grid-row:1/3;width:28px;height:28px;fill:none;stroke:var(--crystal);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mtile b{font-size:14px;line-height:1.2}
+.mtile small{font-size:11px;color:var(--ink-dim);display:flex;align-items:center;gap:4px}
+.menu.has-panel{overflow:hidden}
+.mpanel{position:absolute;inset:0;z-index:3;background:#0d0b0a;overflow-y:auto;padding:16px 16px 28px;box-sizing:border-box;
+  display:flex;flex-direction:column;gap:12px;animation:mslide .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes mslide{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.mpanel{animation:none}}
+.mpanel__h{display:flex;flex-direction:column;align-items:flex-start;gap:8px;position:sticky;top:-16px;background:#0d0b0a;padding:4px 0 8px;margin-top:-4px;z-index:1}
+.mpanel__back{all:unset;cursor:pointer;font:700 13px var(--body);color:var(--crystal);padding:4px 0}
+.mpanel__back:focus-visible{outline:2px solid var(--crystal);outline-offset:2px;border-radius:4px}
+.mpanel__sub{margin:6px 0 0;font:600 11px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim)}
+/* compact shop cards */
+.mpanel .ups{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mpanel .up{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:10px;border-radius:12px}
+.up__top{display:flex;align-items:center;gap:8px}
+.up__ic{width:26px;height:26px;flex:none;display:grid;place-items:center}
+.up__ic img,.up__ic svg{width:26px;height:26px;display:block}
+.mpanel .up__n{font-size:13px;line-height:1.2}
+.mpanel .up__d{font-size:11px;line-height:1.35;flex:1}
+.mpanel .up button{grid-row:auto;grid-column:auto;width:100%;display:flex;justify-content:center;align-items:center;gap:6px;padding:6px 8px}
 .fold{border-radius:12px;background:var(--rock-2);border:1px solid var(--line);flex-shrink:0}
 .fold summary{padding:13px 14px;cursor:pointer;font-family:var(--display);font-size:13px;letter-spacing:.04em;list-style:none;display:flex;justify-content:space-between;align-items:center}
 .fold summary::-webkit-details-marker{display:none}
@@ -212,34 +246,67 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
           <p class="tag">Cave o arco-íris, rebata as bolas e não deixe as pedras te engolirem.</p>
         </header>
 
+        <ol class="how" aria-label="Como jogar">
+          <li><svg viewBox="0 0 100 64" aria-hidden="true"><rect width="100" height="64" rx="10" class="how__bg"/>
+            <rect x="34" y="9" width="32" height="5" rx="2.5" fill="#f4e7d4"/><path d="M45 7h10l-5 9z" fill="#ff5a3c"/>
+            <g fill="#f4e7d4"><circle cx="55" cy="24" r="1.7"/><circle cx="60" cy="31" r="1.7"/><circle cx="65" cy="38" r="1.7"/><circle cx="70" cy="45" r="1.7"/></g>
+            <circle cx="76" cy="52" r="7" fill="none" stroke="#ffd23a" stroke-width="2"/><circle cx="76" cy="52" r="2.6" fill="#ffd23a"/></svg>
+            <b>Segure e solte</b><span>o dedo mira, soltar atira</span></li>
+          <li><svg viewBox="0 0 100 64" aria-hidden="true"><rect width="100" height="64" rx="10" class="how__bg"/>
+            <path d="M22 56 48 16 74 56" fill="none" stroke="#f4e7d4" stroke-width="1.6" stroke-dasharray="3 4"/>
+            <rect x="32" y="9" width="34" height="5" rx="2.5" fill="#7ee081"/><circle cx="48" cy="19" r="4.2" fill="#fff6e8"/>
+            <path d="M70 50l4 6 2-7" fill="none" stroke="#f4e7d4" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <b>Rebata</b><span>a barrinha devolve as bolas</span></li>
+          <li><svg viewBox="0 0 100 64" aria-hidden="true"><rect width="100" height="64" rx="10" class="how__bg"/>
+            <circle cx="50" cy="35" r="21" fill="url(#howCore)" stroke="#ffb020" stroke-width="2.5"/>
+            <defs><radialGradient id="howCore" cx=".38" cy=".35"><stop offset="0" stop-color="#ffcf7a"/><stop offset="1" stop-color="#8a3a10"/></radialGradient></defs>
+            <text x="50" y="40" text-anchor="middle" font-size="14" font-weight="800" fill="#fff" font-family="Chakra Petch, sans-serif">58</text>
+            <circle cx="20" cy="18" r="3" fill="#fff6e8"/><circle cx="80" cy="20" r="3" fill="#fff6e8"/></svg>
+            <b>Quebre o núcleo</b><span>no fundo, para passar de fase</span></li>
+        </ol>
+
         <section class="phase" id="phaseCard" aria-live="polite"></section>
         <button class="btn btn--big" id="bPlay" type="button">Cavar</button>
-
-        <div class="mstats">
-          <div class="mstat"><small>Moedas</small><b><span class="pearl" aria-hidden="true"></span> <span id="sCoins">0</span></b></div>
-          <div class="mstat"><small>Fases vencidas</small><b id="sDone">0</b></div>
-        </div>
 
         <section>
           <h2>Fases</h2>
           <div class="phases" id="core"></div>
         </section>
 
-        <section>
-          <h2>Lojinha <span class="gem shopcoins"><span class="pearl" aria-hidden="true"></span> <span id="mGems">0</span></span></h2>
-          <div class="ups" id="ups"></div>
-        </section>
+        <nav class="mtiles" aria-label="Mais opções">
+          <button class="mtile" type="button" data-panel="pShop">
+            <svg class="mtile__ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8Z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></svg>
+            <b>Lojinha</b><small><span class="pearl" aria-hidden="true"></span> <span id="mGems">0</span> moedas</small></button>
+          <button class="mtile" type="button" data-panel="pCaps">
+            <svg class="mtile__ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-35 12 12)"/><path d="M9.7 8.7l4.6 6.6"/></svg>
+            <b>Cápsulas</b><small>o que cada uma faz</small></button>
+          <button class="mtile" type="button" data-panel="pHelp">
+            <svg class="mtile__ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .9-1 1.6v.7M12 17h.01"/></svg>
+            <b>Todas as regras</b><small>dicas e detalhes</small></button>
+          <button class="mtile" type="button" data-panel="pMin">
+            <svg class="mtile__ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10l4 6-9 10L3 10Z"/><path d="M3 10h18M12 20 8.5 10 11 4M12 20l3.5-10L13 4"/></svg>
+            <b>Minerais</b><small>a coleção do poço</small></button>
+        </nav>
 
-        <details class="fold">
-          <summary>Cápsulas de poder</summary>
-          <div class="fold__in">
+        <!-- sub-pages: open over the menu and come back with Voltar -->
+        <div class="mpanel" id="pShop" hidden>
+          <header class="mpanel__h"><button class="mpanel__back" type="button">← Voltar</button><h2>Lojinha <span class="gem shopcoins"><span class="pearl" aria-hidden="true"></span> <span id="mGems2">0</span></span></h2></header>
+          <p class="lede">Gaste as moedas que caem das pedras. Tudo o que você compra vale para sempre.</p>
+          <h3 class="mpanel__sub">Melhorias</h3>
+          <div class="ups" id="ups"></div>
+          <h3 class="mpanel__sub">Cápsulas mais (ou menos) frequentes</h3>
+          <div class="ups" id="ups2"></div>
+        </div>
+        <div class="mpanel" id="pCaps" hidden>
+          <header class="mpanel__h"><button class="mpanel__back" type="button">← Voltar</button><h2>Cápsulas de poder</h2></header>
+
             <p class="lede caps__intro">Pedras com uma <b>cápsula desenhada</b> soltam aquela cápsula ao quebrar. Ela sobe devagar: <b>encoste a barra nela</b> para pegar. Os tempos só correm com bolas em jogo, e <b>tudo se soma</b>.</p>
             <ul class="caps" id="capList"></ul>
-          </div>
-        </details>
-        <details class="fold">
-          <summary>Como jogar</summary>
-          <div class="fold__in">
+        </div>
+
+        <div class="mpanel" id="pHelp" hidden>
+          <header class="mpanel__h"><button class="mpanel__back" type="button">← Voltar</button><h2>Todas as regras</h2></header>
+
             <ul class="howto">
             <li>Para passar de fase, cave até o fundo e <b>quebre o núcleo</b>: a bola grande no fim do poço. O número nela é quantas batidas ela aguenta.</li>
             <li>Como no Holedown, a <b>broca vai até cada bola que volta</b> e fica onde a <b>última</b> entrou: o próximo tiro sai dali.</li>
@@ -258,12 +325,13 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
             <li>Peça com <b>aura preta</b> tem outras grudadas em cima dela. Destrua a de baixo e tudo o que está empilhado em cima desaba junto.</li>
             <li>Pedras com uma <span class="pearl" aria-hidden="true"></span> moeda desenhada soltam moedas para a lojinha.</li>
           </ul>
-          </div>
-        </details>
-        <details class="fold">
-          <summary>Minerais do poço</summary>
-          <div class="fold__in"><div class="minerals" id="minList"></div></div>
-        </details>
+        </div>
+
+        <div class="mpanel" id="pMin" hidden>
+          <header class="mpanel__h"><button class="mpanel__back" type="button">← Voltar</button><h2>Minerais do poço</h2></header>
+          <div class="minerals" id="minList"></div>
+        </div>
+
       </div>
 
       <div class="ov" id="ovPause" hidden>
@@ -802,32 +870,32 @@ function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catc
 // the shop: each item says plainly what it does and what you have now
 const pct = v => Math.round(v * 100) + "%";
 const UPS = [
-  { name: "+1 bola por tiro", desc: "Todo tiro sai com uma bola a mais, em todas as fases.",
+  { ic: "ball", name: "+1 bola por tiro", desc: "Todo tiro sai com uma bola a mais, em todas as fases.",
     now: () => "Agora: " + save.balls + " bolas por tiro", lvl: () => save.balls - 4, max: 14,
     cost: n => Math.round(19 * Math.pow(1.5, n)), buy: () => { save.balls++; } },
-  { name: "+2 tiros por fase", desc: "Cada fase começa com 2 tiros a mais para você usar.",
+  { ic: "shots", name: "+2 tiros por fase", desc: "Cada fase começa com 2 tiros a mais para você usar.",
     now: () => save.xShots ? "Agora: +" + save.xShots * 2 + " tiros em cada fase" : "Agora: nenhum tiro extra", lvl: () => save.xShots, max: 20,
     cost: n => Math.round(16 * Math.pow(1.45, n)), buy: () => { save.xShots++; } },
-  { name: "Mais moedas nas pedras", desc: "Mais pedras trazem moedas para gastar aqui na lojinha.",
+  { ic: "coin", name: "Mais moedas nas pedras", desc: "Mais pedras trazem moedas para gastar aqui na lojinha.",
     now: () => "Agora: " + pct(.05 + save.luck * .02) + " das pedras com moeda", lvl: () => save.luck, max: 8,
     cost: n => Math.round(22 * Math.pow(1.6, n)), buy: () => { save.luck++; } },
-  { name: "Barrinha mais larga", desc: "A barrinha que rebate as bolas fica mais larga, então fica mais fácil salvar as bolas.",
+  { ic: "pad", name: "Barrinha mais larga", desc: "A barrinha que rebate as bolas fica mais larga, então fica mais fácil salvar as bolas.",
     now: () => save.pad ? "Agora: +" + save.pad * 8 + " px de largura" : "Agora: tamanho normal", lvl: () => save.pad, max: 6,
     cost: n => Math.round(14 * Math.pow(1.5, n)), buy: () => { save.pad++; } },
   // power-up odds
-  { name: "Mais cápsulas de poder", desc: "Mais pedras trazem uma cápsula de poder quando quebram.",
+  { ic: "caps", name: "Mais cápsulas de poder", desc: "Mais pedras trazem uma cápsula de poder quando quebram.",
     now: () => save.capRate ? "Agora: +" + save.capRate * 3 + "% de pedras com cápsula" : "Agora: chance normal", lvl: () => save.capRate, max: 6,
     cost: n => Math.round(24 * Math.pow(1.55, n)), buy: () => { save.capRate++; } },
-  { name: "Mais Multibola (M)", desc: "A cápsula M, que divide cada bola em três, aparece mais vezes.",
+  { ic: "multi", name: "Mais Multibola (M)", desc: "A cápsula M, que divide cada bola em três, aparece mais vezes.",
     now: () => save.capM ? "Agora: nível " + save.capM + " de 5" : "Agora: chance normal", lvl: () => save.capM, max: 5,
     cost: n => Math.round(19 * Math.pow(1.5, n)), buy: () => { save.capM++; } },
-  { name: "Mais Bola de fogo (F)", desc: "A cápsula F, que faz cada batida tirar 3 em vez de 1, aparece mais vezes.",
+  { ic: "fire", name: "Mais Bola de fogo (F)", desc: "A cápsula F, que faz cada batida tirar 3 em vez de 1, aparece mais vezes.",
     now: () => save.capF ? "Agora: nível " + save.capF + " de 5" : "Agora: chance normal", lvl: () => save.capF, max: 5,
     cost: n => Math.round(19 * Math.pow(1.5, n)), buy: () => { save.capF++; } },
-  { name: "Mais Bola extra (B)", desc: "A cápsula B, que dá uma bola a mais até o fim da fase, aparece mais vezes.",
+  { ic: "ball2", name: "Mais Bola extra (B)", desc: "A cápsula B, que dá uma bola a mais até o fim da fase, aparece mais vezes.",
     now: () => save.capB ? "Agora: nível " + save.capB + " de 5" : "Agora: chance normal", lvl: () => save.capB, max: 5,
     cost: n => Math.round(22 * Math.pow(1.55, n)), buy: () => { save.capB++; } },
-  { name: "Menos Barrinha curta (C)", desc: "A cápsula ruim C, que encolhe a barrinha, aparece menos vezes.",
+  { ic: "slim", name: "Menos Barrinha curta (C)", desc: "A cápsula ruim C, que encolhe a barrinha, aparece menos vezes.",
     now: () => save.capC ? "Agora: nível " + save.capC + " de 5" : "Agora: chance normal", lvl: () => save.capC, max: 5,
     cost: n => Math.round(16 * Math.pow(1.5, n)), buy: () => { save.capC++; } }
 ];
@@ -2145,9 +2213,7 @@ function menu() {
   if (cur) core.scrollLeft = Math.max(0, cur.offsetLeft - core.clientWidth / 2 + 44);
   phaseCard();
   $("bPlay").textContent = "Cavar";
-  $("sCoins").textContent = save.gems;
-  $("sDone").textContent = save.maxLevel;
-  $("mGems").textContent = save.gems;
+  $("mGems").textContent = save.gems; $("mGems2").textContent = save.gems;
   const cl = $("capList");
   if (!cl.childElementCount) for (const key of CAP_KEYS) {
     const C = CAPS[key], li = document.createElement("li");
@@ -2158,11 +2224,12 @@ function menu() {
     cl.appendChild(li);
   }
   gallery();
-  const ups = $("ups"); ups.innerHTML = "";
-  UPS.forEach(u => {
+  const ups1 = $("ups"), ups2 = $("ups2"); ups1.innerHTML = ""; ups2.innerHTML = "";
+  UPS.forEach((u, i) => {
+    const ups = i < 4 ? ups1 : ups2;
     const n = u.lvl(), maxed = n >= u.max, c = u.cost(n);
     const d = document.createElement("div"); d.className = "up";
-    d.innerHTML = '<div class="up__n">' + u.name + '</div><div class="up__d">' + u.desc + '<span class="up__now">' + u.now() + '</span></div><div class="pips" aria-label="Nível ' + n + " de " + u.max + '">' +
+    d.innerHTML = '<div class="up__top"><span class="up__ic">' + upIcon(u.ic) + '</span><div class="up__n">' + u.name + '</div></div><div class="up__d">' + u.desc + '<span class="up__now">' + u.now() + '</span></div><div class="pips" aria-label="Nível ' + n + " de " + u.max + '">' +
       Array.from({ length: u.max }, (_, j) => "<i" + (j < n ? ' class="on"' : "") + "></i>").join("") + "</div>";
     const btn = document.createElement("button"); btn.type = "button";
     if (maxed) btn.textContent = "Máximo"; else btn.innerHTML = '<span class="pearl" aria-hidden="true"></span> ' + c;
@@ -2172,6 +2239,45 @@ function menu() {
   });
   hud();
 }
+
+// little pictures for the shop cards
+const upIcCache = {};
+function upIcon(k) {
+  if (upIcCache[k]) return upIcCache[k];
+  const capKey = { multi: "multi", fire: "fire", ball2: "ball", slim: "slim", caps: "shot" }[k];
+  let html;
+  if (capKey) {
+    const c = document.createElement("canvas"); c.width = c.height = 52;
+    capIcon(c.getContext("2d"), capKey, 26, 26, 21, false);
+    html = '<img alt="" src="' + c.toDataURL() + '">';
+  } else html = {
+    ball: '<svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="8" fill="#fff6e8"/><path d="M20 4v6M17 7h6" stroke="#ffd23a" stroke-width="2.2" stroke-linecap="round"/></svg>',
+    shots: '<svg viewBox="0 0 26 26"><path d="M7 4h12l-6 18z" fill="#ff5a3c"/><path d="M9 9h8M10 13h6" stroke="#7a2a10" stroke-width="1.6"/></svg>',
+    coin: '<span class="pearl" style="width:20px;height:20px"></span>',
+    pad: '<svg viewBox="0 0 26 26"><rect x="2" y="11" width="22" height="5" rx="2.5" fill="#7ee081"/><path d="M5 7 2 9.5 5 12M21 7l3 2.5-3 2.5" stroke="#f4e7d4" stroke-width="1.6" fill="none" stroke-linecap="round" transform="translate(0 2)"/></svg>'
+  }[k] || "";
+  return upIcCache[k] = html;
+}
+
+// menu sub-pages (Lojinha, Cápsulas, Regras, Minerais): open over the menu, Voltar or Esc closes
+function openPanel(id) {
+  const m = $("ovMenu");
+  for (const p of m.querySelectorAll(".mpanel")) p.hidden = p.id !== id;
+  m.scrollTop = 0; m.classList.add("has-panel");
+  const p = $(id); p.scrollTop = 0;
+  p.querySelector(".mpanel__back").focus({ preventScroll: true });
+  if (id === "pMin") gallery();
+}
+function closePanel() {
+  const m = $("ovMenu"), open = m.querySelector(".mpanel:not([hidden])");
+  if (!open) return false;
+  open.hidden = true; m.classList.remove("has-panel");
+  const t = m.querySelector('[data-panel="' + open.id + '"]'); if (t) t.focus({ preventScroll: true });
+  return true;
+}
+document.querySelectorAll("[data-panel]").forEach(b => b.onclick = () => openPanel(b.dataset.panel));
+document.querySelectorAll(".mpanel__back").forEach(b => b.onclick = closePanel);
+window.addEventListener("keydown", e => { if (e.key === "Escape" && !$("ovMenu").hidden) closePanel(); });
 
 function gallery() {
   const ml = $("minList");
@@ -2184,7 +2290,7 @@ function gallery() {
     d.append(im, m.name); ml.appendChild(d);
   }
 }
-function showMenu() { paused = true; $("ovEnd").hidden = true; $("ovPause").hidden = true; menu(); $("ovMenu").hidden = false; }
+function showMenu() { closePanel(); paused = true; $("ovEnd").hidden = true; $("ovPause").hidden = true; menu(); $("ovMenu").hidden = false; }
 function play() { audioInit(); $("ovMenu").hidden = true; $("ovEnd").hidden = true; newRun(save.level); paused = false; cv.focus(); }
 
 // ---------- input ----------
@@ -2243,7 +2349,7 @@ window.addEventListener("keydown", e => {
 $("bPlay").onclick = play;
 $("eMain").onclick = play;
 $("eBuy").onclick = buyShots;
-$("eShop").onclick = showMenu;
+$("eShop").onclick = () => { showMenu(); openPanel("pShop"); };
 $("bMenu").onclick = () => { if (!run || paused) return; paused = true; $("ovPause").hidden = false; $("bResume").focus(); };
 $("bResume").onclick = () => { $("ovPause").hidden = true; paused = false; cv.focus(); };
 $("bQuit").onclick = () => { newRun(save.level); showMenu(); };
