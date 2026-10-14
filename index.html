@@ -193,6 +193,11 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 .mtile{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:30px 1fr;grid-template-rows:auto auto;gap:1px 10px;align-items:center;
   padding:11px 12px;border-radius:12px;background:var(--rock-2);border:1px solid var(--line)}
 /* compact shop strip on the main menu: small cards that scroll sideways, tap the price to buy */
+.phase__band{position:relative}
+.phase__hard{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:700 12px var(--body);letter-spacing:.06em;text-transform:uppercase;
+  background:#1a0a06;color:#ff8a4a;padding:4px 9px;border-radius:999px;border:1px solid #ff5a3c;box-shadow:0 0 12px rgba(255,90,60,.5)}
+.ph__band{position:relative}
+.ph__hard{position:absolute;right:5px;top:3px;font-size:13px;filter:drop-shadow(0 0 4px rgba(255,90,60,.9))}
 .mshop__h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .mshop__all{all:unset;cursor:pointer;font:700 12px var(--body);color:var(--crystal)}
 .mshop__all:focus-visible{outline:2px solid var(--crystal);outline-offset:2px;border-radius:4px}
@@ -216,7 +221,9 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
 @keyframes mslide{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.mpanel{animation:none}}
 .mpanel__h{display:flex;flex-direction:column;align-items:flex-start;gap:8px;position:sticky;top:-16px;background:#0d0b0a;padding:4px 0 8px;margin-top:-4px;z-index:1}
-.mpanel__back{all:unset;cursor:pointer;font:700 13px var(--body);color:var(--crystal);padding:4px 0}
+.mpanel__back{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font:700 15px var(--body);
+  color:#1a1205;background:var(--crystal);padding:10px 16px;border-radius:12px;box-shadow:0 3px 0 #9a7a10}
+.mpanel__back:active{transform:translateY(2px);box-shadow:0 1px 0 #9a7a10}
 .mpanel__back:focus-visible{outline:2px solid var(--crystal);outline-offset:2px;border-radius:4px}
 .mpanel__sub{margin:6px 0 0;font:600 11px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim)}
 /* compact shop cards */
@@ -348,6 +355,7 @@ h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px
             <li>As bolas andam em linha reta, quicam nas paredes, no fundo e nas pedras até subir de novo. <b>Mova o rebatedor</b> (arraste, mouse ou setas) para mandá-las de novo para baixo. A ponta do rebatedor dá ângulo. A barrinha é separada da broca e segue o dedo ou o mouse o tempo todo, com ou sem bolas em campo.</li>
             <li><b>Dois cliques</b> ou <b>dois toques</b> rápidos com as bolas em jogo aceleram a jogada (6×). Mais dois cliques ou toques voltam à velocidade normal.</li>
             <li>O botão <b>Juntar</b> (a linha reta) (ao lado do » lá em cima, ou tecla R) junta todas as bolas em jogo numa <b>linha só</b> de novo, atrás da bola que está na frente. Bom para salvar as bolas quando elas estão espalhadas.</li>
+            <li>De vez em quando aparece uma <b>fase difícil</b> (🔥 no menu): pedras mais duras, mais peças, pedras subindo mais rápido e um núcleo mais forte.</li>
             <li>Cada fase é <b>mais funda</b> que a anterior e começa com <b>4 tiros a mais</b>. Durante a fase os tiros não aumentam (só com power-up, tela limpa ou lojinha).</li>
             <li>Se você limpar todas as pedras da tela com bolas ainda em jogo, elas voltam sozinhas para a broca e você <b>ganha o tiro de volta</b>.</li>
             <li>O poço só desce quando o bloco mais alto sai do caminho. Toda vez que as bolas passam pela barra e a vez acaba, <b>as pedras sobem</b> um pouco. Se encostarem na linha vermelha embaixo da broca, você é engolido.</li>
@@ -1084,11 +1092,18 @@ function newRun(li) {
   run.texSets = phaseHues(li).map(() => { const a = pickStone(); let b = pickStone(); for (let t = 0; t < 8 && b === a; t++) b = pickStone(); return [a, b]; });
   fill();
   hud();
+  if (isHard(li)) { run.texts.push({ x: W / 2, y: H / 2 - 40, t: "🔥 Fase difícil!", life: 2.4, col: "#ff8a4a", big: true }); }
 }
 
 function hpBase(ri) { return (1.5 + run.li * .7 + ri * .05 + save.balls * .35) * 1.2 * diff(run.li).hp; }
 // how hard each layer is: tougher rock, busier floors, and the stone climbs faster after each turn
-function diff(li) { return { hp: 1 + li * .04, dens: li * .012, rise: Math.min(20, 6 + li * 1.5), stars: li + 1 }; }
+// now and then (every 7th phase) a phase is a notch harder than its neighbours: tougher rock, a few more pieces,
+// stone climbing a bit faster and a sturdier core. It is marked "Difícil" in the menu.
+const isHard = li => (li + 1) % 7 === 0;
+function diff(li) {
+  const h = isHard(li);
+  return { hp: (1 + li * .04) * (h ? 1.3 : 1), dens: li * .012 + (h ? .03 : 0), rise: Math.min(24, 6 + li * 1.5 + (h ? 3 : 0)), stars: li + 1 + (h ? 2 : 0), hard: h };
+}
 function padW() {
   const fx = run.fx;
   const lv = run.lv;   // stacked capsules multiply: each L +50%, each C -30%
@@ -1130,7 +1145,7 @@ function mk(x, y, cells, hp, col0, row0) {
 }
 
 const CORE_ROWS = 5, CORE_R = 88;   // big, and it never climbs past the middle of the screen (see rise/scroll)
-function coreHp(li) { return Math.max(30, Math.round(hpBase(run.coreRow) * 12)); }
+function coreHp(li) { return Math.max(30, Math.round(hpBase(run.coreRow) * (isHard(li) ? 13.5 : 12))); }
 function genRow() {
   const r = run, y = r.nextY, ri = r.rows++;
   if (!r.occ) r.occ = new Set();
@@ -1927,17 +1942,16 @@ function drawCore(k) {
   // neon rim
   ctx.strokeStyle = "hsl(" + hue + ",100%,65%)"; ctx.lineWidth = 5;
   ctx.beginPath(); ctx.arc(cx, cy, CORE_R, 0, Math.PI * 2); ctx.stroke();
-  // the stone, slowly turning
+  // the stone, flat like every other piece (no sphere shading)
   ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, CORE_R - 1, 0, Math.PI * 2); ctx.clip();
-  ctx.translate(cx, cy); ctx.rotate(k.spin + t * .08); ctx.translate(-cx, -cy);
   ctx.drawImage(k.st.tex, k.geo.ox, k.geo.oy, CORE_R * 2, CORE_R * 2, k.x - 6, k.y - 6, CORE_R * 2 + 12, CORE_R * 2 + 12);
   ctx.restore(); ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, CORE_R - 1, 0, Math.PI * 2); ctx.clip();
   ctx.globalCompositeOperation = "color"; ctx.globalAlpha = .8;
   ctx.fillStyle = "hsl(" + hue + ",95%,50%)"; ctx.fillRect(k.x, k.y, k.w, k.h);
   ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1;
-  // sphere shading
-  const sh = ctx.createRadialGradient(cx - CORE_R * .35, cy - CORE_R * .4, CORE_R * .1, cx, cy, CORE_R);
-  sh.addColorStop(0, "rgba(255,255,255,.35)"); sh.addColorStop(.45, "rgba(255,255,255,0)"); sh.addColorStop(1, "rgba(0,0,0,.55)");
+  // same soft top-to-bottom shade the other pieces have
+  const sh = ctx.createLinearGradient(0, k.y, 0, k.y + k.h);
+  sh.addColorStop(0, "rgba(255,255,255,.12)"); sh.addColorStop(.5, "rgba(0,0,0,0)"); sh.addColorStop(1, "rgba(0,0,0,.28)");
   ctx.fillStyle = sh; ctx.fillRect(k.x, k.y, k.w, k.h);
   // cracks grow with the damage
   if (dmg > .05) {
@@ -2223,7 +2237,7 @@ function phaseCard() {
   const i = save.level, L = LV(i), st = i < save.maxLevel ? "Vencida" : "Próxima";
   $("phaseCard").innerHTML =
     '<div class="phase__band" style="background:' + grad(i) + '"><span class="phase__num">' + String(i + 1).padStart(2, "0") +
-    '</span><span class="phase__state">' + st + '</span></div><div class="phase__body"><p class="phase__name">' + L.name +
+    '</span><span class="phase__state">' + st + "</span>" + (isHard(i) ? '<span class="phase__hard">🔥 Difícil</span>' : "") + '</div><div class="phase__body"><p class="phase__name">' + L.name +
     '</p><div class="phase__sub"><span class="stars" aria-label="Dificuldade ' + diff(i).stars + '">' + starsOf(i) + "</span><span>" + L.km +
     '</span></div><div class="chips"><span class="chip">' + L.goal + "<small>m de meta</small></span><span class=\"chip\">" + L.shots +
     "<small>tiros</small></span>" + (layerBalls(i) ? '<span class="chip">+' + layerBalls(i) + "<small>bolas</small></span>" : "") + "</div></div>";
@@ -2236,7 +2250,7 @@ function menu() {
     b.disabled = i > save.maxLevel;
     b.setAttribute("aria-current", i === save.level ? "true" : "false");
     b.setAttribute("aria-label", "Fase " + (i + 1) + ", " + L.name + (b.disabled ? ", bloqueada" : ""));
-    b.innerHTML = '<span class="ph__band" style="background:' + grad(i) + '">' + (b.disabled ? "🔒" : i + 1) + '</span><span class="ph__lbl">' +
+    b.innerHTML = '<span class="ph__band" style="background:' + grad(i) + '">' + (b.disabled ? "🔒" : i + 1) + (isHard(i) ? '<span class="ph__hard" title="Fase difícil">🔥</span>' : "") + '</span><span class="ph__lbl">' +
       (i < save.maxLevel ? "✓ " : "") + L.name + "</span>";
     b.onclick = () => { save.level = i; store(); newRun(i); menu(); };
     core.appendChild(b);
