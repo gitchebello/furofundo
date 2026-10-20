@@ -1,6 +1,2930 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>DxDrill</title>
-<meta http-equiv="refresh" content="0; url=serve/">
-<link rel="canonical" href="serve/">
-</head><body><a href="serve/">Abrir DxDrill</a></body></html>
+<meta name="description" content="Mire, lance as bolas e cave o poço fase por fase até o núcleo.">
+<meta name="theme-color" content="#0a0a0b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0a0b'/%3E%3Ccircle cx='16' cy='17' r='9' fill='%23ff7a2f'/%3E%3Ccircle cx='13' cy='14' r='3' fill='%23ffd23a'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/bungee-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/chakra-petch-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/chakra-petch-700.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{font-family:"Bungee";font-weight:400;font-display:block;src:url(fonts/bungee-400.woff2) format("woff2")}
+@font-face{font-family:"Chakra Petch";font-weight:400;font-display:block;src:url(fonts/chakra-petch-400.woff2) format("woff2")}
+@font-face{font-family:"Chakra Petch";font-weight:600;font-display:block;src:url(fonts/chakra-petch-600.woff2) format("woff2")}
+@font-face{font-family:"Chakra Petch";font-weight:700;font-display:block;src:url(fonts/chakra-petch-700.woff2) format("woff2")}
+html{background:#0a0a0b;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+[hidden]{display:none!important}
+</style>
+</head><body>
+<style>
+/* Layout: one screen. HUD strip on top, a 9:16 dig shaft below it; menus slide over the shaft. */
+:root{
+  --rock:#0a0a0b;
+  --rock-2:#17171a;
+  --panel:rgba(19,14,12,.93);
+  --line:#2c2c31;
+  --ink:#f4e7d4;
+  --ink-dim:#b29a83;
+  --magma:#ff7a2f;
+  --rainbow:linear-gradient(90deg,#ff3b3b,#ff9a2e,#ffe23a,#4dff7a,#2ee6ff,#4a6aff,#b45cff,#ff5fb8,#ff3b3b);
+  --magma-dk:#c4521a;
+  --crystal:#ffd23a;
+  --display:"Bungee",Impact,"Arial Black",sans-serif;
+  --body:"Chakra Petch","Trebuchet MS",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{background:var(--rock);color:var(--ink);font-family:var(--body);font-size:15px;overflow:hidden;-webkit-tap-highlight-color:transparent}
+.app{height:100%;box-sizing:border-box;padding-inline:16px;padding-block:10px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.hud{display:flex;flex-direction:column;gap:7px;max-width:100%}
+.hud__top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.hud__stats{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pill{display:flex;align-items:center;justify-content:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--rock-2);border:1px solid var(--line);font-weight:700;font-variant-numeric:tabular-nums;font-size:16px;white-space:nowrap;min-width:0}
+.pill b{font-weight:800}
+.pill svg{flex:none;color:var(--ink-dim)}
+.pill small{font-weight:600;font-size:12px;color:var(--ink-dim)}
+.pill--shots svg{color:var(--magma)}
+/* running out of shots: the pill turns red and breathes */
+.pill--low{border-color:#ff4a3a;color:#ffb3a8;animation:lowpulse 1s ease-in-out infinite}
+.pill--low svg{color:#ff4a3a}
+@keyframes lowpulse{50%{box-shadow:0 0 0 4px rgba(255,74,58,.22)}}
+.pill--bump{animation:bump .35s cubic-bezier(.3,1.8,.5,1)}
+@keyframes bump{40%{transform:scale(1.18)}}
+.gem{color:var(--crystal)}
+.pearl{display:inline-block;width:.85em;height:.85em;border-radius:50%;vertical-align:-.08em;background:radial-gradient(circle at 34% 30%,#fff6b0 0 14%,#ffd23a 45%,#d99a12 72%,#a8700c 73%);box-shadow:0 0 6px rgba(255,200,60,.35)}
+.ibtn{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--rock-2);color:var(--ink);font:700 14px var(--body);cursor:pointer;display:grid;place-items:center;padding:0}
+.ibtn:disabled{opacity:.35;cursor:default}
+/* each top button says what it does in a word under the icon */
+.hud__btns .ibtn{width:40px;height:40px;border-radius:12px;transition:transform .12s,opacity .2s}
+.hud__btns .ibtn:active:not(:disabled){transform:scale(.9)}
+.ibtn[aria-pressed="true"]{background:var(--rainbow);background-size:300% 100%;color:var(--rock);border-color:transparent}
+#bSound[aria-pressed="true"]{background:var(--rock-2);color:var(--ink);border-color:var(--line)}
+#bSound[aria-pressed="true"] .snd-off,#bSound[aria-pressed="false"] .snd-on{display:none}
+#bSound[aria-pressed="false"]{color:var(--ink-dim)}
+/* "juntar" lights up the moment it can be used */
+#bRegroup:not(:disabled){border-color:var(--crystal);color:var(--crystal);animation:ready 1.4s ease-in-out infinite}
+/* "juntar" floats see-through in the bottom-right corner of the pit, easy to reach with a thumb; it doesn't catch taps while it can't be used */
+.fab{position:absolute;right:8px;bottom:8px;width:38px;height:38px;border-radius:50%;background:rgba(20,16,14,.42);border-color:rgba(255,255,255,.16);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);transition:opacity .2s,transform .12s}
+.fab:active:not(:disabled){transform:scale(.9)}
+#bRegroup.fab:disabled{opacity:.18;pointer-events:none}
+@keyframes ready{50%{box-shadow:0 0 0 4px rgba(255,210,58,.2)}}
+.ibtn:focus-visible,.btn:focus-visible,.up button:focus-visible,.layer:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
+/* game name on top while playing with the phase number beside it, in the height of the buttons so the pit keeps its size */
+.hud__title{display:flex;align-items:baseline;gap:8px;min-width:0}
+.hud__brand{font-family:var(--display);font-size:27px;line-height:1;color:var(--ink);white-space:nowrap}
+.hud__brand span{background:var(--rainbow);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rb 8s linear infinite}
+@media (prefers-reduced-motion:reduce){.hud__brand span{animation:none}}
+.hud__layer{font-family:var(--display);font-size:18px;line-height:1;letter-spacing:.04em;color:var(--magma);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hud__btns{display:flex;gap:6px}
+.stage{flex:1;min-height:0;width:100%;display:flex;justify-content:center;align-items:flex-start;gap:8px}
+/* the depth gauge: a shaft down the side that the drill digs into */
+.shaft{position:relative;flex:0 0 20px;border-radius:10px;background:#0b0b0d;box-shadow:inset 0 0 0 1px var(--line),inset 0 6px 10px rgba(0,0,0,.8);overflow:visible}
+.shaft__fill{position:absolute;left:3px;right:3px;top:3px;height:0;border-radius:7px 7px 3px 3px;transition:height .35s,top .35s;box-shadow:0 0 10px rgba(255,255,255,.12)}
+.shaft__tip{position:absolute;left:50%;top:3px;width:0;height:0;transform:translate(-50%,0);transition:top .35s}
+.shaft__tip::before{content:"";position:absolute;left:-8px;top:-4px;width:16px;height:16px;border-radius:50%;background:var(--tip-dk,#7a2a10);box-shadow:0 0 8px var(--tip,#ff7a2f)}
+.shaft__tip::after{content:"";position:absolute;left:-7px;top:4px;border-left:7px solid transparent;border-right:7px solid transparent;border-top:14px solid var(--tip,#ff7a2f);animation:drillwob .18s steps(2) infinite}
+@keyframes drillwob{50%{transform:translateX(.8px)}}
+.shaft__mark{position:absolute;left:24px;font-size:10px;color:var(--ink-dim);font-variant-numeric:tabular-nums;white-space:nowrap;transform:translateY(-50%)}
+.shaft__mark--end{bottom:-6px;transform:none}
+.frame{position:relative;border-radius:14px;overflow:hidden;box-shadow:0 0 0 1px var(--line),0 18px 50px rgba(0,0,0,.55)}
+/* power-up flash: coloured comets race around the edge of the game panel */
+@property --ga{syntax:"<angle>";inherits:false;initial-value:0deg}
+.glow{position:absolute;inset:0;border-radius:14px;padding:3px;pointer-events:none;z-index:5;opacity:0;
+  background:conic-gradient(from var(--ga),transparent 0 8%,var(--gc) 16%,#fff 18%,var(--gc2) 22%,transparent 30% 50%,var(--gc2) 58%,#fff 60%,var(--gc) 64%,transparent 72% 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.glow--rain{background:conic-gradient(from var(--ga),#ff3b3b,#ff9a2e,#ffe23a,#4dff7a,#2ee6ff,#4a6aff,#b45cff,#ff5fb8,#ff3b3b)}
+.glow.on{animation:glowrun 1.6s cubic-bezier(.3,.6,.4,1) forwards}
+.glow--rain.on{animation-duration:2.4s}
+/* power-ups with a timer keep a ring of comets running round the edge while they last, one colour per active effect */
+.ring{position:absolute;inset:0;border-radius:14px;padding:3px;pointer-events:none;z-index:5;opacity:0;transition:opacity .4s;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+  animation:ringrun 2.2s linear infinite}
+.ring.on{opacity:1}
+.ring.ending{animation:ringrun 2.2s linear infinite,ringblink .3s steps(2) infinite}
+@keyframes ringrun{to{--ga:360deg}}
+@keyframes ringblink{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.ring{animation:none}.ring.ending{animation:none}}
+.flash{position:absolute;inset:0;border-radius:14px;pointer-events:none;z-index:4;opacity:0;box-shadow:inset 0 0 26px 4px var(--gc)}
+.flash.on{animation:flashin 1s ease-out forwards}
+@keyframes glowrun{0%{--ga:0deg;opacity:0}8%{opacity:1}75%{opacity:1}100%{--ga:540deg;opacity:0}}
+@keyframes flashin{0%{opacity:0}15%{opacity:.9}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.glow.on{animation:flashin 1s ease-out forwards}}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.ov{position:absolute;inset:0;background:var(--panel);overflow-y:auto;padding:22px 18px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px}
+.brand{font-family:var(--display);font-size:clamp(34px,11vw,46px);line-height:.92;margin:0;color:var(--ink);text-wrap:balance}
+.brand span{display:block;background:var(--rainbow);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rb 8s linear infinite}
+@keyframes rb{to{background-position:200% 0}}
+.lede{margin:0;color:var(--ink-dim);line-height:1.5;font-size:14px}
+.lede b{color:var(--ink)}
+h2{font-family:var(--display);font-size:13px;letter-spacing:.06em;margin:0 0 8px;font-weight:400;background:var(--rainbow);-webkit-background-clip:text;background-clip:text;color:transparent;width:fit-content}
+.core{display:flex;flex-direction:column;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.layer{all:unset;box-sizing:border-box;display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:9px 12px;cursor:pointer;color:#1a120d;position:relative}
+.layer[disabled]{cursor:not-allowed}
+.layer[disabled]::after{content:"";position:absolute;inset:0;background:rgba(19,14,12,.62)}
+.layer__n{font-weight:700;font-size:14px}
+.layer__km{font-size:11px;font-variant-numeric:tabular-nums;opacity:.8;text-align:right}
+.layer__goal{font-size:11px;opacity:.8}
+.layer[aria-current="true"]{box-shadow:inset 0 0 0 3px var(--ink)}
+.layer__tag{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-align:right}
+.ups{display:flex;flex-direction:column;gap:8px}
+.up{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;padding:10px 12px;border-radius:10px;background:var(--rock-2);border:1px solid var(--line)}
+.up__n{font-weight:700}
+.up__n small{color:var(--ink-dim);font-weight:600;margin-left:6px;font-variant-numeric:tabular-nums}
+.up__d{grid-column:1;font-size:12px;color:var(--ink-dim)}
+.up__now{display:block;margin-top:3px;font-size:11.5px;font-weight:700;color:var(--crystal);opacity:.9}
+.up button{grid-row:1/3;grid-column:2;border:1px solid var(--crystal);background:transparent;color:var(--crystal);border-radius:8px;padding:7px 10px;font:700 14px var(--body);cursor:pointer;font-variant-numeric:tabular-nums;white-space:nowrap}
+.up button:disabled{border-color:var(--line);color:var(--ink-dim);cursor:not-allowed}
+.btn{border:0;border-radius:12px;padding:14px 18px;font:400 17px var(--display);letter-spacing:.03em;cursor:pointer;background:var(--rainbow);background-size:200% 100%;animation:rb 10s linear infinite;color:#0a0a0b;box-shadow:0 4px 0 rgba(255,255,255,.18)}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(255,255,255,.18)}
+.btn:disabled{cursor:not-allowed;opacity:.55}
+.btn--ghost{animation:none;background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.btn--ghost:active{box-shadow:inset 0 0 0 1px var(--line)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row .btn{flex:1 1 140px}
+.end{justify-content:center;text-align:center}
+.btn--shop{animation:none;background:var(--crystal);color:#1a1205;box-shadow:0 4px 0 #9a7a10;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  font-size:19px;padding:15px 18px;flex-basis:100%!important}
+.btn--shop:active{transform:translateY(2px);box-shadow:0 2px 0 #9a7a10}
+.end__k{font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;background:var(--rainbow);-webkit-background-clip:text;background-clip:text;color:transparent;justify-self:center;align-self:center}
+.end h3{font-family:var(--display);font-size:clamp(26px,8vw,34px);line-height:1;margin:0;text-wrap:balance;font-weight:400}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{padding:12px 8px;border-radius:10px;background:var(--rock-2);border:1px solid var(--line)}
+.stat b{display:block;font-size:24px;font-variant-numeric:tabular-nums}
+.stat small{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}
+.caps__intro{margin-bottom:10px}
+/* power-up cards: big icon, coloured name, what it does in a chip, details below */
+.caps.caps{display:flex;flex-direction:column;gap:8px}
+.caps .pu{display:flex;grid-template-columns:none}
+.pu{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;border:1px solid var(--line);
+  background:linear-gradient(160deg,color-mix(in srgb,var(--c) 16%,transparent),transparent 65%),var(--rock-2);position:relative;overflow:hidden}
+.pu::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--c)}
+.pu__top{display:flex;align-items:center;gap:12px}
+.pu__ic{width:44px;height:44px;display:block;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--c) 55%,transparent))}
+.pu__n{display:block;font-size:14px;line-height:1.2;color:var(--c)}
+.pu__chip{display:inline-block;margin-top:5px;font-size:11px;font-weight:700;line-height:1.3;padding:3px 7px;border-radius:6px;
+  background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--ink)}
+.pu__d{margin:0;font-size:11.5px;line-height:1.45;color:var(--ink-dim)}
+.pu--bad{border-color:color-mix(in srgb,var(--c) 55%,transparent)}
+.pu--rain::before{background:var(--rainbow);background-size:200% 100%;animation:rb 3s linear infinite}
+.pu--rain .pu__n{background:var(--rainbow);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rb 3s linear infinite}
+.caps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.caps li{display:grid;grid-template-columns:40px 1fr;gap:2px 10px;align-items:start;padding:9px 10px;border-radius:10px;background:var(--rock-2);border:1px solid var(--line)}
+.caps__pill{grid-row:1/3;width:34px;height:34px;display:block}
+.caps__n{font-weight:700;font-size:14px}
+.caps__d{font-size:12.5px;color:var(--ink-dim);line-height:1.45;min-width:0}
+.minerals{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}
+.mineral{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--ink-dim);line-height:1.2;min-width:0}
+.mineral img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:6px;border:2px solid var(--mn,var(--line))}
+/* menu */
+.menu{gap:16px;padding:22px 16px 28px}
+.m-hero{display:flex;flex-direction:column;gap:8px}
+.menu .brand{font-size:clamp(40px,13vw,56px);white-space:nowrap}
+.menu .brand span{display:inline}
+.phase{border-radius:16px;background:var(--rock-2);border:1px solid var(--line);overflow:hidden;flex-shrink:0}
+.phase__band{height:62px;display:flex;align-items:flex-end;justify-content:space-between;padding:8px 14px;box-sizing:border-box;color:#0a0a0b}
+.phase__num{font-family:var(--display);font-size:34px;line-height:.9}
+.phase__state{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(0,0,0,.22);color:#fff;padding:3px 8px;border-radius:999px}
+.phase__body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px}
+.phase__name{font-family:var(--display);font-size:20px;line-height:1.05;margin:0}
+.phase__sub{font-size:12px;color:var(--ink-dim);display:flex;justify-content:space-between;gap:8px}
+.stars{color:#ffd23a;letter-spacing:1px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.chip small{font-weight:600;color:var(--ink-dim);margin-left:4px}
+.btn--big{font-size:21px;padding:17px 18px;border-radius:14px;flex-shrink:0}
+.mstats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mstat{background:var(--rock-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.mstat small{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}
+.mstat b{font-size:20px;font-variant-numeric:tabular-nums}
+/* Holedown-style phase picker: big cards you swipe sideways; the one that settles in the middle is the phase you play */
+.pcar{position:relative;perspective:900px;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 14% 10px;flex-shrink:0;scrollbar-width:none;overscroll-behavior-x:contain}
+.pcar::-webkit-scrollbar{display:none}
+.pcar:focus-visible{outline:2px solid var(--crystal);outline-offset:2px;border-radius:16px}
+/* coverflow: cards turn, shrink and sink as they leave the middle, following the finger; --d is the signed distance from the middle in cards */
+.pcar .phase{flex:0 0 100%;scroll-snap-align:center;cursor:pointer;opacity:.5;transition:opacity .25s;will-change:transform;
+  transform:rotateY(calc(var(--d,0) * -32deg)) scale(calc(1 - var(--ad,0) * .14)) translateY(calc(var(--ad,0) * 12px))}
+.pcar .phase.is-on{opacity:1}
+/* when a card settles in the middle its number hops and a shine runs across the colour band */
+.pcar .phase.is-on .phase__num{display:inline-block;animation:numhop .5s cubic-bezier(.3,1.8,.5,1)}
+@keyframes numhop{0%{transform:scale(1)}35%{transform:scale(1.28) rotate(-6deg)}100%{transform:none}}
+.pcar .phase__band{overflow:hidden}
+.pcar .phase.is-on .phase__band::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:35%;pointer-events:none;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);animation:bandshine .7s ease-out forwards}
+@keyframes bandshine{to{left:110%}}
+/* phases already open keep their full colour off to the side; only locked ones stay dimmed */
+.pcar .phase:not(.phase--locked){opacity:1}
+.phase--locked .phase__band{filter:grayscale(.85) brightness(.45)}
+@media (prefers-reduced-motion:reduce){.pcar .phase{transition:none;transform:none}.pcar .phase.is-on .phase__num,.pcar .phase.is-on .phase__band::after{animation:none}}
+.shopcoins{font-family:var(--body);font-weight:700;letter-spacing:0;margin-left:6px;-webkit-text-fill-color:var(--crystal)}
+.menu .ups{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px}
+.menu .up{display:flex;flex-direction:column;align-items:stretch;gap:7px;padding:11px;border-radius:12px}
+.menu .up__n{font-size:14px;line-height:1.2}
+.menu .up__d{font-size:11.5px;line-height:1.35;flex:1}
+.pips{display:flex;gap:3px}
+.pips i{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.1)}
+.pips i.on{background:var(--crystal)}
+.menu .up button{grid-row:auto;grid-column:auto;width:100%;display:flex;justify-content:center;align-items:center;gap:6px}
+/* how-to strip: three pictures that explain the game at a glance */
+.how{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex-shrink:0}
+.how li{display:flex;flex-direction:column;gap:2px;min-width:0}
+.how svg{width:100%;height:auto;display:block;margin-bottom:4px}
+.how__bg{fill:#0b0b0e;stroke:var(--line)}
+.how b{font-size:12.5px;line-height:1.2}
+.how span{font-size:11px;line-height:1.3;color:var(--ink-dim)}
+/* four big tiles instead of a long scroll: each opens its own page */
+.legend{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.legend h2{margin:4px 0 0}
+.lg{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.lg li{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:10px;background:var(--rock-2);border:1px solid var(--line);min-width:0}
+.lg__ic{flex:none;width:30px;height:30px;display:grid;place-items:center;border-radius:9px;border:1px solid var(--line);background:#0b0b0e;color:var(--ink)}
+.lg canvas.lg__ic{border:0;background:none;border-radius:50%}
+.lg b{display:block;font-size:12.5px;line-height:1.2}
+.lg small{display:block;font-size:11px;line-height:1.3;color:var(--ink-dim)}
+.lg li.bad{border-color:rgba(255,74,58,.55)}
+.lg li.bad b{color:#ff8a7a}
+.lg__note{margin:0;font-size:11.5px;line-height:1.4;color:var(--ink-dim);display:flex;align-items:center;gap:8px}
+.lg__chip{flex:none;width:44px;height:14px;border-radius:7px;background:rgba(19,14,12,.85);border:1.5px solid #ff5a3c;display:flex;align-items:center;padding:0 5px;box-sizing:border-box}
+.lg__chip i{display:block;height:4px;width:60%;border-radius:2px;background:#ff5a3c}
+.mtiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0}
+.mtile{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:30px 1fr;grid-template-rows:auto auto;gap:1px 10px;align-items:center;
+  padding:11px 12px;border-radius:12px;background:var(--rock-2);border:1px solid var(--line)}
+/* compact shop strip on the main menu: small cards that scroll sideways, tap the price to buy */
+.phase__band{position:relative}
+.mshop__h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.mshop__all{all:unset;cursor:pointer;font:700 12px var(--body);color:var(--crystal)}
+.mshop__all:focus-visible{outline:2px solid var(--crystal);outline-offset:2px;border-radius:4px}
+.mshop{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ms{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:8px 5px 6px;border-radius:10px;background:var(--rock-2);border:1px solid var(--line);min-width:0}
+.ms__ic{width:22px;height:22px}
+.ms__ic img,.ms__ic svg{width:22px;height:22px;display:block}
+.ms__n{font-size:10.5px;font-weight:700;line-height:1.15;min-height:2.3em;display:flex;align-items:center}
+/* the card you just bought lights up like a power-up: comets race round its edge and it flashes gold */
+.ms,.up{position:relative}
+.is-bought{animation:boughtflash 1.1s ease-out}
+.is-bought::after{content:"";position:absolute;inset:-2px;border-radius:inherit;padding:2px;pointer-events:none;opacity:0;
+  background:conic-gradient(from var(--ga),transparent 0 8%,var(--crystal) 16%,#fff 18%,var(--crystal) 22%,transparent 30% 50%,var(--crystal) 58%,#fff 60%,var(--crystal) 64%,transparent 72% 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+  animation:glowrun 1.6s cubic-bezier(.3,.6,.4,1) forwards}
+@keyframes boughtflash{0%{box-shadow:0 0 0 0 rgba(255,210,58,0)}15%{box-shadow:0 0 22px 3px rgba(255,210,58,.65),inset 0 0 14px rgba(255,210,58,.35)}100%{box-shadow:0 0 0 0 rgba(255,210,58,0)}}
+@media (prefers-reduced-motion:reduce){.is-bought::after{animation:none}}
+.ms__lv{font-size:10px;font-weight:700;color:var(--ink-dim);font-variant-numeric:tabular-nums}
+.ms__lv--max{color:var(--crystal)}
+.ms button{all:unset;box-sizing:border-box;cursor:pointer;margin-top:auto;width:100%;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px 4px;border-radius:7px;
+  border:1px solid var(--crystal);color:var(--crystal);font:700 12px var(--body);font-variant-numeric:tabular-nums}
+.ms button:disabled{border-color:var(--line);color:var(--ink-dim);cursor:not-allowed}
+.ms button:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
+.mtile:hover{border-color:var(--crystal)}
+.mtile:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
+.mtile__ic{grid-row:1/3;width:28px;height:28px;fill:none;stroke:var(--crystal);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mtile b{font-size:14px;line-height:1.2}
+.mtile small{font-size:11px;color:var(--ink-dim);display:flex;align-items:center;gap:4px}
+.menu.has-panel{overflow:hidden}
+.mpanel{position:absolute;inset:0;z-index:3;background:#0d0b0a;overflow-y:auto;padding:16px 16px 28px;box-sizing:border-box;
+  display:flex;flex-direction:column;gap:12px;animation:mslide .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes mslide{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.mpanel{animation:none}}
+.mpanel__h{display:flex;flex-direction:column;align-items:flex-start;gap:8px;position:sticky;top:-16px;background:#0d0b0a;padding:4px 0 8px;margin-top:-4px;z-index:1}
+.mpanel__back{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font:700 15px var(--body);
+  color:#1a1205;background:var(--crystal);padding:10px 16px;border-radius:12px;box-shadow:0 3px 0 #9a7a10}
+.mpanel__back:active{transform:translateY(2px);box-shadow:0 1px 0 #9a7a10}
+.mpanel__back:focus-visible{outline:2px solid var(--crystal);outline-offset:2px;border-radius:4px}
+.mpanel__sub{margin:6px 0 0;font:600 11px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim)}
+/* compact shop cards */
+.mpanel .ups{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mpanel .up{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:10px;border-radius:12px}
+.up__top{display:flex;align-items:center;gap:8px}
+.up__ic{width:26px;height:26px;flex:none;display:grid;place-items:center}
+.up__ic img,.up__ic svg{width:26px;height:26px;display:block}
+.mpanel .up__n{font-size:13px;line-height:1.2}
+.mpanel .up__d{font-size:11px;line-height:1.35;flex:1}
+.mpanel .up button{grid-row:auto;grid-column:auto;width:100%;display:flex;justify-content:center;align-items:center;gap:6px;padding:6px 8px}
+.fold{border-radius:12px;background:var(--rock-2);border:1px solid var(--line);flex-shrink:0}
+.fold summary{padding:13px 14px;cursor:pointer;font-family:var(--display);font-size:13px;letter-spacing:.04em;list-style:none;display:flex;justify-content:space-between;align-items:center}
+.fold summary::-webkit-details-marker{display:none}
+.fold summary::after{content:"+";font-family:var(--body);font-size:20px;color:var(--ink-dim)}
+.fold[open] summary::after{content:"–"}
+.fold summary:focus-visible{outline:2px solid var(--crystal);outline-offset:-2px;border-radius:12px}
+.fold__in{padding:0 14px 14px}
+.howto{margin:0;padding-left:18px;color:var(--ink-dim);font-size:13px;line-height:1.55}
+.howto b{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.shaft__fill,.shaft__tip{transition:none}.shaft__tip::after{animation:none}.brand span,.btn{animation:none}.pill--low,.pill--bump,#bRegroup:not(:disabled){animation:none}}
+</style>
+
+<div class="app">
+  <div class="hud" id="hud">
+    <div class="hud__top">
+      <div class="hud__title"><div class="hud__brand" aria-hidden="true">Dx<span>Drill</span></div><div class="hud__layer" id="hLayer" title="Fase">1</div></div>
+      <div class="hud__btns">
+        <button class="ibtn" id="bFast" type="button" aria-pressed="false" title="Acelerar as bolas" aria-label="Acelerar as bolas"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="currentColor"><path d="M3 5.5v13l8.5-6.5zM12.5 5.5v13L21 12z"/></svg></button>
+        <button class="ibtn" id="bSound" type="button" aria-pressed="true" title="Som" aria-label="Som"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path class="snd-on" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="snd-off" d="m16 9.5 5 5m0-5-5 5"/></svg></button>
+        <button class="ibtn" id="bMenu" type="button" title="Pausar" aria-label="Pausar"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="currentColor"><rect x="6" y="5" width="4.2" height="14" rx="1.4"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.4"/></svg></button>
+      </div>
+    </div>
+    <div class="hud__stats">
+      <div class="pill pill--depth" title="Profundidade"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13m-5-5 5 5 5-5M5 21h14"/></svg><span class="sr">Profundidade</span><b id="hDepth">0</b><small>/ <span id="hGoal">100</span> m</small></div>
+      <div class="pill pill--shots" id="pShots" title="Tiros restantes"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/><path d="M12 1.5v3.5M12 19v3.5M1.5 12H5M19 12h3.5"/></svg><span class="sr">Tiros</span><b id="hShots">0</b></div>
+      <div class="pill gem" title="Moedas"><span class="pearl" aria-hidden="true"></span><span class="sr">Moedas</span><b id="hGems">0</b></div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="shaft" id="shaft" role="progressbar" aria-label="Profundidade" aria-valuemin="0">
+      <div class="shaft__fill" id="hBar"></div>
+      <div class="shaft__tip" id="hTip"></div>
+    </div>
+    <div class="frame" id="frame">
+      <div class="flash" id="fxFlash" aria-hidden="true"></div>
+      <div class="glow" id="fxGlow" aria-hidden="true"></div>
+      <div class="ring" id="fxRing" aria-hidden="true"></div>
+      <canvas id="cv" aria-label="Poço de escavação. Segure para mirar e solte para atirar. Teclado: setas miram, espaço atira."></canvas>
+      <button class="ibtn fab" id="bRegroup" type="button" disabled title="Juntar as bolas numa linha (R)" aria-label="Juntar as bolas numa linha"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="6" cy="18" r="2.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/><circle cx="18" cy="6" r="2.2" fill="currentColor" stroke="none"/></svg></button>
+
+      <div class="ov menu" id="ovMenu">
+        <header class="m-hero">
+          <h1 class="brand">Dx<span>Drill</span></h1>
+        </header>
+
+        <ol class="how" aria-label="Como jogar">
+          <li><svg viewBox="0 0 100 64" aria-hidden="true"><rect width="100" height="64" rx="10" class="how__bg"/>
+            <rect x="34" y="9" width="32" height="5" rx="2.5" fill="#f4e7d4"/><path d="M45 7h10l-5 9z" fill="#ff5a3c"/>
+            <g fill="#f4e7d4"><circle cx="55" cy="24" r="1.7"/><circle cx="60" cy="31" r="1.7"/><circle cx="65" cy="38" r="1.7"/><circle cx="70" cy="45" r="1.7"/></g>
+            <circle cx="76" cy="52" r="7" fill="none" stroke="#ffd23a" stroke-width="2"/><circle cx="76" cy="52" r="2.6" fill="#ffd23a"/></svg>
+            <b>Segure e solte</b><span>o dedo mira, soltar atira</span></li>
+          <li><svg viewBox="0 0 100 64" aria-hidden="true"><rect width="100" height="64" rx="10" class="how__bg"/>
+            <path d="M16 58 64 16 84 50" fill="none" stroke="#f4e7d4" stroke-width="1.6" stroke-dasharray="3 4"/>
+            <path d="M35.6 35.3 42 35l-1.1 6.3" fill="none" stroke="#f4e7d4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="44" y="9" width="38" height="5" rx="2.5" fill="#7ee081"/><circle cx="85" cy="52" r="4.2" fill="#fff6e8"/></svg>
+            <b>Rebata</b><span>a barrinha devolve as bolas</span></li>
+          <li><svg viewBox="0 0 100 64" aria-hidden="true"><rect width="100" height="64" rx="10" class="how__bg"/>
+            <circle cx="50" cy="35" r="21" fill="url(#howCore)" stroke="#ffb020" stroke-width="2.5"/>
+            <defs><radialGradient id="howCore" cx=".38" cy=".35"><stop offset="0" stop-color="#ffcf7a"/><stop offset="1" stop-color="#8a3a10"/></radialGradient></defs>
+            <text x="50" y="40" text-anchor="middle" font-size="14" font-weight="800" fill="#fff" font-family="Chakra Petch, sans-serif">58</text>
+            <circle cx="20" cy="18" r="3" fill="#fff6e8"/><circle cx="80" cy="20" r="3" fill="#fff6e8"/></svg>
+            <b>Quebre o núcleo</b><span>no fundo, para passar de fase</span></li>
+        </ol>
+
+        <div class="pcar" id="core" tabindex="0" aria-label="Fases: arraste para o lado para escolher"></div>
+        <button class="btn btn--big" id="bPlay" type="button">Cavar</button>
+
+        <section class="mshopwrap">
+          <div class="mshop__h"><h2>Lojinha <span class="gem shopcoins"><span class="pearl" aria-hidden="true"></span> <span id="mGems">0</span></span></h2>
+            <button class="mshop__all" type="button" data-panel="pShop">ver detalhes</button></div>
+          <div class="mshop" id="mshop"></div>
+        </section>
+
+        <section class="legend" aria-label="Legenda">
+          <h2>Botões</h2>
+          <ul class="lg lg--btns" id="lgBtns"></ul>
+          <h2>Power-ups</h2>
+          <ul class="lg" id="lgCaps"></ul>
+          <p class="lg__note"><span class="lg__chip" aria-hidden="true"><i></i></span>No canto do jogo, a barrinha mostra quanto tempo ainda resta. Pontinhos = força.</p>
+        </section>
+
+        <nav class="mtiles" aria-label="Mais opções">
+          <button class="mtile" type="button" data-panel="pCaps">
+            <svg class="mtile__ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-35 12 12)"/><path d="M9.7 8.7l4.6 6.6"/></svg>
+            <b>Power-ups</b><small>o que cada um faz</small></button>
+          <button class="mtile" type="button" data-panel="pHelp">
+            <svg class="mtile__ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .9-1 1.6v.7M12 17h.01"/></svg>
+            <b>Todas as regras</b><small>dicas e detalhes</small></button>
+        </nav>
+
+        <!-- sub-pages: open over the menu and come back with Voltar -->
+        <div class="mpanel" id="pShop" hidden>
+          <header class="mpanel__h"><button class="mpanel__back" type="button">← Voltar</button><h2>Lojinha <span class="gem shopcoins"><span class="pearl" aria-hidden="true"></span> <span id="mGems2">0</span></span></h2></header>
+          <p class="lede">Gaste as moedas que caem das pedras. Tudo o que você compra vale para sempre.</p>
+          <h3 class="mpanel__sub">Melhorias</h3>
+          <div class="ups" id="ups"></div>
+          <h3 class="mpanel__sub">Power-ups mais (ou menos) frequentes</h3>
+          <div class="ups" id="ups2"></div>
+        </div>
+        <div class="mpanel" id="pCaps" hidden>
+          <header class="mpanel__h"><button class="mpanel__back" type="button">← Voltar</button><h2>Power-ups</h2></header>
+
+            <p class="lede caps__intro">Quebre a pedra que tem um <b>power-up desenhado</b>. Ele sobe devagar: <b>encoste a barrinha</b> para pegar. Pegar outro igual <b>soma</b> tempo e força.</p>
+            <ul class="caps" id="capList"></ul>
+        </div>
+
+        <div class="mpanel" id="pHelp" hidden>
+          <header class="mpanel__h"><button class="mpanel__back" type="button">← Voltar</button><h2>Todas as regras</h2></header>
+
+            <ul class="howto">
+            <li>Para passar de fase, cave até o fundo e <b>quebre o núcleo</b>: a bola grande no fim do poço. O número nela é quantas batidas ela aguenta.</li>
+            <li>Como no Holedown, a <b>broca vai até cada bola que volta</b> e fica onde a <b>última</b> entrou: o próximo tiro sai dali.</li>
+            <li><b>Segure</b> o dedo na tela para mirar: a linha reta pontilhada aponta da broca até o seu dedo. <b>Solte</b> para atirar. Para cancelar, solte o dedo em cima da broca.</li>
+            <li>No mouse, a mira segue o cursor e o clique atira.</li>
+            <li>No teclado: setas ← → giram a mira (e movem a barrinha durante a jogada), A/D movem a barrinha, espaço atira.</li>
+            <li>Cada bloco é um mineral cortado ao meio. O número em cada um é quantas batidas ela aguenta. No zero, ela quebra.</li>
+            <li>As bolas andam em linha reta, quicam nas paredes, no fundo e nas pedras até subir de novo. <b>Mova o rebatedor</b> (arraste, mouse ou setas) para mandá-las de novo para baixo. A ponta do rebatedor dá ângulo. A barrinha é separada da broca e segue o dedo ou o mouse o tempo todo, com ou sem bolas em campo.</li>
+            <li><b>Dois cliques</b> ou <b>dois toques</b> rápidos com as bolas em jogo aceleram a jogada (6×). Mais dois cliques ou toques voltam à velocidade normal.</li>
+            <li>O botão <b>Juntar</b> (a linha reta) (ao lado do » lá em cima, ou tecla R) junta todas as bolas em jogo numa <b>linha só</b> de novo, atrás da bola que está na frente. Bom para salvar as bolas quando elas estão espalhadas.</li>
+            <li>Cada fase é <b>mais funda</b> que a anterior e começa com <b>2 tiros a mais</b>. Durante a fase os tiros não aumentam (só com power-up, tela limpa ou lojinha).</li>
+            <li>Se você limpar todas as pedras da tela com bolas ainda em jogo, elas voltam sozinhas para a broca e você <b>ganha o tiro de volta</b>.</li>
+            <li>O poço só desce quando o bloco mais alto sai do caminho. Toda vez que as bolas passam pela barra e a vez acaba, <b>as pedras sobem</b> um pouco. Se encostarem na linha vermelha embaixo da broca, você é engolido.</li>
+            <li>Cada camada é mais difícil (estrelas no menu): pedras mais duras, mais peças e pedras subindo mais rápido.</li>
+            <li>Quanto mais funda a camada, mais bolas: cada camada começa com 2 bolas extras a mais que a anterior, e o power-up de <b>bola extra</b> aparece mais.</li>
+            <li>Peça com <b>aura preta</b> tem outras grudadas em cima dela. Destrua a de baixo e tudo o que está empilhado em cima desaba junto.</li>
+            <li>Pedras com uma <span class="pearl" aria-hidden="true"></span> moeda desenhada soltam moedas para a lojinha.</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="ov" id="ovPause" hidden>
+        <div class="end" style="display:flex;flex-direction:column;gap:16px;flex:1">
+          <div class="end__k">Pausa</div>
+          <h3>A broca está parada</h3>
+          <div class="row">
+            <button class="btn" id="bResume" type="button">Continuar</button>
+            <button class="btn btn--ghost" id="bQuit" type="button">Desistir</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ov end" id="ovEnd" hidden>
+        <div class="end__k" id="eKicker">Camada concluída</div>
+        <h3 id="eTitle">Fase concluída</h3>
+        <div class="stats">
+          <div class="stat"><b id="eDepth">0 m</b><small>Profundidade</small></div>
+          <div class="stat"><b class="gem" id="eGems">0</b><small>Moedas</small></div>
+          <div class="stat"><b id="eShots">0</b><small>Tiros usados</small></div>
+          <div class="stat"><b id="eBlocks">0</b><small>Blocos</small></div>
+        </div>
+        <div class="row">
+          <button class="btn" id="eBuy" type="button" hidden>+3 tiros</button>
+          <button class="btn" id="eMain" type="button">Próxima camada</button>
+          <button class="btn btn--shop" id="eShop" type="button"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8Z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></svg>Lojinha</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+// Logical play field: 360 x 640, gravity pulls balls back up to the drill.
+const W = 360, H = 640, COLS = 8, CELL = W / COLS, LX = W / 2, LY = 40, R = 6.5;
+const RH = 44;   // grid rows are 44 tall but bars are only 28 thick: a 16 px corridor between rows lets balls slip through
+const SPEED = 560, GRAV = 340, REST = 215, MPR = 7, STEP = 1 / 240, MIN_A = 0.29;
+const PW = 64, BY = LY + R + 6;   // paddle base width; balls leave and return just under it
+
+// DX-Ball style capsules dropped by broken rock. They drift up toward the paddle.
+const CAPS = {
+  multi: { w: 3, col: "#ffd166", tx: "M",  name: "Multibola", short: "Cada bola vira três", stack: "",
+           desc: "Cada bola em jogo se divide em três, e pegar outra divide de novo. Sem bola em jogo, o próximo tiro sai com 4 bolas a mais, e isso também soma." },
+  fire:  { w: 2, col: "#ff5a3c", tx: "F",  name: "Bola de fogo", short: "Dano ×3 por 8 s", stack: "Somou: mais dano e +8 s",
+           desc: "Por 8 segundos as bolas ficam em brasa e cada batida tira 3 pontos em vez de 1. Somando: 5 e depois 7 pontos por batida, e +8 s a cada power-up." },
+  wide:  { w: 3, col: "#7ee081", tx: "L",  name: "Rebatedor largo", short: "Rebatedor maior por 15 s", stack: "Somou: ainda mais largo e +15 s",
+           desc: "O rebatedor fica 50% mais largo por 15 segundos e fica verde. Somando: +50% de novo (até 3 vezes) e +15 s a cada power-up." },
+  shot:  { w: 1, col: "#f4e7d4", tx: "+1", name: "Tiro extra", short: "+1 tiro nesta camada", stack: "",
+           desc: "Ganha mais um tiro na camada atual." },
+  slim:  { w: 2, col: "#a970ff", tx: "C",  name: "Rebatedor curto", short: "Rebatedor menor por 10 s", stack: "Somou: ainda mais curto e +10 s",
+           desc: "Power-up ruim: o rebatedor encolhe 30% por 10 segundos e fica roxo. Também soma, então desvie dele. Se você tiver L ao mesmo tempo, um compensa o outro." },
+  ball:  { w: 2, col: "#ffffff", tx: "B",  name: "Bola extra", short: "+1 bola nesta camada", stack: "",
+           desc: "Mais uma bola em todos os tiros até o fim da camada. Aparece mais vezes nas camadas mais fundas." },
+  rain:  { w: .3, col: "#ffffff", tx: "★", name: "Bola arco-íris", short: "Destrói tudo por 5 s", stack: "Somou: +5 s de arco-íris",
+           desc: "Raríssima. Por 5 segundos as bolas ficam arco-íris e destroem na hora toda pedra em que encostam, atravessando sem quicar." },
+  zap:   { w: .12, col: "#3a8bff", tx: "✕", name: "Apagador", short: "Toque numa pedra para apagar", stack: "Somou: mais uma pedra para apagar",
+           desc: "Raríssimo, ainda mais que o arco-íris. Depois de pegar, toque em qualquer pedra da tela e ela some na hora. Só o núcleo não pode ser apagado. Pegar outro soma: cada um apaga uma pedra." },
+};
+// balls grow with the dig: each layer starts with extra balls, and the ball capsule shows up more often deeper
+const layerBalls = li => Math.min(24, li * 2);
+const rnd = (a, b) => a + Math.random() * (b - a);
+// chipped outline, ore specks and cracks, generated once per brick in its own coordinates
+// Holedown pieces: unions of grid cells. Outer corners are rounded; a cell at the end of an arm
+// gets a half-cell radius so pills and L/T arms finish in a full round cap.
+const PIECES = [   // only long pieces, lying and standing about equally (no single squares, no 2x2)
+  { w: 15, cells: [[0, 0], [1, 0]] },
+  { w: 12, cells: [[0, 0], [1, 0], [2, 0]] },
+  { w: 4,  cells: [[0, 0], [1, 0], [2, 0], [3, 0]] },
+  { w: 14, cells: [[0, 0], [0, 1]] },
+  { w: 12, cells: [[0, 0], [0, 1], [0, 2]] },
+  { w: 4,  cells: [[0, 0], [0, 1], [0, 2], [0, 3]] },
+  { w: 3,  cells: [[0, 0], [0, 1], [1, 1], [2, 1]] },
+  { w: 3,  cells: [[0, 0], [1, 0], [2, 0], [0, 1]] },
+  { w: 3,  cells: [[0, 0], [0, 1], [0, 2], [1, 2]] },
+  { w: 3,  cells: [[1, 0], [1, 1], [1, 2], [0, 2]] },
+  { w: 2,  cells: [[0, 0], [1, 0], [2, 0], [1, 1]] },
+  { w: 2,  cells: [[0, 0], [0, 1], [0, 2], [1, 1]] }
+];
+const GAP = 2, GV = 8;   // side gap between neighbours, and the larger gap above and below a bar
+function pieceGeo(cells) {
+  const has = (x, y) => cells.some(c => c[0] === x && c[1] === y);
+  return cells.map(([cx, cy]) => {
+    const n = [has(cx, cy - 1), has(cx + 1, cy), has(cx, cy + 1), has(cx - 1, cy)];   // up right down left
+    const deg = n.filter(Boolean).length;
+    const big = (RH - 2 * GV) / 2, small = (RH - 2 * GV) * .32;
+    const rad = deg === 1 ? big : deg === 0 && cells.length === 1 ? small : small;
+    // corner radii tl tr br bl: only where both touching sides are open
+    const rr4 = [!n[0] && !n[3], !n[0] && !n[1], !n[2] && !n[1], !n[2] && !n[3]].map(o => o ? rad : 0);
+    // shared sides run edge to edge so neighbouring cells meet without a seam
+    return { cx, cy, x0: n[3] ? 0 : GAP, y0: n[0] ? 0 : GV, x1: CELL - (n[1] ? 0 : GAP), y1: RH - (n[2] ? 0 : GV), rad: rr4 };
+  });
+}
+
+// ---------- minerals: every texture is read off a photo of fluorescent stones under UV light ----------
+// colours glow on near-black; only the look is taken from the photo, the brick shapes stay Holedown's
+const PX = 1, TX = 190, TY = 190;
+// zoom out: each texture samples a stone area ZM times larger than the canvas, so veins and grains read smaller
+const ZM = 1.9, VX = TX * ZM, VY = TY * ZM;
+const HX = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function ramp(stops, t) {
+  t = clamp(t, 0, 1);
+  for (let i = 1; i < stops.length; i++) if (t <= stops[i][0]) {
+    const a = stops[i - 1], b = stops[i], u = (t - a[0]) / (b[0] - a[0] || 1);
+    return a[1].map((v, j) => v + (b[1][j] - v) * u);
+  }
+  return stops[stops.length - 1][1];
+}
+const S = arr => arr.map(([t, h]) => [t, HX(h)]);
+const mixc = (a, b, t) => a.map((v, i) => v + (b[i] - v) * clamp(t, 0, 1));
+const mul = (a, k) => a.map(v => Math.min(255, v * k));
+function noise(n = 64) {
+  const g = Array.from({ length: n * n }, Math.random), sm = t => t * t * (3 - 2 * t);
+  return (x, y) => {
+    const xi = Math.floor(x), yi = Math.floor(y), xf = sm(x - xi), yf = sm(y - yi);
+    const X = ((xi % n) + n) % n, Y = ((yi % n) + n) % n, X1 = (X + 1) % n, Y1 = (Y + 1) % n;
+    const a = g[Y * n + X], b = g[Y * n + X1], c = g[Y1 * n + X], d = g[Y1 * n + X1];
+    return a + (b - a) * xf + (c - a + (d - c - b + a) * xf) * yf;
+  };
+}
+const fbm = (nz, x, y) => (nz(x, y) * .5 + nz(x * 2, y * 2) * .25 + nz(x * 4, y * 4) * .125 + nz(x * 8, y * 8) * .0625) / .9375;
+const frac = v => v - Math.floor(v);
+function pixTex(fn) {
+  const c = document.createElement("canvas"); c.width = TX; c.height = TY;
+  const x = c.getContext("2d"), im = x.createImageData(TX, TY), d = im.data;
+  for (let y = 0; y < TY; y++) for (let X = 0; X < TX; X++) {
+    const col = fn(X * ZM, y * ZM), i = (y * TX + X) * 4;
+    d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = 255;
+  }
+  x.putImageData(im, 0, 0);
+  return c;
+}
+function voronoi(n, metric) {
+  n = Math.round(n * ZM * ZM);
+  const P = Array.from({ length: n }, () => [rnd(-8, VX + 8), rnd(-8, VY + 8), Math.random()]);
+  return (x, y) => {
+    let d1 = 1e9, d2 = 1e9, k = 0;
+    for (let i = 0; i < n; i++) {
+      const dx = Math.abs(x - P[i][0]), dy = Math.abs(y - P[i][1]);
+      const d = metric === "diamond" ? dx * .8 + dy * 1.2 : metric === "box" ? Math.max(dx, dy) : Math.hypot(dx, dy);
+      if (d < d1) { d2 = d1; d1 = d; k = i; } else if (d < d2) d2 = d;
+    }
+    return [d1, d2, P[k][2]];
+  };
+}
+// botryoidal clusters: overlapping domes, lit in the middle, dark in the gaps
+function bubbles(n, r0, r1, stops, gap) {
+  n = Math.round(n * ZM * ZM);
+  const B = Array.from({ length: n }, () => [rnd(-10, VX + 10), rnd(-10, VY + 10), rnd(r0, r1)]), nz = noise();
+  return pixTex((x, y) => {
+    let h = -1;
+    for (const [bx, by, r] of B) { const d = Math.hypot(x - bx + r * .25, y - by + r * .25) / r; if (d < 1) h = Math.max(h, 1 - d * d); }
+    return h < 0 ? HX(gap) : ramp(S(stops), h * .85 + fbm(nz, x / 6, y / 6) * .25);
+  });
+}
+const vein = (nz, x, y, sc, w) => Math.abs(fbm(nz, x / sc, y / sc) - .5) < w;
+
+const MINERALS = [
+  { name: "Calcita vermelha", neon: "#ff4a1c", make: () => {
+    const a = noise(), v1 = noise(), v2 = noise();
+    return pixTex((x, y) => {
+      if (vein(v1, x, y, 16, .012) || vein(v2, x, y, 9, .01)) return HX("#2a0602");
+      return ramp(S([[0, "#c51e06"], [.6, "#ff4a14"], [1, "#ff9050"]]), fbm(a, x / 14, y / 14));
+    });
+  } },
+  { name: "Scheelita", neon: "#8fd0ff", make: () => {
+    const a = noise(), v = noise(), w = noise();
+    return pixTex((x, y) => {
+      const r = Math.abs(fbm(v, x / 18, y / 8) - .5), r2 = Math.abs(fbm(w, x / 7, y / 11) - .5);
+      const base = ramp(S([[0, "#06112e"], [1, "#1f3d8a"]]), fbm(a, x / 12, y / 12));
+      if (r < .02) return HX("#f2fbff");
+      if (r < .05 || r2 < .015) return mixc(base, HX("#9fd8ff"), .75);
+      return base;
+    });
+  } },
+  { name: "Hackmanita listrada", neon: "#5a5cff", make: () => {
+    const a = noise(), g = noise();
+    return pixTex((x, y) => {
+      const v = frac(y / 58 + fbm(a, x / 40, y / 25) * .9);
+      const c = ramp(S([[0, "#2a1aa8"], [.22, "#4b54ff"], [.36, "#a33cff"], [.45, "#1a0812"], [.55, "#ff3a1a"], [.72, "#ff6a30"], [.82, "#6a1aa0"], [1, "#2a1aa8"]]), v);
+      return mul(c, .75 + fbm(g, x / 4, y / 4) * .5);
+    });
+  } },
+  { name: "Calcita rosa", neon: "#ff7ab0", make: () => {
+    const V = voronoi(55, "box"), nz = noise();
+    return pixTex((x, y) => {
+      const [d1, d2, k] = V(x, y);
+      if (d2 - d1 < 1.2) return HX("#5a1a36");
+      const c = ramp(S([[0, "#d0507e"], [.6, "#ff8fb8"], [1, "#ffd0e2"]]), k * .7 + fbm(nz, x / 8, y / 8) * .4);
+      return d2 - d1 < 3.5 ? mul(c, 1.18) : c;
+    });
+  } },
+  { name: "Septária", neon: "#6ff0e0", make: () => {
+    const V = voronoi(30), nz = noise();
+    return pixTex((x, y) => {
+      const [d1, d2] = V(x, y), e = d2 - d1;
+      if (e < 1.6) return HX("#7fe9dc");
+      if (e < 2.8) return HX("#b59a6a");
+      return ramp(S([[0, "#0f1416"], [1, "#2c3538"]]), fbm(nz, x / 9, y / 9));
+    });
+  } },
+  { name: "Anel de malaquita", neon: "#2cff9a", make: () => {
+    const nz = noise(), C = [[rnd(40, 160), rnd(30, 130)], [rnd(0, 200), rnd(0, 160)]];
+    return pixTex((x, y) => {
+      let d = 1e9; for (const [cx, cy] of C) d = Math.min(d, Math.hypot(x - cx, y - cy));
+      const v = frac(d / 34 + fbm(nz, x / 25, y / 25) * 1.4);
+      if (v > .42 && v < .62) return ramp(S([[0, "#0a8a52"], [.5, "#3dffb0"], [1, "#0a8a52"]]), (v - .42) / .2);
+      return ramp(S([[0, "#050806"], [1, "#16201a"]]), fbm(nz, x / 7, y / 7));
+    });
+  } },
+  { name: "Rodonita", neon: "#ff5fa0", make: () => {
+    const a = noise(), g = noise(), side = Math.random() < .5;
+    return pixTex((x, y) => {
+      const c = ramp(S([[0, "#8a2a5a"], [.5, "#e0609a"], [1, "#ffb0d0"]]), fbm(a, x / 9, y / 9) * .6 + fbm(g, x / 2.5, y / 2.5) * .5);
+      const glow = clamp(((side ? x : VX - x) / VX - .55) * 2.2, 0, 1) * fbm(a, x / 20, y / 20) * 1.6;
+      return mixc(c, HX("#ffd23a"), glow);
+    });
+  } },
+  { name: "Calcita laranja", neon: "#ff8a1e", make: () => {
+    const a = noise(), d = noise(), g = noise();
+    return pixTex((x, y) => {
+      if (fbm(d, x / 16, y / 16) > .63) return ramp(S([[0, "#1a0802"], [1, "#4a1404"]]), fbm(g, x / 3, y / 3));
+      return ramp(S([[0, "#c43c06"], [.55, "#ff7a14"], [1, "#ffc060"]]), fbm(a, x / 10, y / 10) * .6 + fbm(g, x / 2.5, y / 2.5) * .5);
+    });
+  } },
+  { name: "Jaspe estrelado", neon: "#ff6040", make: () => {
+    const a = noise(), g = noise();
+    return pixTex((x, y) => {
+      const r = Math.random();
+      if (r < .025) return HX("#ffd25a");
+      if (r < .035) return HX("#fff2c0");
+      return ramp(S([[0, "#1e0604"], [.6, "#5a160c"], [1, "#9a2c18"]]), fbm(a, x / 8, y / 8) * .7 + fbm(g, x / 2, y / 2) * .4);
+    });
+  } },
+  { name: "Lava fluorescente", neon: "#ffb020", make: () => {
+    const a = noise(), b = noise(), c = noise();
+    return pixTex((x, y) => {
+      const f = fbm(a, x / 18, y / 18), sp = fbm(c, x / 2.2, y / 2.2);
+      if (f > .55) return ramp(S([[0, "#c43a06"], [.5, "#ff9a14"], [1, "#fff07a"]]), (f - .55) * 3.5);
+      if (f > .5) return HX("#7a1a04");
+      if (sp > .7) return HX("#4aff5a");
+      return ramp(S([[0, "#0c0503"], [1, "#2a0e06"]]), fbm(b, x / 4, y / 4));
+    });
+  } },
+  { name: "Gnaisse com rubi", neon: "#ff3a7a", make: () => {
+    const a = noise(), p = noise(), g = noise();
+    return pixTex((x, y) => {
+      const pk = fbm(p, x / 30, y / 30);
+      const rock = ramp(S([[0, "#3a4458"], [.6, "#7a8aa8"], [1, "#d8e2f0"]]), fbm(a, x / 6, y / 6) * .6 + fbm(g, x / 1.8, y / 1.8) * .5);
+      return pk > .6 ? mixc(rock, HX("#ff3a6a"), (pk - .6) * 6) : rock;
+    });
+  } },
+  { name: "Calcita dente-de-cão", neon: "#fff2c8", make: () => {
+    const V = voronoi(60, "diamond"), nz = noise();
+    return pixTex((x, y) => {
+      const [d1, d2, k] = V(x, y);
+      if (d2 - d1 < 1.1) return HX("#6a5a3a");
+      const c = ramp(S([[0, "#c8b888"], [.6, "#f0e6c0"], [1, "#fffbe8"]]), k * .5 + fbm(nz, x / 7, y / 7) * .5);
+      return d2 - d1 < 3 ? mul(c, .82) : c;
+    });
+  } },
+  { name: "Hialita-leopardo", neon: "#f0fff8", make: () => {
+    const V = voronoi(70), nz = noise();
+    return pixTex((x, y) => {
+      const [d1, d2] = V(x, y);
+      return d2 - d1 > 2.6 ? mixc(HX("#cfe3e0"), HX("#ffffff"), fbm(nz, x / 4, y / 4)) : HX("#0a0d0e");
+    });
+  } },
+  { name: "Fluorita azul", neon: "#4a6aff", make: () => bubbles(140, 5, 13, [[0, "#1a1aa0"], [.5, "#3a4cff"], [1, "#b8c8ff"]], "#080828") },
+  { name: "Ágata vermelha", neon: "#ff2a1a", make: () => {
+    const nz = noise(), cx = rnd(40, 160), cy = VY + rnd(20, 60);
+    return pixTex((x, y) => {
+      const v = frac(Math.hypot(x - cx, (y - cy) * 1.3) / 26 + fbm(nz, x / 30, y / 30) * .5);
+      if (v < .55) return ramp(S([[0, "#ff2a10"], [.4, "#ff6a40"], [1, "#a80c04"]]), v / .55);
+      return ramp(S([[0, "#0a0202"], [1, "#2a0604"]]), fbm(nz, x / 5, y / 5));
+    });
+  } },
+  { name: "Calcita óptica", neon: "#d8e0ff", make: () => {
+    const a = noise(), v = noise();
+    return pixTex((x, y) => {
+      const c = ramp(S([[0, "#8a96d8"], [.6, "#d6dcff"], [1, "#ffffff"]]), fbm(a, x / 40, y / 40) * .7 + (1 - y / VY) * .4);
+      return vein(v, x, y, 30, .01) ? mul(c, 1.1) : c;
+    });
+  } },
+  { name: "Calcita salmão", neon: "#ff6a4a", make: () => {
+    const a = noise(), st = Array.from({ length: 12 }, () => rnd(4, 14));
+    return pixTex((x, y) => {
+      let acc = 0, row = 0; while (acc + st[row % 12] < y) { acc += st[row % 12]; row++; }
+      const edge = y - acc < 1.5, step = Math.floor((x + row * 17) / 34), sedge = (x + row * 17) % 34 < 1.2;
+      const c = ramp(S([[0, "#e0402a"], [.6, "#ff6a4a"], [1, "#ffa080"]]), fbm(a, x / 12, y / 12) + (step % 2) * .1);
+      return edge || sedge ? mul(c, .7) : c;
+    });
+  } },
+  { name: "Azul pontilhado", neon: "#3ab0ff", make: () => {
+    const a = noise(), c = noise();
+    return pixTex((x, y) => {
+      const cl = fbm(a, x / 20, y / 20), sp = fbm(c, x / 2, y / 2);
+      if (cl > .5 && sp > .55) return ramp(S([[0, "#1a6aff"], [1, "#a8e0ff"]]), sp);
+      return ramp(S([[0, "#03060f"], [1, "#101a34"]]), cl);
+    });
+  } },
+  { name: "Aragonita gelo", neon: "#7ae8ff", make: () => {
+    const a = noise(), b = noise();
+    return pixTex((x, y) => ramp(S([[0, "#2a7aa0"], [.5, "#6ac8e8"], [1, "#d8f6ff"]]), fbm(a, x / 30, y / 12) * .8 + fbm(b, x / 4, y / 4) * .3));
+  } },
+  { name: "Ágata rendada", neon: "#c8d8ff", make: () => {
+    const nz = noise(), cs = [[rnd(0, VX), rnd(0, VY)], [rnd(0, VX), rnd(0, VY)]];
+    return pixTex((x, y) => {
+      let d = 1e9, a = 0;
+      for (const [cx, cy] of cs) { const dd = Math.hypot(x - cx, y - cy); if (dd < d) { d = dd; a = Math.atan2(y - cy, x - cx); } }
+      return ramp(S([[0, "#141c34"], [.35, "#34548f"], [.5, "#eef4ff"], [.58, "#6a8ac8"], [1, "#141c34"]]), frac((d + fbm(nz, x / 40, y / 40) * 34 + Math.sin(a * 9 + d * .03) * 9) / 22));
+    });
+  } },
+  { name: "Madeira petrificada", neon: "#e8b070", make: () => {
+    const nz = noise(), cx = rnd(-VX * .4, VX * .2), cy = rnd(VY * .2, VY * .8);
+    return pixTex((x, y) => {
+      const d = Math.hypot(x - cx, (y - cy) * 1.15), a = Math.atan2(y - cy, x - cx);
+      if (Math.abs(Math.sin(a * 16 + fbm(nz, x / 30, y / 30) * 3)) < .035 && d > 40) return HX("#1a0e06");
+      return ramp(S([[0, "#3a2010"], [.55, "#9a6a3a"], [.75, "#d8b080"], [1, "#4a2a12"]]), frac(d / 15 + fbm(nz, x / 25, y / 25) * 1.6));
+    });
+  } },
+  { name: "Amonita", neon: "#f0c890", make: () => {
+    const nz = noise(), cx = VX * .5 + rnd(-40, 40), cy = VY * .5 + rnd(-40, 40), b = .17;
+    return pixTex((x, y) => {
+      const dx = x - cx, dy = y - cy, r = Math.hypot(dx, dy) + 1, a = Math.atan2(dy, dx);
+      const t = Math.log(r) / (b * 2 * Math.PI) - a / (2 * Math.PI), w = frac(t);
+      if (w < .07) return HX("#24140a");
+      const septa = frac(a / (2 * Math.PI) * 16 + Math.sin(w * 5) * .25 + Math.floor(t) * .37) < .07;
+      const c = ramp(S([[0, "#5a3418"], [.5, "#c8925a"], [.85, "#f6dcb0"], [1, "#7a4a22"]]), w * .9 + fbm(nz, x / 10, y / 10) * .2);
+      return septa ? mul(c, .55) : c;
+    });
+  } },
+  { name: "Ágata-olho", neon: "#ffd090", make: () => {
+    const V = voronoi(4), nz = noise();
+    return pixTex((x, y) => {
+      const [d1] = V(x, y);
+      if (d1 < 46) return ramp(S([[0, "#1a0a04"], [.4, "#a8622a"], [.55, "#fff0d8"], [.7, "#6a3410"], [1, "#1a0a04"]]), frac(d1 / 11));
+      return ramp(S([[0, "#3a1e0c"], [1, "#8a5428"]]), fbm(nz, x / 18, y / 18));
+    });
+  } },
+  { name: "Pedra-paisagem", neon: "#d8c8a0", make: () => {
+    const nz = noise();
+    const cols = ["#efe2c4", "#c9b48a", "#9a8460", "#6a5638", "#3e301e"].map(HX);
+    return pixTex((x, y) => {
+      const yy = y % 150, band = Math.floor(y / 150);
+      for (let k = 0; k < 4; k++) {
+        const h = 26 + k * 30 + (fbm(nz, x / 55 + k * 7 + band * 3, k + band) - .5) * 56;
+        if (yy < h) return mul(cols[k], .9 + fbm(nz, x / 5, y / 5) * .2);
+      }
+      return mul(cols[4], .9 + fbm(nz, x / 5, y / 5) * .2);
+    });
+  } },
+  { name: "Labradorita", neon: "#6ad8ff", make: () => {
+    const a = noise(), b = noise();
+    return pixTex((x, y) => {
+      const base = ramp(S([[0, "#101418"], [1, "#3a4048"]]), fbm(a, x / 8, y / 8));
+      const v = fbm(b, (x * .8 + y * .6) / 30, (-x * .6 + y * .8) / 110);
+      return v > .54 ? mixc(base, HX("#d8f4ff"), Math.min(1, (v - .54) * 5)) : base;
+    });
+  } },
+  { name: "Coral fóssil", neon: "#ffb0a0", make: () => {
+    const V = voronoi(55), nz = noise();
+    return pixTex((x, y) => {
+      const [d1, d2] = V(x, y);
+      if (d2 - d1 < 2.2) return HX("#f2e2d0");
+      if (d1 < 3.2) return HX("#5a3a2a");
+      return ramp(S([[0, "#8a5a44"], [1, "#c8987a"]]), d1 / 18 + fbm(nz, x / 6, y / 6) * .3);
+    });
+  } },
+  { name: "Estromatólito", neon: "#c8e0a0", make: () => {
+    const nz = noise();
+    return pixTex((x, y) => {
+      const dome = -Math.abs(Math.sin(x / 34 + fbm(nz, x / 80, 3) * 4)) * 22;
+      return ramp(S([[0, "#3a3a24"], [.5, "#a8a070"], [.65, "#efe8c8"], [1, "#3a3a24"]]), frac((y + dome + fbm(nz, x / 20, y / 20) * 12) / 16));
+    });
+  } },
+  { name: "Pedra-zebra", neon: "#f0f0f0", make: () => {
+    const nz = noise();
+    return pixTex((x, y) => Math.sin((x + y * .3 + fbm(nz, x / 70, y / 70) * 140) / 8) > .1 ? mixc(HX("#e8e2d4"), HX("#ffffff"), fbm(nz, x / 4, y / 4)) : HX("#15110e"));
+  } },
+  { name: "Rodocrosita fatiada", neon: "#ff8ab0", make: () => {
+    const nz = noise(), C = [[rnd(VX * .2, VX * .8), rnd(VY * .2, VY * .8)], [rnd(0, VX), rnd(0, VY)]];
+    return pixTex((x, y) => {
+      let d = 1e9, a = 0;
+      for (const [cx, cy] of C) { const dd = Math.hypot(x - cx, y - cy); if (dd < d) { d = dd; a = Math.atan2(y - cy, x - cx); } }
+      return ramp(S([[0, "#8a2448"], [.5, "#f08ab0"], [.7, "#fff0f4"], [1, "#8a2448"]]), frac((d + Math.sin(a * 5) * 7 + fbm(nz, x / 30, y / 30) * 16) / 15));
+    });
+  } },
+  { name: "Ágata-musgo", neon: "#9aff9a", make: () => {
+    const a = noise(), b = noise(), cl = noise();
+    return pixTex((x, y) => {
+      const m = fbm(a, x / 14, y / 14) * .6 + fbm(b, x / 3.5, y / 3.5) * .45;
+      const base = ramp(S([[0, "#d8e0d8"], [1, "#f6fbf6"]]), fbm(cl, x / 40, y / 40));
+      return m > .62 ? ramp(S([[0, "#3a6a2a"], [1, "#0e2a0a"]]), (m - .62) * 4) : m > .58 ? mixc(base, HX("#7aa860"), .5) : base;
+    });
+  } },
+  { name: "Obsidiana floco-de-neve", neon: "#ffffff", make: () => {
+    // one or two huge flakes seen very close: six petals, a bright vein down each and
+    // web-like threads strung across the petals between the veins
+    const P = [[VX * rnd(.3, .45), VY * rnd(.3, .45), rnd(230, 280), rnd(0, 6)], [VX * rnd(.85, 1.05), VY * rnd(.85, 1.05), rnd(170, 210), rnd(0, 6)]];
+    const nz = noise(), fe = noise();
+    return pixTex((x, y) => {
+      for (const [px, py, R, ph] of P) {
+        const dx = x - px, dy = y - py, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+        if (r > R) continue;
+        const petal = Math.pow(Math.abs(Math.cos(3 * a + ph)), .6), edge = R * (.3 + .7 * petal) * (.9 + fbm(fe, x / 14, y / 14) * .2);
+        if (r < edge) {
+          const u = 3 * a + ph, dA = (u - Math.round(u / Math.PI) * Math.PI) / 3, perp = Math.abs(r * Math.sin(dA));
+          // threads: rings that sag a little between the veins, like a web
+          const ring = frac((r - Math.abs(dA) * r * .35) / 24);
+          const t = r / edge;
+          if (perp < 3 || r < R * .06) return HX("#ffffff");
+          if (ring < .05) return HX("#f0f3f6");
+          return mixc(HX("#c8ccd2"), HX("#3a3e44"), Math.pow(t, 1.6) * .85 + fbm(nz, x / 6, y / 6) * .15);
+        }
+      }
+      return ramp(S([[0, "#040405"], [1, "#18191c"]]), fbm(nz, x / 12, y / 12));
+    });
+  } },
+  { name: "Teia de aranha", neon: "#e8eef6", make: () => {
+    // a real orb web over dark stone: radial threads, a sagging spiral between them, dew drops
+    const c = document.createElement("canvas"); c.width = TX; c.height = TY;
+    const x = c.getContext("2d"), bg = x.createRadialGradient(TX / 2, TY / 2, 10, TX / 2, TY / 2, TX * .75);
+    bg.addColorStop(0, "#22242a"); bg.addColorStop(1, "#08090b"); x.fillStyle = bg; x.fillRect(0, 0, TX, TY);
+    const web = (cx, cy, R) => {
+      const n = 15 + Math.floor(rnd(0, 6)), ang = Array.from({ length: n }, (_, i) => i / n * Math.PI * 2 + rnd(-.12, .12));
+      x.strokeStyle = "rgba(235,240,248,.85)"; x.lineWidth = .9;
+      for (const a of ang) { x.beginPath(); x.moveTo(cx, cy); x.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); x.stroke(); }
+      x.lineWidth = .7; x.strokeStyle = "rgba(235,240,248,.7)";
+      for (let rr = 7; rr < R; rr += rnd(5, 8)) {
+        for (let i = 0; i < n; i++) {
+          const a0 = ang[i], a1 = ang[(i + 1) % n] + (i === n - 1 ? Math.PI * 2 : 0), r0 = rr + rnd(-1, 1), r1 = rr + rnd(-1, 1), am = (a0 + a1) / 2, sag = rr * .86;
+          x.beginPath(); x.moveTo(cx + Math.cos(a0) * r0, cy + Math.sin(a0) * r0);
+          x.quadraticCurveTo(cx + Math.cos(am) * sag, cy + Math.sin(am) * sag, cx + Math.cos(a1) * r1, cy + Math.sin(a1) * r1); x.stroke();
+          if (Math.random() < .05) { x.fillStyle = "rgba(255,255,255,.95)"; x.beginPath(); x.arc(cx + Math.cos(am) * sag, cy + Math.sin(am) * sag, rnd(.8, 1.8), 0, Math.PI * 2); x.fill(); }
+        }
+      }
+      x.fillStyle = "rgba(255,255,255,.6)"; x.beginPath(); x.arc(cx, cy, 2.5, 0, Math.PI * 2); x.fill();
+    };
+    web(rnd(TX * .35, TX * .65), rnd(TY * .35, TY * .65), TX * .62);
+    // a few loose strands across the corners
+    x.strokeStyle = "rgba(235,240,248,.45)"; x.lineWidth = .6;
+    for (let i = 0; i < 4; i++) { x.beginPath(); x.moveTo(rnd(0, TX), 0); x.lineTo(rnd(0, TX), TY); x.stroke(); }
+    return c;
+  } },
+  { name: "Dendrito", neon: "#f0e0c0", make: () => {
+    const c = document.createElement("canvas"); c.width = TX; c.height = TY;
+    const x = c.getContext("2d"); x.fillStyle = "#efe4cc"; x.fillRect(0, 0, TX, TY);
+    x.strokeStyle = "#2a1c10"; x.lineCap = "round";
+    const branch = (px, py, a, len, w, d) => {
+      if (d === 0 || len < 1.2) return;
+      const qx = px + Math.cos(a) * len, qy = py + Math.sin(a) * len;
+      x.lineWidth = w; x.beginPath(); x.moveTo(px, py); x.lineTo(qx, qy); x.stroke();
+      branch(qx, qy, a + rnd(.25, .6), len * rnd(.6, .78), w * .7, d - 1);
+      branch(qx, qy, a - rnd(.25, .6), len * rnd(.6, .78), w * .7, d - 1);
+      if (Math.random() < .4) branch(qx, qy, a + rnd(-.15, .15), len * .7, w * .7, d - 1);
+    };
+    for (let i = 0; i < 18; i++) branch(rnd(0, TX), Math.random() < .5 ? TY + 2 : rnd(0, TY), -Math.PI / 2 + rnd(-.9, .9), rnd(13, 22), 2.2, 7);
+    return c;
+  } }
+];
+const neonOf = (m, k) => "hsl(" + Math.round(k.hue) + ",100%,62%)";
+// the whole dig is one rainbow of 8 colours in a circle: red, pink, orange, yellow, green, blue,
+// indigo, violet, then red again. Every phase is a gradient of 2 to 8 neighbouring colours,
+// starting at any of the 8 and running forwards or backwards: 7 sizes x 8 starts x 2 ways = 112.
+// Phases go by size (2 colours first); in each size, 8 forwards (from red ... violet), then 8 backwards
+// hues unwrapped round the circle so a gradient never takes the long way between two neighbours
+const PAL8 = [0, -30, 28, 52, 125, 215, 245, 280];   // red pink orange yellow green blue indigo violet
+const PHASES = 112;
+const palHue = k => PAL8[((k % 8) + 8) % 8] + 360 * Math.floor(k / 8);
+function phaseHues(li) {
+  const j = li % PHASES, n = 2 + Math.floor(j / 16), dir = j % 16 < 8 ? 1 : -1, st = j % 8, out = [];
+  for (let c = 0; c < n; c++) out.push(palHue(st + dir * c));
+  return out;
+}
+// the first colour holds for the first part of the dig, then blends smoothly through the rest
+const HOLD = .4;
+function hueAt(li, meters) {
+  const t = clamp((clamp(meters / LV(li).goal, 0, 1) - HOLD) / (1 - HOLD), 0, 1), e = t * t * (3 - 2 * t);
+  const hs = phaseHues(li), x = e * (hs.length - 1), i = Math.floor(x);
+  return hs[i] + (hs[Math.min(i + 1, hs.length - 1)] - hs[i]) * (x - i);
+}
+const CAP_KEYS = Object.keys(CAPS);
+
+const EARTH = [
+  { name: "Crosta",         km: "0 – 35 km",       bg: ["#2b1c13", "#40291b"], blk: ["#e8b27a", "#c4713d", "#8e3d22"] },
+  { name: "Manto superior", km: "35 – 660 km",     bg: ["#2c130f", "#4a1b12"], blk: ["#ffa46b", "#e5552e", "#a2241d"] },
+  { name: "Manto inferior", km: "660 – 2.890 km",  bg: ["#241019", "#3e1428"], blk: ["#ff8db3", "#d6457a", "#86214f"] },
+  { name: "Núcleo externo", km: "2.890 – 5.150 km", bg: ["#2a1d06", "#4a320b"], blk: ["#ffe08a", "#f2a531", "#b26a10"] },
+  { name: "Núcleo interno", km: "5.150 – 6.371 km", bg: ["#0c1b22", "#123744"], blk: ["#b5f5ff", "#4fc6e0", "#1f7a9c"] }
+];
+// one name per phase (112), each about digging, stone or falling and matching its colours,
+// in the same order as phaseHues. After the last one the names come round again as II, III ...
+const NAMES = [
+  // 2 colours, forwards: red-pink, pink-orange, orange-yellow, yellow-green, green-blue, blue-indigo, indigo-violet, violet-red
+  "Primeira Picareta em Brasa", "Poço de Quartzo Rosa", "Poço de Âmbar", "Veio de Enxofre",
+  "Gruta de Malaquita", "Queda Azul-Noite", "Fenda de Ametista", "Desabamento Rubi",
+  // 2 colours, backwards: red-violet, pink-red, orange-pink, yellow-orange, green-yellow, blue-green, indigo-blue, violet-indigo
+  "Brasa Arroxeada", "Coral Petrificado", "Cobre Rosado", "Mina de Ouro Velho",
+  "Túnel do Musgo Luminoso", "Gruta Turquesa", "Abismo de Safira", "Despenhadeiro do Crepúsculo",
+  // 3 colours, forwards
+  "Fornalha Desabada", "Geodo Incandescente", "Galeria do Ouro Falso", "Mina de Jade",
+  "Cachoeira Gelada", "Queda da Meia-Noite", "Câmara de Granada", "Escadaria de Rodocrosita",
+  // 3 colours, backwards
+  "Lava sob a Noite", "Jardim de Turmalina", "Forja Rosada", "Areia do Deserto Rosa",
+  "Floresta Fossilizada", "Lagoa de Enxofre", "Fosso Oceânico", "Gruta da Aurora",
+  // 4 colours, forwards
+  "Veio do Pôr do Sol", "Pomar de Cristal", "Poço das Lascas Douradas", "Glaciar Esmeralda",
+  "Catedral de Gelo", "Câmara do Relâmpago", "Abismo de Fluorita", "Vulcão Afogado",
+  // 4 colours, backwards
+  "Mergulho na Lava Fria", "Noite das Faíscas", "Brasas do Crepúsculo", "Sol Enterrado",
+  "Selva de Cristal", "Areia Movediça", "Mar Subterrâneo", "Veio da Aurora Boreal",
+  // 5 colours, forwards
+  "Grande Desabamento", "Mina do Arco Velho", "Raízes do Mundo", "Cachoeira de Prismas",
+  "Glaciar em Chamas", "Recife Petrificado", "Precipício do Crepúsculo", "Coração da Montanha",
+  // 5 colours, backwards
+  "Avalanche Colorida", "Eco das Profundezas", "Fornalha da Meia-Noite", "Jardim de Geodos",
+  "Floresta em Brasa", "Rio de Cobre", "Caverna dos Vaga-lumes", "Gruta do Limo Dourado",
+  // 6 colours, forwards
+  "Escadaria de Luz", "Túnel das Pedras Preciosas", "Vale dos Cristais", "Queda Sem Fim",
+  "Labirinto de Opala", "Mina das Mil Cores", "Poço do Feiticeiro", "Galeria dos Vitrais",
+  // 6 colours, backwards
+  "Fenda do Dragão", "Abismo Estrelado", "Gruta do Pavão", "Cascata de Gemas",
+  "Câmara do Tesouro", "Ninho de Cristal", "Rio de Opala", "Caverna do Eco Colorido",
+  // 7 colours, forwards
+  "Prisma Partido", "Ponte do Arco-Íris", "Templo Soterrado", "Coroa de Pedras",
+  "Floresta de Cristais", "Mosaico Profundo", "Trono de Ametista", "Farol Subterrâneo",
+  // 7 colours, backwards
+  "Espiral das Cores", "Caleidoscópio de Pedra", "Garganta do Vulcão", "Lagoa Prismática",
+  "Cripta dos Vitrais", "Salão dos Espelhos", "Caminho das Gemas", "Vórtice de Quartzo",
+  // all 8, forwards
+  "Prisma Enterrado", "Mina do Arco-Íris", "Catedral Prismática", "Coração de Opala",
+  "Roda das Cores", "Fonte de Luz", "Mar de Prismas", "Mergulho no Arco-Íris",
+  // all 8, backwards
+  "Arco-Íris Invertido", "Prisma ao Contrário", "Espelho do Abismo", "Volta ao Mundo",
+  "Avesso da Terra", "Reflexo Profundo", "Eclipse Colorido", "Centro da Terra"];
+const ROMAN = ["", " II", " III", " IV", " V", " VI", " VII", " VIII", " IX", " X"];
+// every phase digs deeper than the last: 150 m, 185 m, 220 m ... and a little more each lap
+const goalOf = i => 150 + i * 35 + Math.floor(i / 10) * 25;
+// the shots don't grow during a phase: each new phase starts with 2 more than the one before
+const shotsOf = i => 12 + i * 2;
+function LV(i) {
+  const lap = Math.floor(i / NAMES.length);
+  let start = 0; for (let j = 0; j < i; j++) start += goalOf(j);
+  return {
+    name: NAMES[i % NAMES.length] + (ROMAN[lap] ?? " " + (lap + 1)),
+    km: "começa a " + start.toLocaleString("pt-BR") + " m",
+    goal: goalOf(i),
+    shots: shotsOf(i),
+    blk: EARTH[Math.min(i, EARTH.length - 1)].blk
+  };
+}
+
+const DEF = { level: 0, maxLevel: 0, balls: 4, xShots: 0, luck: 0, pad: 0, capRate: 0, capM: 0, capF: 0, capB: 0, capC: 0, gems: 0, wins: 0 };
+const KEY = "furofundo.v1";
+let save = load();
+function load() {
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) return Object.assign({}, DEF, s); } catch (e) {}
+  return Object.assign({}, DEF);
+}
+function store() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} }
+
+// the shop: each item says plainly what it does and what you have now
+const pct = v => Math.round(v * 100) + "%";
+const UPS = [
+  { ic: "ball", name: "+1 bola por tiro", short: "+1 bola", desc: "Todo tiro sai com uma bola a mais, em todas as fases.",
+    now: () => "Agora: " + save.balls + " bolas por tiro", lvl: () => save.balls - 4, max: 14,
+    cost: n => Math.round(19 * Math.pow(1.5, n)), buy: () => { save.balls++; } },
+  { ic: "shots", name: "+2 tiros por fase", short: "+2 tiros", desc: "Cada fase começa com 2 tiros a mais para você usar.",
+    now: () => save.xShots ? "Agora: +" + save.xShots * 2 + " tiros em cada fase" : "Agora: nenhum tiro extra", lvl: () => save.xShots, max: 20,
+    cost: n => Math.round(16 * Math.pow(1.45, n)), buy: () => { save.xShots++; } },
+  { ic: "coin", name: "Mais moedas nas pedras", short: "Mais moedas", desc: "Mais pedras trazem moedas para gastar aqui na lojinha.",
+    now: () => "Agora: " + pct(.05 + save.luck * .02) + " das pedras com moeda", lvl: () => save.luck, max: 8,
+    cost: n => Math.round(22 * Math.pow(1.6, n)), buy: () => { save.luck++; } },
+  { ic: "pad", name: "Barrinha mais larga", short: "Barrinha larga", desc: "A barrinha que rebate as bolas fica mais larga, então fica mais fácil salvar as bolas.",
+    now: () => save.pad ? "Agora: +" + save.pad * 8 + " px de largura" : "Agora: tamanho normal", lvl: () => save.pad, max: 6,
+    cost: n => Math.round(14 * Math.pow(1.5, n)), buy: () => { save.pad++; } },
+  // power-up odds
+  { ic: "caps", name: "Mais power-ups", short: "Mais power-ups", desc: "Mais pedras trazem um power-up quando quebram.",
+    now: () => save.capRate ? "Agora: +" + save.capRate * 3 + "% de pedras com power-up" : "Agora: chance normal", lvl: () => save.capRate, max: 6,
+    cost: n => Math.round(24 * Math.pow(1.55, n)), buy: () => { save.capRate++; } },
+  { ic: "multi", name: "Mais Multibola (M)", short: "Mais Multibola", desc: "O power-up M, que divide cada bola em três, aparece mais vezes.",
+    now: () => save.capM ? "Agora: nível " + save.capM + " de 5" : "Agora: chance normal", lvl: () => save.capM, max: 5,
+    cost: n => Math.round(19 * Math.pow(1.5, n)), buy: () => { save.capM++; } },
+  { ic: "fire", name: "Mais Bola de fogo (F)", short: "Mais Bola de fogo", desc: "O power-up F, que faz cada batida tirar 3 em vez de 1, aparece mais vezes.",
+    now: () => save.capF ? "Agora: nível " + save.capF + " de 5" : "Agora: chance normal", lvl: () => save.capF, max: 5,
+    cost: n => Math.round(19 * Math.pow(1.5, n)), buy: () => { save.capF++; } },
+  { ic: "ball2", name: "Mais Bola extra (B)", short: "Mais Bola extra", desc: "O power-up B, que dá uma bola a mais até o fim da fase, aparece mais vezes.",
+    now: () => save.capB ? "Agora: nível " + save.capB + " de 5" : "Agora: chance normal", lvl: () => save.capB, max: 5,
+    cost: n => Math.round(22 * Math.pow(1.55, n)), buy: () => { save.capB++; } },
+  { ic: "slim", name: "Menos Barrinha curta (C)", short: "Menos Barra curta", desc: "O power-up ruim C, que encolhe a barrinha, aparece menos vezes.",
+    now: () => save.capC ? "Agora: nível " + save.capC + " de 5" : "Agora: chance normal", lvl: () => save.capC, max: 5,
+    cost: n => Math.round(16 * Math.pow(1.5, n)), buy: () => { save.capC++; } }
+];
+
+// ---------- DOM ----------
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let scale = 1;
+
+function fit() {
+  const st = $("stage").getBoundingClientRect();
+  const room = st.width - 28;   // the depth shaft and its gap sit beside the field
+  let h = st.height, w = h * 9 / 16;
+  if (w > room) { w = room; h = w * 16 / 9; }
+  w = Math.floor(w); h = Math.floor(h);
+  $("frame").style.width = w + "px"; $("frame").style.height = h + "px";
+  $("hud").style.width = (w + 28) + "px";
+  $("shaft").style.height = h + "px";
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  scale = cv.width / W;
+  if (run) hud();
+}
+
+// ---------- sound: everything plays inside a flooded cave ----------
+// sfx go through a muffling low-pass and a long dark cave reverb; a low abyssal hum and distant
+// plays underneath while the sound is on
+let ac = null, soundOn = true, bus = null, direct = null, master = null, noiseBuf = null, lastHit = 0, ambient = null;
+function audioInit() {
+  if (!ac) {
+    try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ac = null; return; }
+    master = ac.createGain(); master.gain.value = soundOn ? .9 : 0; master.connect(ac.destination);
+    const lp = ac.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2600; lp.Q.value = .4;
+    const dry = ac.createGain(); dry.gain.value = .85;
+    const wet = ac.createGain(); wet.gain.value = .28;
+    const verb = ac.createConvolver(); verb.buffer = caveIR(2.2);
+    bus = ac.createGain();
+    bus.connect(lp); lp.connect(dry).connect(master); lp.connect(verb); verb.connect(wet).connect(master);
+    // a clear, unfiltered path for the hit itself, with a little sent into the cave so it still echoes
+    direct = ac.createGain(); direct.connect(master);
+    const send = ac.createGain(); send.gain.value = .14; direct.connect(send).connect(verb);
+    noiseBuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+    const nd = noiseBuf.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+    startAmbient();
+  }
+  if (ac.state === "suspended") ac.resume();
+}
+// impulse response of a big wet cavern: dense noise tail that darkens as it fades
+function caveIR(sec) {
+  const n = Math.floor(ac.sampleRate * sec), buf = ac.createBuffer(2, n, ac.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch); let lpv = 0;
+    for (let i = 0; i < n; i++) {
+      const t = i / n, k = .5 + t * .45;           // later = more low-passed
+      lpv = lpv * k + (Math.random() * 2 - 1) * (1 - k);
+      d[i] = lpv * Math.pow(1 - t, 2.6) * 2.2;
+    }
+  }
+  return buf;
+}
+function tone(f0, f1, dur, type = "sine", vol = .1, when = 0, dest) {
+  if (!ac || !soundOn) return;
+  const t = ac.currentTime + when, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .006); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g).connect(dest || bus); o.start(t); o.stop(t + dur + .05);
+}
+function hiss(dur, ftype, f0, f1, vol = .1, when = 0, q = .7, dest) {
+  if (!ac || !soundOn) return;
+  const t = ac.currentTime + when, src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  src.buffer = noiseBuf; src.playbackRate.value = .7 + Math.random() * .3;
+  f.type = ftype; f.Q.value = q; f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(Math.max(30, f1), t + dur);
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  src.connect(f).connect(g).connect(dest || bus); src.start(t, Math.random()); src.stop(t + dur + .05);
+}
+function startAmbient() {
+  if (ambient || !ac) return;
+  const g = ac.createGain(); g.gain.value = .03;
+  const lp = ac.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 140;
+  const lfo = ac.createOscillator(), lfoG = ac.createGain(); lfo.frequency.value = .07; lfoG.gain.value = 60;
+  lfo.connect(lfoG).connect(lp.frequency); lfo.start();
+  for (const f of [36.7, 55, 55.6]) { const o = ac.createOscillator(); o.type = "sine"; o.frequency.value = f; o.connect(lp); o.start(); }
+  const n = ac.createBufferSource(); n.buffer = noiseBuf; n.loop = true;
+  const nf = ac.createBiquadFilter(); nf.type = "lowpass"; nf.frequency.value = 220; const ng = ac.createGain(); ng.gain.value = .35;
+  n.connect(nf).connect(ng).connect(lp); n.start();
+  lp.connect(g).connect(master);
+  ambient = g;
+}
+const sfx = {
+  hit(hp) {   // a dull, muffled "tup": low-passed noise and a short mid-low body, dry and with no pitch slide, a bit lower for tougher rock
+    if (!ac) return;
+    const t = ac.currentTime; if (t - lastHit < .03) return; lastHit = t;
+    const f = 240 - Math.min(hp, 60) * 1.2 + rnd(-6, 6);
+    hiss(.035, "lowpass", 900, 400, .3, 0, .7, master);
+    tone(f, f * .95, .04, "sine", .2, 0, master);
+  },
+  smash(big) {   // the stone pops like a bubble: a quick upward "blup" with a soft muffled puff, then a few smaller bubbles, nothing sharp or high
+    const f = big ? 170 : 230;
+    tone(f, f * 3.2, .07, "sine", .34, 0, direct);
+    hiss(.04, "lowpass", 700, 300, .18, 0, .7, direct);
+    for (let i = 0; i < (big ? 3 : 2); i++) {
+      const g = rnd(260, 360);
+      tone(g, g * 2.4, .045, "sine", .1, .06 + i * rnd(.04, .07), direct);
+    }
+  },
+  collapse() {   // a cave-in: a crack, a long low rumble in the cave, heavy rocks thudding down one after another, then gravel trickling
+    hiss(.03, "bandpass", 1800, 1200, .2, 0, 1, direct);
+    hiss(1.6, "lowpass", 380, 90, .5, 0, .7);
+    hiss(1.3, "lowpass", 260, 80, .4, .25, .7);
+    let when = .05;
+    for (let i = 0; i < 6; i++) {
+      tone(rnd(65, 95), 45, .09, "sine", .28, when, direct);
+      hiss(.05, "lowpass", 900, 300, .25, when, .7, direct);
+      when += rnd(.1, .2);
+    }
+    for (let i = 0; i < 18; i++) hiss(.02, "bandpass", rnd(900, 2400), 700, rnd(.04, .09), rnd(.2, 1.6), 4);
+  },
+  rise() {   // a soft grinding of stone sliding upward
+    hiss(.7, "bandpass", 170, 280, .07, 0, 1.5);
+    tone(58, 72, .6, "sine", .07);
+  },
+  rebound() { tone(330, 300, .06, "triangle", .12, 0, direct); hiss(.02, "bandpass", 1200, 1000, .08, 0, 2, direct); },
+  shoot() {   // a stream of bubbles rushing out of the drill: one bigger blup with a soft puff, then smaller ones rising quicker and a little higher
+    tone(200, 640, .08, "sine", .22, 0, direct);
+    hiss(.05, "lowpass", 700, 300, .1, 0, .7, direct);
+    let when = .05;
+    for (let i = 0; i < 6; i++) {
+      const g = rnd(240, 340) + i * 30;
+      tone(g, g * 2.4, .045, "sine", .08, when, direct);
+      when += rnd(.03, .06);
+    }
+  },
+  coin() {   // water drops
+    tone(820, 1850, .07, "sine", .09);
+    tone(1150, 2500, .05, "sine", .05, .07);
+  },
+  plop() { tone(rnd(520, 640), rnd(1100, 1400), .045, "sine", .07, 0, direct); },
+  bubbles() { for (let i = 0; i < 5; i++) tone(rnd(300, 400) + i * 90, rnd(700, 950) + i * 120, .05, "sine", .06, i * .05); },
+  tick(i) {   // the same "blup" as a breaking tile, one per phase card passing the middle, ringing in the cave; deeper phases sit higher on a pentatonic scale, so swiping on climbs and swiping back falls
+    if (!ac) return;
+    const k = Math.min(i, 10), g = 160 * Math.pow(2, ([0, 2, 4, 7, 9][k % 5] + 12 * Math.floor(k / 5)) / 12);
+    tone(g, g * 3.2, .07, "sine", .22, 0, direct);
+    hiss(.04, "lowpass", 700, 300, .1, 0, .7, direct);
+    tone(g, g * 3.2, .07, "sine", .1);          // through the cave reverb
+    tone(g, g * 3.2, .07, "sine", .04, .15);    // a faint echo coming back
+  },
+  bad() { tone(260, 180, .3, "triangle", .1); tone(195, 140, .3, "triangle", .07, .08); },
+  ff() { for (let i = 0; i < 3; i++) tone(300 + i * 120, 700 + i * 160, .06, "sine", .05, i * .05); },
+  buy() {   // a simple "bling" for paying: two quick rising notes, the second one ringing a little with a soft shimmer on top
+    tone(988, 988, .06, "triangle", .1, 0, direct);
+    tone(1318.5, 1318.5, .35, "sine", .12, .06, direct);
+    tone(2637, 2637, .15, "sine", .03, .06, direct);
+  },
+  win() { [196, 247, 294, 392].forEach((f, i) => tone(f, f, 1.1, "sine", .08, i * .1)); sfx.coin(); },
+  lose() { [220, 196, 165].forEach((f, i) => tone(f, f, .5, "triangle", .1, i * .22)); }
+};
+function setSound(on) {
+  soundOn = on;
+  if (master) master.gain.setTargetAtTime(on ? .9 : 0, ac.currentTime, .05);
+}
+
+// ---------- run state ----------
+let run = null, paused = true;
+const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+
+function newRun(li) {
+  const L = LV(li);
+  run = {
+    li, L, pal: L.blk.map(rgb), blocks: [], balls: [], homing: [], parts: [], texts: [],
+    depth: 0, rows: 0, nextY: REST, carry: new Set(),
+    shots: L.shots + save.xShots * 2, used: 0, gemsRun: 0, broken: 0,
+    state: "aim", spawnLeft: 0, spawnT: 0, shotT: 0, dir: [0, 1],
+    scrollLeft: 0, aimA: Math.PI / 2, aimOn: false, fast: false, trauma: 0, cam: { x: 0, y: 0, vx: 0, vy: 0 }, pops: [], icons: [], fxMax: { fire: 0, wide: 0, slim: 0, rain: 0 }, seen: {}, padT: 9, drillT: 9, hpRef: 1,
+    px: LX, dx: LX, caps: [], falling: [], fx: { fire: 0, wide: 0, slim: 0, rain: 0 }, lv: { fire: 0, wide: 0, slim: 0, rain: 0 }, bonus: 0, rebounds: 0, extra: layerBalls(li)
+  };
+  CAPS.ball.w = 1.5 + li * 2.5;
+  // like Holedown: the bottom of the phase is a big round core. It sits a little past the goal depth,
+  // and the phase is only won once it is broken. Its rows are booked so no piece overlaps it.
+  run.coreRow = Math.ceil(L.goal / MPR) + 1;
+  run.occ = new Set();
+  for (let q = 0; q < CORE_ROWS; q++) for (let c = 1; c < COLS - 1; c++) run.occ.add(c + "," + (run.coreRow + q));
+  // two stones per colour of this phase, drawn fresh every time the phase starts
+  run.texSets = phaseHues(li).map(() => { const a = pickStone(); let b = pickStone(); for (let t = 0; t < 8 && b === a; t++) b = pickStone(); return [a, b]; });
+  fill();
+  hud();
+}
+
+function hpBase(ri) { return (1.5 + run.li * .7 + ri * .05 + save.balls * .35) * 1.2 * diff(run.li).hp; }
+// how hard each layer is: tougher rock, busier floors, and the stone climbs faster after each turn
+// now and then (every 7th phase) a phase is a notch harder than its neighbours: tougher rock, a few more pieces,
+// stone climbing a bit faster and a sturdier core. It comes unannounced.
+const isHard = li => (li + 1) % 7 === 0;
+function diff(li) {
+  const h = isHard(li);
+  return { hp: (1 + li * .04) * (h ? 1.3 : 1), dens: li * .012 + (h ? .03 : 0), rise: Math.min(24, 6 + li * 1.5 + (h ? 3 : 0)), stars: li + 1 + (h ? 2 : 0), hard: h };
+}
+function padW() {
+  const fx = run.fx;
+  const lv = run.lv;   // stacked capsules multiply: each L +50%, each C -30%
+  return Math.min(W * .8, (PW + save.pad * 8) * (1 + .5 * lv.wide) * Math.pow(.7, lv.slim));
+}
+function setPad(x) { const h = padW() / 2; run.px = clamp(x, h, W - h); }
+
+// how likely each capsule is, after the shop's odds upgrades
+function capW(c) {
+  const w = CAPS[c].w;
+  return c === "multi" ? w + save.capM * 1.5 : c === "fire" ? w + save.capF * 1.5 : c === "ball" ? w + save.capB * 1.5
+    : c === "slim" ? Math.max(.2, w - save.capC * .36) : w;
+}
+function pickCap() {
+  let t = Math.random() * CAP_KEYS.reduce((a, c) => a + capW(c), 0);
+  for (const c of CAP_KEYS) { t -= capW(c); if (t <= 0) return c; }
+  return CAP_KEYS[0];
+}
+// the stone for a piece: one of the two picked for the colour band at this depth
+function stoneAt(row0) {
+  const sets = run.texSets; if (!sets) return pickStone();
+  const idx = Math.round(clamp(row0 * MPR / LV(run.li).goal, 0, 1) * (sets.length - 1));
+  return sets[idx][Math.random() < .5 ? 0 : 1];
+}
+function pickStone() { const ready = MINERALS.filter(m => m.tex); return ready[Math.floor(Math.random() * ready.length)]; }
+function mk(x, y, cells, hp, col0, row0) {
+  const luck = 0.05 + save.luck * 0.02, n = cells.length, big = n >= 3;
+  const coins = Math.random() < (big ? luck * 1.6 : luck) ? 1 + (Math.random() < .25 ? 1 : 0) + Math.floor(run.li / 4) : 0;
+  const w = (Math.max(...cells.map(c => c[0])) + 1) * CELL, h = (Math.max(...cells.map(c => c[1])) + 1) * RH;
+  // the number sits on the cell nearest the middle of the piece, the capsule on another cell when there is one
+  let mx = 0, my = 0; for (const c of cells) { mx += c[0] / n; my += c[1] / n; }
+  const order = cells.slice().sort((a, b) => Math.hypot(a[0] - mx, a[1] - my) - Math.hypot(b[0] - mx, b[1] - my));
+  const lc = order[0], bc = order[n - 1];
+  return { x, y, w, h, hp, max: hp, gem: coins, flash: 0, cells: pieceGeo(cells), col0, row0,
+    label: [lc[0] * CELL + CELL / 2, lc[1] * RH + RH / 2], badgeCell: n > 1 ? bc : null,
+    st: stoneAt(row0), hue: hueAt(run.li, row0 * MPR) + rnd(-14, 14),
+    geo: { ox: Math.floor(rnd(0, TX - w)), oy: Math.floor(rnd(0, TY - h)) },
+    cap: Math.random() < (big ? .4 : .14) + save.capRate * .03 ? pickCap() : null };
+}
+
+const CORE_ROWS = 5, CORE_R = 88;   // big, and it never climbs past the middle of the screen (see rise/scroll)
+function coreHp(li) { return Math.max(30, Math.round(hpBase(run.coreRow) * (isHard(li) ? 13.5 : 12))); }
+function genRow() {
+  const r = run, y = r.nextY, ri = r.rows++;
+  if (!r.occ) r.occ = new Set();
+  if (ri === r.coreRow) {
+    const hp = coreHp(r.li), cy = y + CORE_ROWS * RH / 2;
+    r.blocks.push({ core: true, x: W / 2 - CORE_R, y: cy - CORE_R, w: CORE_R * 2, h: CORE_R * 2, hp, max: hp, flash: 0,
+      cells: [], col0: 1, row0: ri, st: stoneAt(ri), hue: hueAt(r.li, r.L.goal), gem: 0, cap: null, holds: 0,
+      geo: { ox: Math.floor(rnd(0, TX - CORE_R * 2)), oy: Math.floor(rnd(0, TY - CORE_R * 2)) }, spin: rnd(0, 6) });
+  }
+  if (ri > r.coreRow + CORE_ROWS - 1) { r.nextY += RH; return; }   // solid bedrock under the core: nothing more to dig
+  const dens = Math.min(.26, .09 + ri * .0015 + diff(r.li).dens);   // sparse floors: a few bars per row, not a wall
+  const base = hpBase(ri);
+  const total = PIECES.reduce((a, p) => a + p.w, 0);
+  // now and then a hanging structure: a long base bar on the next row with one or two bars resting
+  // on top of it. Pieces are fixed in place otherwise; only these depend on their base.
+  if (ri > 1 && Math.random() < .11 + r.li * .01) {
+    const L = Math.random() < .5 ? 3 : 4, c0 = Math.floor(Math.random() * (COLS - L + 1));
+    const free = (c, rw) => c < 0 || c >= COLS || !r.occ.has(c + "," + rw);
+    let ok = true;
+    for (let c = c0 - 1; c <= c0 + L; c++) if (!free(c, ri) || !free(c, ri + 1)) ok = false;
+    for (let c = c0; c < c0 + L; c++) if (!free(c, ri - 1)) ok = false;
+    if (ok) {
+      const holder = Array.from({ length: L }, (_, i) => [i, 0]);
+      const tops = L === 4 && Math.random() < .5 ? [[c0, 2], [c0 + 2, 2]] : [[c0 + Math.floor(Math.random() * (L - 1)), Math.min(L, 2 + Math.floor(Math.random() * 2))]];
+      for (let c = c0 - 1; c <= c0 + L; c++) { r.occ.add(c + "," + ri); r.occ.add(c + "," + (ri + 1)); }
+      const hb = mk(c0 * CELL, y + RH, holder, Math.max(1, Math.round(base * 1.3 * (1 + .65 * (L - 1)))), c0, ri + 1);
+      r.blocks.push(hb);
+      for (const [tc, tl] of tops) {
+        const len = Math.min(tl, c0 + L - tc);
+        const k = mk(tc * CELL, y, Array.from({ length: len }, (_, i) => [i, 0]), Math.max(1, Math.round(base * (.5 + Math.random() * .9) * (1 + .65 * (len - 1)))), tc, ri);
+        k.hang = true; r.blocks.push(k);
+      }
+    }
+  }
+  for (let c = 0; c < COLS; c++) {
+    if (r.occ.has(c + "," + ri) || Math.random() > dens) continue;
+    // try a random piece anchored on this cell, fall back to a single cell
+    for (let tries = 0; tries < 5; tries++) {
+      let t = Math.random() * total, P = PIECES[0];
+      for (const q of PIECES) { t -= q.w; if (t <= 0) { P = q; break; } }
+      if (tries === 4) P = PIECES[0];   // last try: the short bar
+      const top = P.cells.filter(q => q[1] === 0).reduce((a, q) => Math.min(a, q[0]), 9);
+      const ox = c - top;
+      if (P.cells.some(([qx, qy]) => ox + qx < 0 || ox + qx >= COLS || r.occ.has((ox + qx) + "," + (ri + qy)))) continue;
+      for (const [qx, qy] of P.cells) r.occ.add((ox + qx) + "," + (ri + qy));
+      const hp = Math.max(1, Math.round(base * (.5 + Math.random() * .9) * (1 + .65 * (P.cells.length - 1))));
+      r.blocks.push(mk(ox * CELL, y, P.cells, hp, ox, ri));
+      break;
+    }
+  }
+  // now and then an empty row gets a bar, so the bottom isn't bare for long stretches
+  const starts = () => r.blocks.filter(k => k.row0 === ri).length;
+  const want = Math.random() < .4 ? 1 : 0;
+  for (let tries = 0; tries < 30 && starts() < want; tries++) {
+    const len = Math.random() < .5 ? 2 : 3, c0 = Math.floor(Math.random() * (COLS - len + 1));
+    let ok = true; for (let q = 0; q < len; q++) if (r.occ.has((c0 + q) + "," + ri)) ok = false;
+    if (!ok) continue;
+    for (let q = 0; q < len; q++) r.occ.add((c0 + q) + "," + ri);
+    r.blocks.push(mk(c0 * CELL, y, Array.from({ length: len }, (_, q) => [q, 0]), Math.max(1, Math.round(base * (.5 + Math.random() * .9) * (1 + .65 * (len - 1)))), c0, ri));
+  }
+  r.nextY += RH;
+}
+const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+function cellMap(list) {
+  const m = new Map();
+  for (const k of list) for (const c of k.cells) m.set((k.col0 + c.cx) + "," + (k.row0 + c.cy), k);
+  return m;
+}
+// connected groups of pieces (touching along a cell side)
+function groups() {
+  const r = run, m = cellMap(r.blocks), seen = new Set(), out = [];
+  for (const k0 of r.blocks) {
+    if (seen.has(k0)) continue;
+    const g = { cells: [], maxRow: -1, wall: false }, q = [k0]; seen.add(k0);
+    while (q.length) {
+      const k = q.pop();
+      for (const c of k.cells) {
+        const X = k.col0 + c.cx, Y = k.row0 + c.cy;
+        g.cells.push([X, Y]); g.maxRow = Math.max(g.maxRow, Y);
+        if (X === 0 || X === COLS - 1) g.wall = true;
+        for (const [dx, dy] of DIRS) { const n = m.get((X + dx) + "," + (Y + dy)); if (n && !seen.has(n)) { seen.add(n); q.push(n); } }
+      }
+    }
+    out.push(g);
+  }
+  return out;
+}
+// stacking rule: a piece glued on top of another rests on it. Destroy the one underneath and
+// everything stacked above it comes down too, all the way up the pile.
+function stackAbove(roots, m) {
+  const out = new Set(), q = roots.slice();
+  while (q.length) {
+    const k = q.pop();
+    for (const c of k.cells) {
+      const n = m.get((k.col0 + c.cx) + "," + (k.row0 + c.cy - 1));
+      if (n && n !== k && !out.has(n) && !roots.includes(n)) { out.add(n); q.push(n); }
+    }
+  }
+  return out;
+}
+// how many pieces each one is holding up: those get the black aura
+function markHolders() {
+  const m = cellMap(run.blocks);
+  for (const k of run.blocks) k.holds = stackAbove([k], m).size;
+}
+// the eraser power-up: the piece under the finger breaks at once (never the core), and whatever was stacked on it comes down
+function pieceAt(x, y) {
+  return run.blocks.find(k => !k.core && k.hp > 0 && onScreen(k) && k.cells.some(c => {
+    const x0 = k.x + c.cx * CELL + c.x0, y0 = k.y + c.cy * RH + c.y0, x1 = k.x + c.cx * CELL + c.x1, y1 = k.y + c.cy * RH + c.y1;
+    return x >= x0 - 4 && x <= x1 + 4 && y >= y0 - 6 && y <= y1 + 6;
+  }));
+}
+function zapAt(x, y) {
+  const r = run, k = pieceAt(x, y);
+  if (!k) return false;
+  r.zaps--;
+  k.hp = 0; k.flash = 1; k.hnx = 0; k.hny = 1;
+  breakBlock(k);
+  r.blocks = r.blocks.filter(q => q.hp > 0);
+  collapseAbove([k]); markHolders();
+  edgeGlow("zap", CAPS.zap.col);
+  hud();
+  return true;
+}
+function collapseAbove(dead) {
+  const r = run, m = cellMap(r.blocks.concat(dead)), loose = [...stackAbove(dead, m)].filter(k => k.hp > 0);
+  if (!loose.length) return;
+  r.blocks = r.blocks.filter(k => !loose.includes(k));
+  // a little hop up first (anticipation), then a falling arc that drifts sideways
+  for (const k of loose) { k.vy = rnd(-90, -40); k.vx = rnd(-50, 50); k.spin = rnd(-1.5, 1.5); k.fallT = 0; k.flash = 1; r.falling.push(k); }
+  sfx.collapse();
+  kick(.35, 0, 1, 90);
+}
+function fill() {
+  let grew = false;
+  while (run.nextY < H + RH * 3) { genRow(); grew = true; }
+  if (grew) markHolders();
+}
+
+// ---------- physics ----------
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+
+// ---------- motion ----------
+// squash & stretch along a unit direction: a along it, 1/a across it, so the area never changes
+function sqMat(ux, uy, a) {
+  const b = 1 / a, c = (a - b) * ux * uy;
+  return [a * ux * ux + b * uy * uy, c, c, a * uy * uy + b * ux * ux];
+}
+const mulM = (m, n) => [m[0] * n[0] + m[1] * n[2], m[0] * n[1] + m[1] * n[3], m[2] * n[0] + m[3] * n[2], m[2] * n[1] + m[3] * n[3]];
+// a damped spring: full at t = 0, overshoots once the other way, then settles
+const spring = (t, f = 34, d = 13) => Math.exp(-t * d) * Math.cos(t * f);
+const easeOut = t => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+const easeBack = t => { t = clamp(t, 0, 1) - 1; return 1 + 2.9 * t * t * t + 1.9 * t * t; };
+// a hit squashes the ball flat against the surface it touched (n points from the surface to the ball)
+function squash(b, nx, ny, k = 1) { b.sqT = 0; b.snx = nx; b.sny = ny; b.sqK = k; }
+// the camera: trauma that dies out (shaken by smooth noise, trauma²) plus a directional kick on a spring
+function kick(trauma, dx = 0, dy = 0, push = 0) {
+  if (reduceMotion || !run) return;
+  const r = run;
+  r.trauma = Math.min(1, (r.trauma || 0) + trauma);
+  r.cam.vx += dx * push; r.cam.vy += dy * push;
+}
+// a short slow-motion beat on the big hits, with a cooldown so a chain of breaks doesn't crawl
+function hitstop(s) {
+  const r = run;
+  if (reduceMotion || r.ff || (r.hsCool || 0) > 0) return;
+  r.hitstop = Math.max(r.hitstop || 0, s); r.hsCool = s + .3;
+}
+
+// circle against one cell: a rectangle whose open corners are rounded
+function hitCell(px, py, x0, y0, x1, y1, rad) {
+  if (px < x0 - R || px > x1 + R || py < y0 - R || py > y1 + R) return null;
+  const cs = [[x0, y0, 1, 1], [x1, y0, -1, 1], [x1, y1, -1, -1], [x0, y1, 1, -1]];
+  for (let i = 0; i < 4; i++) {
+    const r = rad[i]; if (!r) continue;
+    const cx = cs[i][0] + cs[i][2] * r, cy = cs[i][1] + cs[i][3] * r;
+    if ((px - cx) * cs[i][2] < 0 && (py - cy) * cs[i][3] < 0) {
+      const dx = px - cx, dy = py - cy, d = Math.hypot(dx, dy) || .001;
+      return d >= r + R ? null : [dx / d, dy / d, r + R - d];
+    }
+  }
+  const qx = clamp(px, x0, x1), qy = clamp(py, y0, y1), dx = px - qx, dy = py - qy, d = Math.hypot(dx, dy);
+  if (d > 0) return d >= R ? null : [dx / d, dy / d, R - d];
+  const l = px - x0, rt = x1 - px, t = py - y0, bt = y1 - py, m = Math.min(l, rt, t, bt);
+  return m === l ? [-1, 0, l + R] : m === rt ? [1, 0, rt + R] : m === t ? [0, -1, t + R] : [0, 1, bt + R];
+}
+// a piece only exists for play once all of it is on screen: no half-pieces peeking from the bottom
+// the floor of the shaft sits on the lowest row line that is fully on screen, so pieces are never cut
+function floorY() { const r = run; return r ? r.nextY - Math.ceil((r.nextY - H) / RH) * RH : H; }
+const onScreen = k => k.y + k.h <= floorY() + .5;
+function coreHit(b, k) {
+  const cx = k.x + CORE_R, cy = k.y + CORE_R, dx = b.x - cx, dy = b.y - cy, d = Math.hypot(dx, dy) || .001;
+  return d >= CORE_R + R ? null : [dx / d, dy / d, CORE_R + R - d];
+}
+function touches(b, k) {
+  if (k.core) return !!coreHit(b, k);
+  if (b.x < k.x - R || b.y < k.y - R || b.x > k.x + k.w + R || b.y > k.y + k.h + R) return false;
+  return k.cells.some(c => { const ox = k.x + c.cx * CELL, oy = k.y + c.cy * RH; return hitCell(b.x, b.y, ox + c.x0, oy + c.y0, ox + c.x1, oy + c.y1, c.rad); });
+}
+function collide(b, k) {
+  if (b.x < k.x - R || b.y < k.y - R || b.x > k.x + k.w + R || b.y > k.y + k.h + R) return false;
+  if (k.core) {   // the core is a true circle: plain reflection off its surface
+    const h = coreHit(b, k); if (!h) return false;
+    const [nx, ny, pen] = h; b.x += nx * pen; b.y += ny * pen;
+    const vn = b.vx * nx + b.vy * ny;
+    if (vn < 0) { b.vx -= 2 * vn * nx; b.vy -= 2 * vn * ny; b.hnx = nx; b.hny = ny; return true; }
+    return false;
+  }
+  let hit = false;
+  for (const c of k.cells) {
+    const ox = k.x + c.cx * CELL, oy = k.y + c.cy * RH;
+    const h = hitCell(b.x, b.y, ox + c.x0, oy + c.y0, ox + c.x1, oy + c.y1, c.rad);
+    if (!h) continue;
+    const [nx, ny, pen] = h;
+    b.x += nx * pen; b.y += ny * pen;
+    // rounded corners are real curves: the ball reflects off the curve's own normal, so where it lands on the arc sets the new angle
+    const vn = b.vx * nx + b.vy * ny;
+    if (vn < 0) { b.vx -= 2 * vn * nx; b.vy -= 2 * vn * ny; b.hnx = nx; b.hny = ny; hit = true; }
+  }
+  return hit;
+}
+
+// no gravity: balls fly in straight lines at constant speed. A ball never travels almost flat,
+// so it can't bounce sideways forever; it always works its way back up to the paddle.
+function move(b, h) {
+  const sp = Math.hypot(b.vx, b.vy) || SPEED, minVy = sp * .28;
+  if (Math.abs(b.vy) < minVy) {
+    b.vy = (b.vy < 0 ? -1 : 1) * minVy;
+    b.vx = (b.vx < 0 ? -1 : 1) * Math.sqrt(sp * sp - minVy * minVy);
+  }
+  b.x += b.vx * h; b.y += b.vy * h;
+  if (b.x < R) { b.x = R; b.vx = Math.abs(b.vx); squash(b, 1, 0, .75); }
+  else if (b.x > W - R) { b.x = W - R; b.vx = -Math.abs(b.vx); squash(b, -1, 0, .75); }
+  const fl = floorY() - GV;
+  if (b.y > fl - R) { b.y = fl - R; b.vy = -Math.abs(b.vy); squash(b, 0, -1, .85); }
+}
+
+function step(h) {
+  const r = run;
+  r.simT = (r.simT || 0) + h;
+  if (r.hole) holeStep(h);
+  for (const b of r.balls) {
+    if (b.home) { holeBall(b, h); continue; }
+    if (b.gather) {   // regroup: fly to the lead ball's spot, then wait in line to be sent out again
+      const g = r.regroup, dx = g.x - b.x, dy = g.y - b.y, d = Math.hypot(dx, dy), v = 1800 * h;
+      if (d <= v) { b.done = true; g.left++; continue; }
+      b.x += dx / d * v; b.y += dy / d * v;
+      continue;
+    }   // screen cleared: swirl into the black hole, get spat at the drill
+    move(b, h);
+    b.age += h;
+    if (r.fx.rain > 0) {   // rainbow balls: anything they touch is gone, and they keep flying straight
+      for (const k of r.blocks) {
+        if (k.hp <= 0 || !onScreen(k)) continue;
+        if (k.core) { if (collide(b, k)) { k.hp = Math.max(0, k.hp - 3); k.flash = 1; hitFx(b, k); sfx.hit(k.hp); if (k.hp <= 0) breakBlock(k); } }
+        else if (touches(b, k)) { k.hp = 0; k.flash = 1; const sp = Math.hypot(b.vx, b.vy) || 1; k.hnx = b.vx / sp; k.hny = b.vy / sp; breakBlock(k); }
+      }
+    } else for (const k of r.blocks) {
+      if (k.hp <= 0 || !onScreen(k) || !collide(b, k)) continue;
+      k.hp = Math.max(0, k.hp - (1 + 2 * r.lv.fire)); k.flash = 1;
+      hitFx(b, k);
+      sfx.hit(k.hp);
+      if (k.hp <= 0) breakBlock(k);
+    }
+    // the paddle: catch a rising ball and send it back down, angle set by where it lands
+    if (b.vy < 0 && b.y < BY && !b.miss) {
+      const pw = padW();
+      if (Math.abs(b.x - r.px) <= pw / 2 + R) {
+        // mirror the ball like a wall would, nudged a little by where it lands on the paddle, then pulled toward
+        // the angle the last balls left with: a volley you save goes back down together instead of fanning out
+        const off = clamp((b.x - r.px) / (pw / 2), -1, 1);
+        let a = clamp(Math.atan2(-b.vy, b.vx) - off * .35, MIN_A, Math.PI - MIN_A);
+        if (r.rebT != null && r.simT - r.rebT < .8) a = a * .2 + r.rebA * .8;
+        r.rebA = a; r.rebT = r.simT;
+        b.vx = Math.cos(a) * SPEED; b.vy = Math.sin(a) * SPEED; b.y = BY; b.age = 0;
+        squash(b, 0, 1); if (r.padT > .08) r.padT = 0;
+        r.rebounds++; sfx.rebound();
+      } else b.miss = true;
+    }
+    if ((b.y < LY - 14 && b.vy < 0) || b.age > 25) {
+      b.done = true;
+      if (b.y < LY) { r.homeX = b.x; r.homing.push({ x: b.x, y: b.y, t: 0, d0: Math.abs(r.dx - b.x) }); }   // every ball back moves the mark: the last one decides where the next shot leaves from
+    }
+  }
+  if (r.blocks.some(k => k.hp <= 0)) {
+    const dead = r.blocks.filter(k => k.hp <= 0);
+    r.blocks = r.blocks.filter(k => k.hp > 0);
+    collapseAbove(dead); markHolders();
+  }
+  if (r.balls.some(b => b.done)) r.balls = r.balls.filter(b => !b.done);
+}
+
+// a ball lands on a piece: the ball flattens against it, the piece is shoved and springs back
+function hitFx(b, k) {
+  squash(b, b.hnx, b.hny);
+  if ((k.hitT ?? 9) > .05) { k.hitT = 0; k.hnx = -b.hnx; k.hny = -b.hny; }
+}
+function breakBlock(k) {
+  const r = run, cx = k.x + k.w / 2, cy = k.y + k.h / 2, col = neonOf(k.st, k);
+  r.broken++;
+  if (k.core) return breakCore(k, cx, cy, col);
+  const big = k.cells.length >= 4, dx = k.hnx ?? 0, dy = k.hny ?? 1;
+  // the shards fly on with the ball that broke the piece: a cone around its path, plus a few loose ones all around
+  const n = reduceMotion ? 6 : 14 + (big ? 14 : 0), base = Math.atan2(dy, dx);
+  for (let i = 0; i < n; i++) {
+    const cone = i % 3 !== 0, a = cone ? base + rnd(-.9, .9) : Math.random() * Math.PI * 2, s = cone ? rnd(160, 460) : rnd(60, 220);
+    r.parts.push({ x: cx + rnd(-.35, .35) * k.w, y: cy + rnd(-.25, .25) * k.h, vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+      life: rnd(.45, .85), max: .85, col, s: rnd(2.5, 5.5), rot: rnd(0, 6.3), vr: rnd(-14, 14), spark: Math.random() < .35 });
+  }
+  if (!reduceMotion) r.pops.push({ k, t: 0, col, cx, cy, ring: Math.max(k.w, k.h) * .45 });
+  kick(big ? .3 : .18, dx, dy, big ? 130 : 70);
+  if (big) hitstop(.05);
+  sfx.smash(big);
+  // the capsule pops out of the stone, arcs down a little, and is then pulled up toward the paddle
+  if (k.cap) r.caps.push({ x: cx, y: Math.min(cy, H - 20), type: k.cap, vx: rnd(-110, 110), vy: rnd(90, 160), t: 0 });
+  if (k.gem) {
+    save.gems += k.gem; r.gemsRun += k.gem; store();
+    r.texts.push({ x: cx - 8, y: cy, t: "+" + k.gem, life: 1, pearl: true, vx: rnd(-40, 40), vy: -150 });
+    sfx.coin();
+    hud();
+  }
+}
+
+// the core bursts: a big ring of shards, every ball floats home as a bubble and the phase is won
+function breakCore(k, cx, cy, col) {
+  const r = run;
+  r.coreDown = true;
+  for (let i = 0; i < (reduceMotion ? 24 : 90); i++) {
+    const a = Math.random() * Math.PI * 2, s = 80 + Math.random() * 380;
+    r.parts.push({ x: cx + Math.cos(a) * CORE_R * .5, y: cy + Math.sin(a) * CORE_R * .5, vx: Math.cos(a) * s * 1.8, vy: Math.sin(a) * s * 1.8,
+      life: .7 + Math.random() * .8, max: 1.5, col: i % 3 ? col : "#fff", s: 2 + Math.random() * 4, rot: rnd(0, 6.3), vr: rnd(-12, 12), spark: i % 2 === 0 });
+  }
+  r.coreBlast = { x: cx, y: cy, t: 0, col };
+  kick(.9);
+  hitstop(.16);
+  r.texts.push({ x: W / 2, y: clamp(cy - 20, 120, H - 80), t: "Núcleo quebrado!", life: 2.2, col: "#ffe58a", big: true });
+  sfx.smash(true); sfx.win();
+  r.spawnLeft = 0;
+  if (r.balls.length && !r.hole) { r.cleared = true; openHole(); }
+}
+
+function takeCap(c) {
+  const r = run, C = CAPS[c.type];
+  if (c.type === "multi") {
+    const live = r.balls.filter(b => !b.miss).slice(0, Math.max(0, Math.floor((120 - r.balls.length) / 2)));   // at most 120 balls on screen
+    if (live.length) for (const b of live) for (const s of [-.35, .35]) {
+      const a = Math.atan2(b.vy, b.vx) + s, v = Math.hypot(b.vx, b.vy);
+      r.balls.push({ x: b.x, y: b.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, age: 0 });
+    }
+    else r.bonus += 4;
+  } else if (c.type === "rain") {
+    r.fx.rain += 5; r.lv.rain = 1;
+  } else if (c.type === "fire" || c.type === "wide" || c.type === "slim") {
+    // same capsule again: time adds up and the effect gets one level stronger (max 3)
+    r.fx[c.type] += { fire: 8, wide: 15, slim: 10 }[c.type];
+    r.lv[c.type] = Math.min(3, r.lv[c.type] + 1);
+  }
+  else if (c.type === "zap") r.zaps = (r.zaps || 0) + 1;
+  else if (c.type === "shot") r.shots++;
+  else if (c.type === "ball") r.extra++;
+  else if (c.type === "gem") { save.gems += 3; r.gemsRun += 3; store(); }
+  setPad(r.px);
+  if (TIMED.includes(c.type)) r.fxMax[c.type] = Math.max(r.fxMax[c.type], r.fx[c.type]);
+  // the icon jumps off the paddle; a timed one arcs into its slot in the corner, the rest float up and pop.
+  // The name shows only the first time a run meets that power-up.
+  const row = r.icons.filter(q => q.name).length;   // names caught together stack instead of overlapping
+  r.icons.push({ type: c.type, x: c.x, y: LY + 14, t: 0, rise: !TIMED.includes(c.type), name: r.seen[c.type] ? "" : C.name, row });
+  r.seen[c.type] = true;
+  if (c.type !== "gem" && !TIMED.includes(c.type)) edgeGlow(c.type, C.col);
+  else if (TIMED.includes(c.type)) flashOnly(c.type === "rain" ? "#b45cff" : C.col);
+  ringUpdate();
+  if (c.type === "slim") sfx.bad();
+  else if (c.type === "gem") sfx.coin();
+  else sfx.bubbles();
+  hud();
+}
+
+// light up the panel's edge in the capsule's colour (the rainbow one gets the whole spectrum)
+const GLOW2 = { zap: "#bfe0ff", multi: "#ff7a2f", fire: "#ffd23a", wide: "#2ee6ff", shot: "#ffd166", slim: "#ff5fb8", ball: "#9fd0ff" };
+function flashOnly(col) {
+  const f = $("fxFlash");
+  f.style.setProperty("--gc", col);
+  f.classList.remove("on"); void f.offsetWidth; f.classList.add("on");
+}
+function edgeGlow(type, col) {
+  const g = $("fxGlow"), f = $("fxFlash");
+  g.style.setProperty("--gc", col); g.style.setProperty("--gc2", GLOW2[type] || col);
+  f.style.setProperty("--gc", type === "rain" ? "#b45cff" : col);
+  g.classList.toggle("glow--rain", type === "rain");
+  for (const el of [g, f]) { el.classList.remove("on"); void el.offsetWidth; el.classList.add("on"); }
+}
+
+// the ring for timed effects: fire, wide, slim and rainbow. Each active one gets its comets on the
+// same ring, spaced evenly, so two or more at once share the edge. It blinks in the last 2 seconds.
+const TIMED = ["fire", "wide", "slim", "rain"];
+const RAINBOW_STOPS = ["#ff3b3b", "#ff9a2e", "#ffe23a", "#4dff7a", "#2ee6ff", "#4a6aff", "#b45cff", "#ff5fb8"];
+let ringKey = "";
+function ringUpdate() {
+  const r = run, el = $("fxRing");
+  const on = r ? TIMED.filter(t => r.fx[t] > 0) : [];
+  const ending = on.length > 0 && on.every(t => r.fx[t] < 2);
+  const key = on.join(",") + (ending ? "!" : "");
+  if (key === ringKey) return;
+  ringKey = key;
+  el.classList.toggle("on", on.length > 0);
+  el.classList.toggle("ending", ending);
+  if (!on.length) return;
+  if (on.length === 1 && on[0] === "rain") {   // rainbow alone: the whole ring is the spectrum
+    el.style.background = "conic-gradient(from var(--ga)," + RAINBOW_STOPS.join(",") + ",#ff3b3b)";
+    return;
+  }
+  // two comets per effect, all spread evenly round the ring
+  const list = on.concat(on), seg = 100 / list.length, stops = [];
+  list.forEach((t, i) => {
+    const a = i * seg, cols = t === "rain" ? RAINBOW_STOPS : [CAPS[t].col, GLOW2[t]];
+    stops.push("transparent " + a.toFixed(2) + "%");
+    const len = seg * .7, n = cols.length;
+    cols.forEach((c, j) => stops.push(c + " " + (a + seg * .1 + len * j / n).toFixed(2) + "%"));
+    stops.push("#fff " + (a + seg * .1 + len).toFixed(2) + "%");
+    stops.push("transparent " + (a + seg * .1 + len + seg * .08).toFixed(2) + "%");
+  });
+  stops.push("transparent 100%");
+  el.style.background = "conic-gradient(from var(--ga)," + stops.join(",") + ")";
+}
+
+// ---------- bubbles: when the screen is cleared every ball turns into a soap bubble that wobbles up
+// to the drill and pops on it ----------
+function openHole() {
+  const r = run;
+  r.hole = { t: 0, pops: [] };
+  r.balls.forEach((b, i) => {
+    b.home = true; b.miss = true;
+    b.bub = 0; b.bt = -i * .03;            // each ball turns into a bubble a moment after the one before
+    b.bx = b.x; b.vb = rnd(40, 80);        // base x drifts toward the drill, rise speed builds up slowly
+    b.ph = rnd(0, 6.3); b.ph2 = rnd(0, 6.3); b.amp = rnd(14, 26); b.fq = rnd(3.6, 5.2); b.rb = rnd(1.7, 2.3);
+  });
+}
+function holeStep(h) {
+  const o = run.hole;
+  o.t += h;
+  for (const q of o.pops) q.t += h;
+  o.pops = o.pops.filter(q => q.t < .4);
+  if (!run.balls.some(b => b.home) && !o.pops.length) run.hole = null;
+}
+function holeBall(b, h) {
+  const r = run, o = r.hole;
+  if (!o) { b.done = true; return; }
+  b.bt += h;
+  if (b.bt < 0) return;
+  b.bub = Math.min(1, b.bub + h * 4);   // ball -> bubble in a quarter of a second
+  if (b.bub < 1) return;
+  // a lazy dance on the way up: a wide sway plus a quicker little wiggle, and a bob in the rise
+  b.vb = Math.min(420, b.vb + 230 * h);
+  b.y -= b.vb * h * (1 + .35 * Math.sin(b.bt * b.fq * 1.3 + b.ph2));
+  b.bx += (r.dx - b.bx) * Math.min(1, h * 1.6);
+  const near = clamp((b.y - LY) / 70, 0, 1);   // the dance calms down only right before the pop
+  b.x = b.bx + (Math.sin(b.bt * b.fq + b.ph) * b.amp + Math.sin(b.bt * b.fq * 2.3 + b.ph2) * b.amp * .35) * near;
+  if (b.y <= LY - 10) {
+    b.done = true;
+    o.pops.push({ x: b.x, y: LY - 12, t: 0, s: R * b.rb });
+    sfx.plop();
+  }
+}
+function drawBubble(b) {
+  const k = b.bub, rr = R * (1 + (b.rb - 1) * k), t = performance.now() / 1000;
+  // the solid ball fades out inside as the bubble grows around it
+  if (k < 1) {
+    ctx.globalAlpha = 1 - k; ctx.fillStyle = "#fff6e8";
+    ctx.beginPath(); ctx.arc(b.x, b.y, R * (1 - k * .5), 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = .25 + .75 * k;
+  // thin film: almost clear inside, a soft tint toward the edge
+  const g = ctx.createRadialGradient(b.x - rr * .3, b.y - rr * .3, rr * .1, b.x, b.y, rr);
+  g.addColorStop(0, "rgba(255,255,255,.05)"); g.addColorStop(.75, "rgba(180,220,255,.08)"); g.addColorStop(1, "rgba(255,200,255,.28)");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, rr, 0, Math.PI * 2); ctx.fill();
+  // rim with a shifting rainbow sheen
+  ctx.lineWidth = 1.2; ctx.strokeStyle = "rgba(255,255,255,.75)";
+  ctx.beginPath(); ctx.arc(b.x, b.y, rr, 0, Math.PI * 2); ctx.stroke();
+  const sh = t * 2 + b.ph;
+  ctx.lineWidth = 1.6;
+  ctx.strokeStyle = "rgba(255,120,220,.55)"; ctx.beginPath(); ctx.arc(b.x, b.y, rr - 1.2, sh, sh + 1.3); ctx.stroke();
+  ctx.strokeStyle = "rgba(90,230,255,.55)"; ctx.beginPath(); ctx.arc(b.x, b.y, rr - 1.2, sh + 2.4, sh + 3.6); ctx.stroke();
+  // highlight
+  ctx.fillStyle = "rgba(255,255,255,.85)";
+  ctx.beginPath(); ctx.ellipse(b.x - rr * .38, b.y - rr * .42, rr * .22, rr * .13, -.6, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+}
+function drawHole() {
+  const o = run.hole;
+  if (!o) return;
+  // pops on the drill: a ring and a few droplets flying out
+  for (const q of o.pops) {
+    const f = q.t / .4;
+    ctx.globalAlpha = 1 - f;
+    ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(q.x, q.y, q.s * (1 + f * 1.4), 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = "#e8f6ff";
+    for (let i = 0; i < 6; i++) {
+      const a = i * Math.PI / 3 + q.s, d = q.s * (1 + f * 2.4);
+      ctx.beginPath(); ctx.arc(q.x + Math.cos(a) * d, q.y + Math.sin(a) * d, 1.6 * (1 - f) + .4, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+// regroup button: every ball still in play lines up behind the lead one again, Holedown style
+function canRegroup() {
+  const r = run;
+  return r && r.state === "shoot" && !paused && !r.hole && !r.regroup && r.balls.filter(b => !b.miss && !b.home).length > 1;
+}
+function regroup() {
+  if (!canRegroup()) return;
+  const r = run, live = r.balls.filter(b => !b.miss && !b.home);
+  // the leader is a ball heading down (the one nearest the top, so the line has the whole field ahead of it);
+  // if every ball is on its way up, the deepest one leads
+  const down = live.filter(b => b.vy > 0);
+  const lead = down.length ? down.reduce((a, b) => b.y < a.y ? b : a) : live.reduce((a, b) => b.y > a.y ? b : a);
+  r.regroup = { x: lead.x, y: lead.y, vx: lead.vx, vy: lead.vy, left: r.spawnLeft, t: .04 };
+  r.spawnLeft = 0;   // balls not fired yet join the same line
+  for (const b of live) if (b !== lead) b.gather = true;
+  if (!reduceMotion) r.pops.push({ k: null, t: 0, col: "#ffd23a", cx: lead.x, cy: lead.y, ring: 4 });   // a ring marks where the line forms
+  sfx.bubbles();
+}
+
+// double click / double tap during a shot: fast-forward on, and again to go back to normal speed
+function recall() {
+  const r = run;
+  if (r.state !== "shoot") return;
+  r.ff = !r.ff;
+  sfx.ff();
+}
+
+// ---------- turn flow ----------
+function fire() {
+  const r = run;
+  if (r.state !== "aim" || r.shots <= 0 || paused) return;
+  r.shots--; r.used++;
+  r.ff = false; r.cleared = false;
+  r.state = "shoot"; r.spawnLeft = save.balls + r.extra + r.bonus; r.bonus = 0; r.spawnT = 0; r.shotT = 0; r.rebT = null;
+  r.dir = [Math.cos(r.aimA), Math.sin(r.aimA)]; r.fireX = r.dx; r.homeX = null;
+  r.aimOn = false; r.drillT = 0;
+  sfx.shoot();
+  hud();
+}
+
+// when every ball has slipped past the paddle the turn is over, and the stone climbs toward you
+const DANGER = LY + 26;
+function endTurn() {
+  const r = run;
+  if (r.coreDown) return finish(true);
+  r.riseLeft = diff(r.li).rise;
+  r.state = "rise";
+  sfx.rise();
+}
+function topOf() { let t = Infinity; for (const k of run.blocks) t = Math.min(t, k.core ? k.y : k.y + Math.min(...k.cells.map(c => c.cy * RH + c.y0))); return t; }
+function afterRise() {
+  const r = run;
+  if (topOf() < DANGER) return finish(false, true);
+  let top = Infinity;
+  for (const k of r.blocks) top = Math.min(top, k.y);
+  r.scrollLeft = top === Infinity ? RH * 6 : Math.max(0, top - REST);
+  r.state = "scroll";
+}
+
+function afterScroll() {
+  const r = run;
+  r.state = "aim";
+  hud();
+  if (r.coreDown) return finish(true);
+  if (r.shots <= 0) return finish(false);
+}
+
+function buyPrice() { return 12 * Math.pow(2, run.buys || 0); }
+function buyShots() {
+  const r = run, price = buyPrice();
+  if (save.gems < price || r.state !== "over") return;
+  save.gems -= price; store(); sfx.buy();
+  r.buys = (r.buys || 0) + 1; r.shots += 3; r.state = "aim";
+  $("ovEnd").hidden = true; paused = false; hud(); cv.focus();
+}
+function finish(won, eaten) {
+  const r = run;
+  r.state = "over";
+  const last = r.li === EARTH.length - 1;
+  if (won) {
+    if (last) save.wins++;
+    save.level = r.li + 1; save.maxLevel = Math.max(save.maxLevel, r.li + 1);
+    store();
+    sfx.win();
+  } else {
+    sfx.lose();
+  }
+  $("eKicker").textContent = won ? "Fase concluída" : eaten ? "Engolido" : "Sem tiros";
+  $("eTitle").textContent = won
+    ? "Você atravessou: " + r.L.name
+    : eaten ? "As pedras subiram até a broca" : r.depth >= r.L.goal - .01 ? "Faltou quebrar o núcleo" : "Faltaram " + Math.ceil(r.L.goal - r.depth) + " m";
+  $("eDepth").textContent = Math.floor(r.depth) + " m";
+  $("eGems").innerHTML = '<span class="pearl" aria-hidden="true"></span> ' + r.gemsRun;
+  $("eShots").textContent = r.used;
+  $("eBlocks").textContent = r.broken;
+  $("eMain").textContent = won ? "Próxima camada" : "Tentar de novo";
+  // out of shots: buy three more and carry on from where you are (price doubles each time in a layer)
+  const price = buyPrice(), eb = $("eBuy");
+  eb.hidden = won || eaten;
+  eb.innerHTML = '+3 tiros · <span class="pearl" aria-hidden="true"></span> ' + price;
+  eb.disabled = save.gems < price;
+  eb.className = "btn" + (eb.disabled ? " btn--ghost" : "");
+  $("eMain").className = "btn" + (!eb.hidden && !eb.disabled ? " btn--ghost" : "");
+  setTimeout(() => { $("ovEnd").hidden = false; paused = true; (eb.hidden || eb.disabled ? $("eMain") : eb).focus(); }, 450);
+}
+
+// ---------- update ----------
+function update(dt) {
+  const r = run;
+  if (!r) return;
+  // shards burst out fast and slow down (ease out), drifting up on the way: arcs, not straight lines
+  const drag = Math.exp(-dt * 4.2);
+  for (const p of r.parts) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= drag; p.vy = p.vy * drag - GRAV * .5 * dt; p.rot = (p.rot || 0) + (p.vr || 0) * dt; }
+  r.parts = r.parts.filter(p => p.life > 0);
+  for (const t of r.texts) {
+    t.life -= dt; t.age = (t.age || 0) + dt;
+    if (t.vy != null) { t.x += t.vx * dt; t.y += t.vy * dt; t.vx *= Math.exp(-dt * 3); t.vy = t.vy * Math.exp(-dt * 5) - 12 * dt; }   // pops up in an arc and floats
+    else t.y -= 28 * (1 + 2.5 * Math.exp(-t.age * 6)) * dt;
+  }
+  for (const q of r.pops) q.t += dt;
+  r.pops = r.pops.filter(q => q.t < .45);
+  if (r.coreBlast && (r.coreBlast.t += dt) > 1.4) r.coreBlast = null;
+  // camera: the kick springs back (underdamped, so it overshoots once), the trauma fades
+  const cam = r.cam;
+  cam.vx += (-cam.x * 420 - cam.vx * 18) * dt; cam.vy += (-cam.y * 420 - cam.vy * 18) * dt;
+  cam.x += cam.vx * dt; cam.y += cam.vy * dt;
+  r.trauma = Math.max(0, r.trauma - dt * 1.5);
+  r.padT += dt; r.drillT += dt; r.hsCool = Math.max(0, (r.hsCool || 0) - dt);
+  for (const b of r.balls) {
+    b.sqT = (b.sqT ?? 9) + dt;
+    // where the ball was the last few frames: drawn as a fading streak (motion blur)
+    b.tr = b.tr || []; b.tr.unshift(b.x, b.y); if (b.tr.length > 6) b.tr.length = 6;
+  }
+  for (const q of r.icons) q.t += dt;
+  r.icons = r.icons.filter(q => q.t < (q.name ? 1.6 : 1));
+  r.texts = r.texts.filter(t => t.life > 0);
+  for (const k of r.blocks) {
+    if (k.flash > 0) k.flash = Math.max(0, k.flash - dt * 7);
+    if (k.hitT != null) k.hitT += dt;
+    if (onScreen(k)) k.fade = Math.min(1, (k.fade ?? 0) + dt * 4); else k.fade = 0;
+  }
+  // pieces that lost their support drop and shatter
+  for (const k of r.falling) {
+    k.fallT += dt; k.vy += 1100 * dt; k.y += k.vy * dt; k.x += (k.vx || 0) * dt; k.flash = Math.max(0, k.flash - dt * 4);
+    if (k.fallT > .55 || k.y > H) { k.gone = true; k.hp = 0; k.y = Math.min(k.y, H - k.h * .5); breakBlock(k); }
+  }
+  if (r.falling.some(k => k.gone)) r.falling = r.falling.filter(k => !k.gone);
+  ringUpdate();
+  const rg = canRegroup();
+  if ($("bRegroup").disabled === rg) $("bRegroup").disabled = !rg;
+  if (paused) return;
+  if (r.hole && r.state !== "shoot") holeStep(dt);   // let the hole close after the turn ends
+  // balls that came back over the line roll along the surface into the drill
+  for (const g of r.homing) {
+    const ff = r.ff ? 3 : 1;
+    g.t += dt * ff;
+    g.y += (LY - 24 - g.y) * Math.min(1, dt * ff * 14);
+    const d = r.dx - g.x;
+    g.x += Math.sign(d) * Math.min(Math.abs(d), (380 + g.t * 900) * dt * ff);
+    if (Math.abs(r.dx - g.x) < 3 && g.t > .08) g.in = true;
+  }
+  if (r.homing.some(g => g.in)) r.homing = r.homing.filter(g => !g.in);
+  // the drill is on its own: each time a ball comes back it slides over to that spot, so it ends where the last one came in
+  if (r.homeX != null) {
+    const want = clamp(r.homeX, 12, W - 12), d = want - r.dx;
+    r.dx = Math.abs(d) < 1 ? want : r.dx + Math.sign(d) * Math.min(Math.abs(d), Math.max(260, Math.abs(d) * 8) * dt);
+  }
+  // keys: A/D always move the paddle; arrows turn the drill while aiming and move the paddle otherwise
+  const ka = keys.a || keys.A, kd = keys.d || keys.D;
+  if (r.state === "aim") {
+    if (keys.ArrowLeft) { r.aimA = clamp(r.aimA + 1.6 * dt, MIN_A, Math.PI - MIN_A); r.aimOn = true; }
+    if (keys.ArrowRight) { r.aimA = clamp(r.aimA - 1.6 * dt, MIN_A, Math.PI - MIN_A); r.aimOn = true; }
+  }
+  const kl = ka || (r.state !== "aim" && keys.ArrowLeft), kr = kd || (r.state !== "aim" && keys.ArrowRight);
+  if (kl) setPad(r.px - 420 * dt);
+  if (kr) setPad(r.px + 420 * dt);
+  const pw = padW();
+  for (const c of r.caps) {
+    c.t = (c.t || 0) + dt;
+    if (c.vy == null) c.y -= 105 * dt;
+    else {   // the pop: thrown down and sideways, then pulled up until it rises at its usual speed
+      c.vy = Math.max(-105, c.vy - 620 * dt); c.vx *= Math.exp(-dt * 3.5);
+      c.x = clamp(c.x + c.vx * dt, 14, W - 14); c.y += c.vy * dt;
+      if (c.y > H - 16) { c.y = H - 16; c.vy = Math.min(c.vy, 0); }
+    }
+    if (c.y < BY + 6 && c.y > LY - 8 && Math.abs(c.x - r.px) < pw / 2 + 13) { c.got = true; takeCap(c); }
+  }
+  r.caps = r.caps.filter(c => !c.got && c.y > LY - 12);
+
+  if (r.state === "shoot") {
+    r.shotT += dt;
+    const ts = r.ff ? 6 : r.fast ? 2.5 : 1;
+    // a hitstop slows the world right down for a beat, so the big breaks land
+    let sim = dt * ts * (r.hitstop > 0 ? .12 : 1);
+    if (r.hitstop > 0) r.hitstop -= dt;
+    for (const f in r.fx) { r.fx[f] = Math.max(0, r.fx[f] - sim); if (!r.fx[f]) { r.lv[f] = 0; r.fxMax[f] = 0; } }
+    while (sim > 0) {
+      const h = Math.min(STEP, sim); sim -= h;
+      if (r.regroup && r.regroup.left > 0) {   // regrouped balls stream back out of one spot, in one line
+        const g = r.regroup;
+        g.t -= h;
+        if (g.t <= 0) { r.balls.push({ x: g.x, y: g.y, vx: g.vx, vy: g.vy, age: 0 }); g.left--; g.t = .04; }
+      }
+      if (r.regroup && r.regroup.left === 0 && !r.balls.some(b => b.gather)) r.regroup = null;
+      if (r.spawnLeft > 0) {
+        r.spawnT -= h;
+        if (r.spawnT <= 0) {
+          // like Holedown: the whole volley streams out of the spot where you fired, in one line
+          r.balls.push({ x: r.fireX, y: BY, vx: r.dir[0] * SPEED, vy: r.dir[1] * SPEED, age: 0 });
+          r.spawnLeft--; r.spawnT = .04;
+        }
+      }
+      step(h);
+    }
+    // every stone on screen is gone while balls are still out: call them home and give the shot back
+    if (!r.cleared && r.balls.length && !r.blocks.some(onScreen)) {
+      r.cleared = true; r.spawnLeft = 0; r.shots++;
+      openHole();
+      r.icons.push({ type: "shot", x: W / 2, y: H / 2, t: 0, rise: true, big: true });   // screen cleared: a big +1 shot
+      sfx.bubbles(); hud();
+    }
+    if (r.spawnLeft === 0 && r.balls.length === 0 && !r.regroup) endTurn();
+  } else if (r.state === "rise") {
+    const amt = Math.min(r.riseLeft, 70 * dt);
+    r.riseLeft -= amt;
+    for (const k of r.blocks) k.y = k.core ? Math.max(H / 2 - CORE_R, k.y - amt) : k.y - amt;
+    for (const c of r.caps) c.y -= amt;
+    r.nextY -= amt;
+    fill();
+    if (r.riseLeft <= 0.01) afterRise();
+  } else if (r.state === "scroll") {
+    const amt = Math.min(r.scrollLeft, (r.scrollLeft * 7 + 90) * dt);
+    r.scrollLeft -= amt;
+    for (const k of r.blocks) k.y = k.core ? Math.max(H / 2 - CORE_R, k.y - amt) : k.y - amt;
+    for (const p of r.parts) p.y -= amt;
+    for (const c of r.caps) c.y -= amt;
+    for (const k of r.falling) k.y -= amt;
+    for (const d of dust) d.y -= amt * .4;
+    for (const d of deep) d.y -= amt * .4;
+    r.nextY -= amt;
+    r.depth = Math.min(r.L.goal, r.depth + amt / RH * MPR);
+    fill();
+    hud();
+    if (r.scrollLeft <= 0.01) afterScroll();
+  }
+}
+
+// ---------- aim preview ----------
+// a straight dotted line from the drill to the first thing the shot would touch
+function ghostPath() {
+  const r = run, cx = Math.cos(r.aimA), sy = Math.sin(r.aimA), fl = floorY() - GV - R;
+  const pts = [], blocks = r.blocks.filter(onScreen);
+  for (let t = 0; t < 900; t += 3) {
+    const x = r.dx + cx * t, y = BY + sy * t;
+    if (x < R || x > W - R || y > fl) break;
+    const b = { x, y };
+    if (blocks.some(k => touches(b, k))) break;
+    if (t % 12 === 0) pts.push(x, y);
+  }
+  return pts;
+}
+
+// ---------- draw ----------
+function mix(a, b, t) { return a.map((v, i) => Math.round(v + (b[i] - v) * t)); }
+function blockColor(hp) {
+  const p = run.pal, t = clamp(hp / run.hpRef, 0, 1);
+  const c = t < .5 ? mix(p[0], p[1], t * 2) : mix(p[1], p[2], (t - .5) * 2);
+  return "rgb(" + c.join(",") + ")";
+}
+function rr(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+// a gold coin: rim, raised face and a small shine
+function coin(g, x, y, r) {
+  g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = "#a8700c"; g.fill();
+  const gr = g.createRadialGradient(x - r * .35, y - r * .4, r * .1, x, y, r * .85);
+  gr.addColorStop(0, "#fff6b0"); gr.addColorStop(.5, "#ffd23a"); gr.addColorStop(1, "#d99a12");
+  g.beginPath(); g.arc(x, y, r * .8, 0, Math.PI * 2); g.fillStyle = gr; g.fill();
+  g.strokeStyle = "rgba(120,70,0,.7)"; g.lineWidth = Math.max(1, r * .14);
+  g.beginPath(); g.arc(x, y, r * .5, 0, Math.PI * 2); g.stroke();
+  g.strokeStyle = "rgba(40,20,0,.55)"; g.lineWidth = 1; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.stroke();
+}
+// capsule icon: coloured disc with a pictogram of what it does
+function capIcon(g, type, x, y, R, glow) {
+  const C = CAPS[type], u = R / 10, ink = "#1a110c";
+  if (glow) { g.shadowColor = C.col; g.shadowBlur = 10; }
+  g.beginPath(); g.arc(x, y, R, 0, Math.PI * 2); g.fillStyle = C.col; g.fill();
+  g.shadowBlur = 0;
+  g.lineWidth = Math.max(1.2, u * 1.4); g.strokeStyle = ink; g.stroke();
+  g.save(); g.translate(x, y); g.fillStyle = ink; g.strokeStyle = ink;
+  const tri = (a, b, c, d, e, f) => { g.beginPath(); g.moveTo(a, b); g.lineTo(c, d); g.lineTo(e, f); g.closePath(); g.fill(); };
+  if (type === "multi") {
+    for (const [px, py] of [[0, -3.4], [-3.4, 2.6], [3.4, 2.6]]) { g.beginPath(); g.arc(px * u, py * u, 2.5 * u, 0, Math.PI * 2); g.fill(); }
+  } else if (type === "fire") {
+    g.beginPath(); g.moveTo(0, -7 * u);
+    g.bezierCurveTo(2 * u, -3 * u, 6 * u, -1 * u, 5 * u, 3 * u); g.bezierCurveTo(4.4 * u, 6 * u, 2 * u, 7 * u, 0, 7 * u);
+    g.bezierCurveTo(-2 * u, 7 * u, -4.4 * u, 6 * u, -5 * u, 3 * u); g.bezierCurveTo(-5.5 * u, 0, -2 * u, -2 * u, 0, -7 * u); g.fill();
+    g.fillStyle = "#ffd166"; g.beginPath(); g.moveTo(0, -.5 * u);
+    g.bezierCurveTo(2.5 * u, 2 * u, 2.6 * u, 5.4 * u, 0, 5.4 * u); g.bezierCurveTo(-2.6 * u, 5.4 * u, -2.5 * u, 2 * u, 0, -.5 * u); g.fill();
+  } else if (type === "wide") {
+    g.fillRect(-3.4 * u, -1.3 * u, 6.8 * u, 2.6 * u);
+    tri(4 * u, -3.4 * u, 7.6 * u, 0, 4 * u, 3.4 * u); tri(-4 * u, -3.4 * u, -7.6 * u, 0, -4 * u, 3.4 * u);
+  } else if (type === "slim") {
+    g.fillRect(-1.6 * u, -1.3 * u, 3.2 * u, 2.6 * u);
+    tri(7.6 * u, -3.4 * u, 4 * u, 0, 7.6 * u, 3.4 * u); tri(-7.6 * u, -3.4 * u, -4 * u, 0, -7.6 * u, 3.4 * u);
+  } else if (type === "shot") {   // one more shot: a big "+1" over a little dotted aim line
+    g.font = "800 " + (9.5 * u) + "px 'Chakra Petch', sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText("+1", 0, -1.6 * u);
+    for (const px of [-3.2, 0, 3.2]) { g.beginPath(); g.arc(px * u, 5.4 * u, .95 * u, 0, Math.PI * 2); g.fill(); }
+  } else if (type === "rain") {   // little rainbow
+    g.lineWidth = 1.5 * u; g.lineCap = "round";
+    const tt = performance.now() / 1000;   // the colours keep sliding through the arcs
+    for (let i = 0; i < 8; i++) {
+      const col = "hsl(" + Math.round((i * 45 - tt * 160) % 360 + 360) % 360 + ",100%,58%)";
+      g.strokeStyle = col; g.beginPath(); g.arc(0, 4 * u, (7.4 - i * .78) * u, Math.PI * 1.05, Math.PI * 1.95); g.stroke();
+    }
+  } else if (type === "zap") {   // a little tile with an X in it
+    g.lineWidth = 1.5 * u; g.lineCap = "round"; g.lineJoin = "round";
+    const bx = 6 * u, by = 4.4 * u, br = 2.2 * u;
+    g.beginPath(); g.moveTo(-bx + br, -by); g.arcTo(bx, -by, bx, by, br); g.arcTo(bx, by, -bx, by, br); g.arcTo(-bx, by, -bx, -by, br); g.arcTo(-bx, -by, bx, -by, br); g.closePath(); g.stroke();
+    g.lineWidth = 1.9 * u;
+    g.beginPath(); g.moveTo(-2.4 * u, -2 * u); g.lineTo(2.4 * u, 2 * u); g.moveTo(2.4 * u, -2 * u); g.lineTo(-2.4 * u, 2 * u); g.stroke();
+  } else if (type === "ball") {
+    g.beginPath(); g.arc(-1.6 * u, 1.4 * u, 4.2 * u, 0, Math.PI * 2); g.fill();
+    g.lineWidth = 1.8 * u; g.lineCap = "round";
+    g.beginPath(); g.moveTo(3.2 * u, -4.6 * u); g.lineTo(7.2 * u, -4.6 * u); g.moveTo(5.2 * u, -6.6 * u); g.lineTo(5.2 * u, -2.6 * u); g.stroke();
+  } else if (type === "gem") {
+    coin(g, -2.6 * u, 2 * u, 3.6 * u); coin(g, 2.8 * u, 2.4 * u, 3.2 * u); coin(g, .2 * u, -3 * u, 3.4 * u);
+  }
+  g.restore();
+}
+// the capsule a brick carries, drawn on its corner so you can aim for it
+function capBadge(type, x, y) { capIcon(ctx, type, x, y, 10, true); }
+function poly(pts, fill) {
+  ctx.beginPath(); ctx.moveTo(pts[0], pts[1]);
+  for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]);
+  ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+}
+// one rounded rect with its own radius per corner (tl tr br bl)
+function cellPath(x0, y0, x1, y1, r) {
+  ctx.moveTo(x0 + r[0], y0);
+  ctx.lineTo(x1 - r[1], y0); r[1] ? ctx.arcTo(x1, y0, x1, y0 + r[1], r[1]) : ctx.lineTo(x1, y0);
+  ctx.lineTo(x1, y1 - r[2]); r[2] ? ctx.arcTo(x1, y1, x1 - r[2], y1, r[2]) : ctx.lineTo(x1, y1);
+  ctx.lineTo(x0 + r[3], y1); r[3] ? ctx.arcTo(x0, y1, x0, y1 - r[3], r[3]) : ctx.lineTo(x0, y1);
+  ctx.lineTo(x0, y0 + r[0]); r[0] ? ctx.arcTo(x0, y0, x0 + r[0], y0, r[0]) : ctx.lineTo(x0, y0);
+  ctx.closePath();
+}
+function piecePath(k) {
+  ctx.beginPath();
+  for (const c of k.cells) { const ox = k.x + c.cx * CELL, oy = k.y + c.cy * RH; cellPath(ox + c.x0, oy + c.y0, ox + c.x1, oy + c.y1, c.rad); }
+}
+// a piece cut from a fluorescent stone: neon rim drawn first, then the stone laid over it so no seams show
+function drawStone(k) {
+  const m = k.st, g = k.geo, neon = neonOf(m, k);
+  piecePath(k);
+  if (k.holds > 0 && !k.fallT) {   // black aura: this piece is holding others up
+    // on the black void the aura is a black band with a pale rim, so it reads as a halo
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "rgba(235,235,245,.75)"; ctx.lineWidth = 19; ctx.stroke();
+    ctx.strokeStyle = "#000"; ctx.lineWidth = 15; ctx.stroke();
+  }
+  ctx.strokeStyle = neon; ctx.lineJoin = "round";
+  ctx.globalAlpha = .3; ctx.lineWidth = 9; ctx.stroke();
+  ctx.globalAlpha = 1; ctx.lineWidth = 4; ctx.stroke();
+  ctx.save(); ctx.clip();
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(m.tex, g.ox, g.oy, k.w, k.h, k.x, k.y, k.w, k.h);
+  ctx.globalCompositeOperation = "color"; ctx.globalAlpha = .82;
+  ctx.fillStyle = "hsl(" + Math.round(k.hue) + ",95%,50%)"; ctx.fillRect(k.x, k.y, k.w, k.h);
+  ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1;
+  const sh = ctx.createLinearGradient(0, k.y, 0, k.y + k.h);
+  sh.addColorStop(0, "rgba(255,255,255,.12)"); sh.addColorStop(.5, "rgba(0,0,0,0)"); sh.addColorStop(1, "rgba(0,0,0,.28)");
+  ctx.fillStyle = sh; ctx.fillRect(k.x, k.y, k.w, k.h);
+  ctx.restore();
+}
+
+// the core: a big round piece cut from the phase's stone
+function drawCore(k) {
+  const cx = k.x + CORE_R, cy = k.y + CORE_R, t = performance.now() / 1000, hue = Math.round(k.hue);
+  const pulse = .5 + .5 * Math.sin(t * 2.4);
+  // halo
+  const halo = ctx.createRadialGradient(cx, cy, CORE_R * .8, cx, cy, CORE_R * 1.7);
+  halo.addColorStop(0, "hsla(" + hue + ",100%,60%," + (.35 + pulse * .2) + ")"); halo.addColorStop(1, "hsla(" + hue + ",100%,50%,0)");
+  ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(cx, cy, CORE_R * 1.7, 0, Math.PI * 2); ctx.fill();
+  // neon rim
+  ctx.strokeStyle = "hsl(" + hue + ",100%,65%)"; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.arc(cx, cy, CORE_R, 0, Math.PI * 2); ctx.stroke();
+  // the stone, flat like every other piece (no sphere shading)
+  ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, CORE_R - 1, 0, Math.PI * 2); ctx.clip();
+  ctx.drawImage(k.st.tex, k.geo.ox, k.geo.oy, CORE_R * 2, CORE_R * 2, k.x - 6, k.y - 6, CORE_R * 2 + 12, CORE_R * 2 + 12);
+  ctx.restore(); ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, CORE_R - 1, 0, Math.PI * 2); ctx.clip();
+  ctx.globalCompositeOperation = "color"; ctx.globalAlpha = .8;
+  ctx.fillStyle = "hsl(" + hue + ",95%,50%)"; ctx.fillRect(k.x, k.y, k.w, k.h);
+  ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1;
+  // same soft top-to-bottom shade the other pieces have
+  const sh = ctx.createLinearGradient(0, k.y, 0, k.y + k.h);
+  sh.addColorStop(0, "rgba(255,255,255,.12)"); sh.addColorStop(.5, "rgba(0,0,0,0)"); sh.addColorStop(1, "rgba(0,0,0,.28)");
+  ctx.fillStyle = sh; ctx.fillRect(k.x, k.y, k.w, k.h);
+  if (k.flash > 0) { ctx.globalAlpha = k.flash * .6; ctx.fillStyle = "#fff"; ctx.fillRect(k.x, k.y, k.w, k.h); ctx.globalAlpha = 1; }
+  ctx.restore();
+  // the number of hits it still takes
+  ctx.font = "800 " + (k.hp > 999 ? 34 : 42) + "px 'Chakra Petch', sans-serif";
+  ctx.lineWidth = 5; ctx.strokeStyle = "rgba(0,0,0,.6)"; ctx.lineJoin = "round";
+  ctx.strokeText(k.hp, cx, cy + 6); ctx.fillStyle = "#fff"; ctx.fillText(k.hp, cx, cy + 6);
+  ctx.font = "700 12px 'Chakra Petch', sans-serif"; ctx.fillStyle = "rgba(255,255,255,.85)";
+  ctx.fillText("NÚCLEO", cx, cy - 28);
+}
+
+// fine dust rising slowly through the dark, seen through a lens with chromatic aberration:
+// red and blue split away from the centre of the screen, more toward the edges
+const dust = Array.from({ length: 110 }, () => ({
+  x: Math.random() * W, y: Math.random() * H, s: .5 + Math.random() * 1.4,
+  up: 4 + Math.random() * 9, ph: Math.random() * 7, a: .3 + Math.random() * .5
+}));
+// a second, denser layer that lives in the lower part of the shaft and fades as it rises
+const deep = Array.from({ length: 90 }, () => ({
+  x: Math.random() * W, y: H * (.45 + Math.random() * .55), s: .5 + Math.random() * 1.3,
+  up: 3 + Math.random() * 7, ph: Math.random() * 7, a: .3 + Math.random() * .5, deep: true
+}));
+function dustStep(dt) {
+  const t = performance.now() / 1000;
+  for (const d of deep) {
+    d.x += Math.sin(t * .35 + d.ph) * 2.5 * dt;
+    d.y -= d.up * dt;
+    if (d.y < H * .42) { d.y = H + 4; d.x = Math.random() * W; }
+  }
+  for (const d of dust) {
+    d.x += Math.sin(t * .3 + d.ph) * 3 * dt;
+    d.y -= d.up * dt;
+    if (d.x < -4) d.x += W + 8; else if (d.x > W + 4) d.x -= W + 8;
+    if (d.y < -6) { d.y += H + 12; d.x = Math.random() * W; }
+  }
+}
+function drawDust() {
+  const t = performance.now() / 1000;
+  ctx.globalCompositeOperation = "lighter";
+  for (const d of dust.concat(deep)) {
+    const fadeUp = d.deep ? clamp((d.y - H * .42) / (H * .3), 0, 1) : 1;
+    const a = d.a * fadeUp * (.6 + .4 * Math.sin(t * .8 + d.ph * 3));
+    const ox = (d.x - W / 2) / (W / 2) * 1.8, oy = (d.y - H / 2) / (H / 2) * 1.8;
+    for (const [cx, cy, col] of [[-ox, -oy, "#ff0000"], [0, 0, "#00ff00"], [ox, oy, "#0000ff"]]) {
+      ctx.globalAlpha = a; ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(d.x + cx, d.y + cy, d.s, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1;
+}
+
+// ---------- power-up chips ----------
+// timed power-ups sit in the top-left corner as chips: icon, a bar for the time left, a dot per level
+const CHIP_W = 62, CHIP_ORDER = ["rain", "fire", "wide", "slim"];
+const chipsOn = () => CHIP_ORDER.filter(f => run.fx[f] > 0);
+const chipX = f => 6 + chipsOn().indexOf(f) * (CHIP_W + 5);
+function drawChips() {
+  const r = run, tp = performance.now() / 1000;
+  ctx.textBaseline = "middle";
+  for (const f of chipsOn()) {
+    const x = chipX(f), y = 4, left = r.fx[f], fr = clamp(left / (r.fxMax[f] || left), 0, 1), ending = left < 2.5;
+    const fly = r.icons.find(q => q.type === f && !q.rise);   // its icon is still flying in: the slot waits, then pops
+    const land = fly ? fly.t - .55 : 9;
+    let sc = 1;
+    if (fly && land < 0) { ctx.globalAlpha = .25; }
+    else if (land < .4) sc = 1 + .25 * spring(land, 28, 10);
+    if (ending && !reduceMotion) { ctx.globalAlpha = .5 + .5 * Math.abs(Math.sin(tp * (left < 1 ? 14 : 8))); sc *= 1 + .05 * Math.sin(tp * 30); }
+    ctx.save(); ctx.translate(x + CHIP_W / 2, y + 11); ctx.scale(sc, sc); ctx.translate(-x - CHIP_W / 2, -y - 11);
+    ctx.fillStyle = "rgba(19,14,12,.85)"; rr(x, y, CHIP_W, 22, 11); ctx.fill();
+    const col = f === "rain" ? "hsl(" + (tp * 220 % 360) + ",100%,62%)" : f === "slim" ? "#ff4a3a" : CAPS[f].col;
+    ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.stroke();
+    capIcon(ctx, f, x + 11, y + 11, 8.5, false);
+    // the time bar: full when caught, it drains; turns red near the end
+    const bw = CHIP_W - 30;
+    ctx.fillStyle = "rgba(255,255,255,.12)"; rr(x + 23, y + 6, bw, 6, 3); ctx.fill();
+    if (f === "rain") { const g = ctx.createLinearGradient(x + 23, 0, x + 23 + bw, 0); RAINBOW_STOPS.forEach((c, i) => g.addColorStop(i / 7, c)); ctx.fillStyle = g; }
+    else ctx.fillStyle = ending ? "#ff4a3a" : CAPS[f].col;
+    rr(x + 23, y + 6, Math.max(6, bw * fr), 6, 3); ctx.fill();
+    ctx.fillStyle = "#f4e7d4";
+    for (let i = 0; i < r.lv[f]; i++) { ctx.beginPath(); ctx.arc(x + 25 + i * 6, y + 16.5, 1.7, 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore(); ctx.globalAlpha = 1;
+  }
+}
+// while an eraser is in hand: a blue hint at the bottom of the pit saying what to do, with how many are left
+function drawZap() {
+  const r = run;
+  if (!(r.zaps > 0)) return;
+  const tp = performance.now() / 1000, txt = "Toque numa pedra para apagar" + (r.zaps > 1 ? " (" + r.zaps + ")" : "");
+  ctx.font = "700 13px 'Chakra Petch', sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  const w = ctx.measureText(txt).width + 44, x = (W - w) / 2, y = H - 44;
+  ctx.globalAlpha = reduceMotion ? 1 : .8 + .2 * Math.sin(tp * 5);
+  ctx.fillStyle = "rgba(10,24,52,.9)"; rr(x, y, w, 28, 14); ctx.fill();
+  ctx.strokeStyle = CAPS.zap.col; ctx.lineWidth = 2; ctx.stroke();
+  capIcon(ctx, "zap", x + 16, y + 14, 9, true);
+  ctx.fillStyle = "#e8f2ff"; ctx.fillText(txt, x + 32, y + 14.5);
+  ctx.globalAlpha = 1;
+}
+// a caught power-up's icon: timed ones arc from the paddle into their chip, the others pop and float away
+function drawIcons() {
+  const r = run;
+  for (const q of r.icons) {
+    let x, y, R0 = q.big ? 22 : 13, sz, a = 1;
+    if (q.rise) {
+      const p = q.t / 1;
+      x = q.x; y = q.y + (q.big ? -50 : 30) * easeOut(p) - (q.big ? 0 : 10);
+      sz = R0 * (.3 + .7 * easeBack(q.t / .3)) * (1 - .3 * p); a = clamp((1 - p) * 3, 0, 1);
+    } else {
+      const p = easeOut(clamp(q.t / .55, 0, 1)), tx = chipX(q.type) + 11, ty = 15;
+      const cx = (q.x + tx) / 2, cy = Math.max(q.y, ty) + 90;   // control point below: it swoops down, then up into the slot
+      x = (1 - p) * (1 - p) * q.x + 2 * (1 - p) * p * cx + p * p * tx;
+      y = (1 - p) * (1 - p) * q.y + 2 * (1 - p) * p * cy + p * p * ty;
+      sz = q.t < .55 ? R0 * (.4 + .6 * easeBack(q.t / .25)) * (1 - .4 * p) : 0;
+    }
+    if (sz > .5) { ctx.globalAlpha = a; capIcon(ctx, q.type, x, y, sz, true); }
+    if (q.name) {   // first time this run: say what it is, small, where it was caught
+      ctx.globalAlpha = clamp((1.6 - q.t) * 2, 0, 1) * clamp(q.t * 6, 0, 1);
+      ctx.font = "700 12px 'Chakra Petch', sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.lineWidth = 3; ctx.strokeStyle = "rgba(0,0,0,.7)"; ctx.lineJoin = "round";
+      const nx = clamp(q.x, 50, W - 50), ny = LY + 46 + q.row * 17 - 8 * easeOut(q.t / .4);
+      ctx.strokeText(q.name, nx, ny); ctx.fillStyle = q.type === "slim" ? "#ff8a7a" : CAPS[q.type].col === "#ffffff" ? "#f4e7d4" : CAPS[q.type].col; ctx.fillText(q.name, nx, ny);
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ---------- motion drawing ----------
+// a ball: stretched along its flight, and for a moment after a hit squashed flat against what it hit
+function ballPath(b, rad = R) {
+  const sp = Math.hypot(b.vx, b.vy) || 1, t = b.sqT ?? 9;
+  let m = sqMat(b.vx / sp, b.vy / sp, 1 + .14 * (1 - Math.exp(-t * 9)));   // follow-through: the stretch comes back as it leaves
+  if (t < .3 && b.snx != null) m = mulM(sqMat(b.snx, b.sny, 1 - .4 * (b.sqK || 1) * spring(t, 38, 14)), m);
+  ctx.save(); ctx.transform(m[0], m[2], m[1], m[3], b.x, b.y);
+  ctx.beginPath(); ctx.arc(0, 0, rad, 0, Math.PI * 2);
+  ctx.restore();
+}
+// motion blur: each ball drags a tapering streak through where it was the last few frames
+function drawTrails() {
+  const r = run;
+  if (reduceMotion) return;
+  ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
+  ctx.strokeStyle = r.fx.rain > 0 ? "#d9b8ff" : r.fx.fire > 0 ? "#ff8a4a" : "#ffe6c8";
+  for (let i = 0; i < 3; i++) {
+    ctx.globalAlpha = [.26, .14, .06][i]; ctx.lineWidth = R * [1.5, 1.1, .7][i];
+    ctx.beginPath();
+    for (const b of r.balls) {
+      const tr = b.tr; if (b.home || b.gather || !tr || tr.length < 2 * i + 2) continue;
+      if (i) ctx.moveTo(tr[2 * i - 2], tr[2 * i - 1]); else ctx.moveTo(b.x, b.y);
+      ctx.lineTo(tr[2 * i], tr[2 * i + 1]);
+    }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over"; ctx.lineCap = "butt";
+}
+// a piece that was hit is shoved along the ball's path and squashed on that axis, then springs back;
+// a piece arriving on screen pops in from a little smaller. Returns true if it left a ctx.save() open.
+function blockXf(k, f) {
+  const t = k.hitT ?? 9, arrive = f < 1 ? .88 + .12 * easeBack(f) : 1;
+  if (t > .45 && arrive === 1) return false;
+  const cx = k.x + k.w / 2, cy = k.y + k.h / 2;
+  ctx.save(); ctx.translate(cx, cy);
+  if (t <= .45) {
+    const e = spring(t, 30, 11), ext = Math.abs(k.hnx) * k.w + Math.abs(k.hny) * k.h;
+    ctx.translate(k.hnx * 2.6 * e, k.hny * 2.6 * e);
+    const m = sqMat(k.hnx, k.hny, 1 - e * Math.min(k.core ? .05 : .09, 5 / ext));
+    ctx.transform(m[0], m[2], m[1], m[3], 0, 0);
+  }
+  if (arrive !== 1) ctx.scale(arrive, arrive);
+  ctx.translate(-cx, -cy);
+  return true;
+}
+// a broken piece leaves its ghost: a white flash in its shape that swells and fades, and a shockwave ring
+function drawPops() {
+  const r = run;
+  ctx.globalCompositeOperation = "lighter";
+  for (const q of r.pops) {
+    const p = q.t / .45, k = q.k, s = 1 + .3 * easeOut(p * 1.6);
+    if (k) {
+    ctx.save(); ctx.translate(q.cx, q.cy); ctx.scale(s, s); ctx.translate(-q.cx, -q.cy);
+    piecePath(k);
+    ctx.globalAlpha = Math.pow(clamp(1 - p * 2.2, 0, 1), 2) * .9; ctx.fillStyle = "#fff"; ctx.fill();
+    ctx.globalAlpha = Math.pow(1 - p, 2); ctx.strokeStyle = q.col; ctx.lineWidth = 3 / s; ctx.stroke();
+    ctx.restore();
+    }
+    ctx.globalAlpha = (1 - p) * .7; ctx.strokeStyle = q.col; ctx.lineWidth = 3 * (1 - p) + .5;
+    ctx.beginPath(); ctx.arc(q.cx, q.cy, q.ring + 46 * easeOut(p), 0, Math.PI * 2); ctx.stroke();
+  }
+  const cb = r.coreBlast;
+  if (cb) {   // the core: two big rings rolling out across the shaft and a flash of light
+    for (const [d, w] of [[0, 8], [.12, 4]]) {
+      const p = clamp((cb.t - d) / 1.1, 0, 1); if (p <= 0 || p >= 1) continue;
+      ctx.globalAlpha = (1 - p) * .85; ctx.strokeStyle = d ? "#fff" : cb.col; ctx.lineWidth = w * (1 - p) + 1;
+      ctx.beginPath(); ctx.arc(cb.x, cb.y, CORE_R + W * 1.1 * easeOut(p), 0, Math.PI * 2); ctx.stroke();
+    }
+    const fl = clamp(1 - cb.t / .3, 0, 1);
+    if (fl > 0) { ctx.globalAlpha = fl * fl * .55; ctx.fillStyle = "#fff"; ctx.fillRect(-20, -20, W + 40, H + 40); }
+  }
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
+}
+// shards: spinning triangles that shrink as they die, and sparks drawn as streaks along their speed (motion blur)
+function drawParts() {
+  const r = run;
+  ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
+  for (const p of r.parts) {
+    const life = clamp(p.life / (p.max || 1), 0, 1), a = clamp(p.life * 2.5, 0, 1);
+    ctx.globalAlpha = a; ctx.fillStyle = ctx.strokeStyle = p.col;
+    if (p.spark) {
+      ctx.lineWidth = p.s * .55;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * .045, p.y - p.vy * .045); ctx.stroke();
+    } else {
+      const sz = p.s * (.4 + .9 * life), c = Math.cos(p.rot || 0) * sz, s = Math.sin(p.rot || 0) * sz;
+      ctx.beginPath(); ctx.moveTo(p.x + c, p.y + s); ctx.lineTo(p.x - .5 * c - .87 * s, p.y - .5 * s + .87 * c); ctx.lineTo(p.x - .5 * c + .87 * s * .6, p.y - .5 * s - .87 * c * .6); ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over"; ctx.lineCap = "butt";
+}
+
+function draw() {
+  const r = run;
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  if (!r) return;
+  // camera: spring kick + smooth noise (layered sines, not a random jump every frame) and a hint of roll
+  const tq = r.trauma * r.trauma, tn = performance.now() / 1000;
+  const sx = r.cam.x + tq * 12 * (Math.sin(tn * 41) * .6 + Math.sin(tn * 23.3 + 1.7) * .4);
+  const sy = r.cam.y + tq * 12 * (Math.sin(tn * 37.7 + 3.1) * .6 + Math.sin(tn * 19.1 + .4) * .4);
+  ctx.translate(W / 2 + sx, H / 2 + sy); ctx.rotate(tq * .025 * Math.sin(tn * 29 + 2.2)); ctx.translate(-W / 2, -H / 2);
+
+  // black void with fine theatre dust drifting through it
+  // black, with a faint wash of the layer's colour rising from the depths
+  const h0 = Math.round(hueAt(r.li, r.depth)), h1 = Math.round(hueAt(r.li, r.depth + 60));
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, "#000"); bg.addColorStop(.45, "hsl(" + h0 + ",60%,3%)"); bg.addColorStop(1, "hsl(" + h1 + ",70%,10%)");
+  ctx.fillStyle = bg; ctx.fillRect(-40, -40, W + 80, H + 80);
+  drawDust();
+
+  // blocks
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  for (const k of r.blocks) {
+    if (!onScreen(k) || k.y + k.h < 0) continue;
+    const f = k.fade ?? 1;
+    ctx.globalAlpha = f;
+    const moved = blockXf(k, f);
+    if (k.core) { drawCore(k); ctx.globalAlpha = 1; if (moved) ctx.restore(); continue; }
+    drawStone(k);
+    if (k.flash > 0) {
+      ctx.globalAlpha = k.flash * .7 * f; ctx.fillStyle = "#fff";
+      piecePath(k); ctx.fill();
+      ctx.globalAlpha = f;
+    }
+    ctx.font = "700 " + (k.hp > 999 ? 13 : k.hp > 99 ? 15 : 17) + "px 'Chakra Petch', sans-serif";
+    ctx.lineWidth = 3; ctx.strokeStyle = "rgba(0,0,0,.55)"; ctx.lineJoin = "round";
+    const solo = !k.badgeCell, lx = k.x + k.label[0], ly = k.y + k.label[1] + 1;
+    const ps = 1 + .35 * Math.exp(-(k.hitT ?? 9) * 14);   // the number pops on each hit
+    if (ps > 1.01) { ctx.save(); ctx.translate(lx, ly); ctx.scale(ps, ps); ctx.translate(-lx, -ly); }
+    ctx.strokeText(k.hp, lx, ly);
+    ctx.fillStyle = "#fff"; ctx.fillText(k.hp, lx, ly);
+    if (ps > 1.01) ctx.restore();
+    const bx = k.x + (solo ? k.label[0] - CELL / 2 : k.badgeCell[0] * CELL), by = k.y + (solo ? k.label[1] - RH / 2 : k.badgeCell[1] * RH);
+    if (k.cap) capBadge(k.cap, bx + CELL / 2 - (k.gem ? 9 : 0), by + RH / 2);
+    if (k.gem) coin(ctx, bx + CELL / 2 + (k.cap ? 12 : 0), by + RH / 2, 6);
+    ctx.globalAlpha = 1;
+    if (moved) ctx.restore();
+  }
+  drawPops();
+
+  // bedrock under the floor line
+  const fy = floorY() - GV;
+  if (fy < H) {
+    const bg2 = ctx.createLinearGradient(0, fy, 0, H);
+    bg2.addColorStop(0, "rgba(0,0,0,0)"); bg2.addColorStop(1, "rgba(0,0,0,.55)");
+    ctx.fillStyle = bg2; ctx.fillRect(-40, fy, W + 80, H - fy + 50);
+  }
+
+  // falling pieces
+  for (const k of r.falling) {
+    ctx.save();
+    const cx = k.x + k.w / 2, cy = k.y + k.h / 2;
+    const st = 1 + clamp(k.vy / 3000, 0, .12);
+    ctx.translate(cx, cy); ctx.rotate(k.spin * k.fallT); ctx.scale(1 / st, st); ctx.translate(-cx, -cy);
+    ctx.globalAlpha = clamp(1.4 - k.fallT * 2, 0, 1);
+    drawStone(k);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+
+  // particles
+  drawParts();
+
+  // surface band and drill
+  ctx.fillStyle = "#050505"; ctx.fillRect(-40, -40, W + 80, LY + 38);
+  ctx.fillStyle = "#1c1c20"; ctx.fillRect(-40, LY - 2, W + 80, 3);
+  if (r.state === "aim" && r.aimOn && !paused) {
+    const pts = ghostPath();
+    ctx.fillStyle = "rgba(244,231,212,.75)";
+    for (let i = 0; i < pts.length; i += 2) {
+      const a = 1 - i / pts.length; ctx.globalAlpha = .25 + a * .7;
+      ctx.beginPath(); ctx.arc(pts[i], pts[i + 1], 2.2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  if (r.state === "aim" && !r.aimOn && !paused && r.shots > 0) {
+    // ready to fire: rings pulse out of the drill. The words only show on the very first shot of the game.
+    const tp = performance.now() / 1000;
+    if (!reduceMotion) for (const o of [0, .6]) {
+      const p = (tp * .85 + o) % 1;
+      ctx.globalAlpha = (1 - p) * .55; ctx.strokeStyle = "#f4e7d4"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(r.dx, LY - 10, 12 + 26 * easeOut(p), 0, Math.PI * 2); ctx.stroke();
+    }
+    if (save.level === 0 && save.maxLevel === 0 && r.used === 0) {
+      ctx.globalAlpha = .55 + .3 * Math.sin(tp * 3.3);
+      ctx.fillStyle = "#f4e7d4"; ctx.font = "600 12px 'Chakra Petch', sans-serif"; ctx.textAlign = "center";
+      ctx.fillText("segure para mirar · solte para atirar", W / 2, LY + 70);
+    }
+    ctx.globalAlpha = 1;
+  }
+  // capsules: a marker on the paddle line shows where to catch them;
+  // the bad one gets a red ring spinning round it so it reads as "dodge me"
+  const tc = performance.now() / 1000;
+  for (const c of r.caps) {
+    const C = CAPS[c.type], bad = c.type === "slim", lined = Math.abs(c.x - r.px) < padW() / 2 + 13;
+    ctx.globalAlpha = lined ? 1 : .55 + .25 * Math.sin(tc * 8);
+    ctx.fillStyle = bad ? "#ff4a3a" : C.col;
+    ctx.beginPath(); ctx.moveTo(c.x, LY + 7); ctx.lineTo(c.x - 5, LY + 13); ctx.lineTo(c.x + 5, LY + 13); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1;
+    const cs = 12 * (c.vy == null ? 1 : .3 + .7 * easeBack((c.t || 0) / .35));
+    capIcon(ctx, c.type, c.x, c.y, cs, true);
+    if (bad) {
+      ctx.strokeStyle = "#ff4a3a"; ctx.lineWidth = 2; ctx.setLineDash([4, 4]); ctx.lineDashOffset = -tc * 20;
+      ctx.beginPath(); ctx.arc(c.x, c.y, cs + 4, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+  drawChips();
+  drawZap();
+
+  // danger line: glows red as the stone climbs toward it
+  const near = clamp(1 - (topOf() - DANGER) / 140, 0, 1);
+  if (near > 0) {
+    ctx.globalAlpha = near * (.55 + .45 * Math.sin(performance.now() / 160));
+    ctx.fillStyle = "#ff3a3a"; ctx.fillRect(0, DANGER - 1.5, W, 3);
+    const gl = ctx.createLinearGradient(0, DANGER, 0, DANGER + 40);
+    gl.addColorStop(0, "rgba(255,40,40,.35)"); gl.addColorStop(1, "rgba(255,40,40,0)");
+    ctx.fillStyle = gl; ctx.fillRect(0, DANGER, W, 40);
+    ctx.globalAlpha = 1;
+  }
+
+  // the drill stands on its own spot (where the last volley came back), apart from the paddle
+  ctx.save();
+  ctx.translate(r.dx, LY - 14);
+  // after the shot the drill swings back down from the firing angle instead of snapping
+  ctx.rotate(r.state === "aim" ? r.aimA - Math.PI / 2 : (Math.atan2(r.dir[1], r.dir[0]) - Math.PI / 2) * (1 - easeOut(r.drillT / .5)));
+  if (r.drillT < .5) {   // recoil: kicked back and squashed, then it springs out past its length and settles
+    const e = spring(r.drillT, 30, 9);
+    ctx.translate(0, -5 * e); ctx.scale(1 + .22 * e, 1 - .22 * e);
+  }
+  // painted in the colour of the phase right now
+  const dh = Math.round(hueAt(r.li, r.depth)), dDark = "hsl(" + dh + ",80%,36%)";
+  ctx.shadowColor = "hsl(" + dh + ",100%,60%)"; ctx.shadowBlur = 10;
+  ctx.fillStyle = dDark; ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "hsl(" + dh + ",92%,58%)";
+  ctx.beginPath(); ctx.moveTo(-9, 2); ctx.lineTo(9, 2); ctx.lineTo(0, 26); ctx.closePath(); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = dDark; ctx.lineWidth = 2;
+  for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(-7 + i * 2.3, 7 + i * 5.5); ctx.lineTo(7 - i * 2.3, 10 + i * 5.5); ctx.stroke(); }
+  ctx.restore();
+  // balls ready in the drill: a ball glyph and the count
+  const ready = r.state === "aim" ? save.balls + r.extra + r.bonus : r.spawnLeft;
+  const ballCount = (x, y) => {
+    ctx.fillStyle = "#fff6e8"; ctx.beginPath(); ctx.arc(x, y, 3.2, 0, Math.PI * 2); ctx.fill();
+    ctx.font = "700 13px 'Chakra Petch', sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillStyle = "#f4e7d4"; ctx.fillText(ready, x + 6, y + 1);
+  };
+  if (ready && r.state === "shoot") {   // the volley's mouth stays where you fired while balls are still coming out
+    ctx.fillStyle = "rgba(255,246,232,.85)"; ctx.beginPath(); ctx.arc(r.fireX, BY, 4, 0, Math.PI * 2); ctx.fill();
+    ballCount(r.fireX + 12, BY + 12);
+  } else if (ready) ballCount(r.dx + 15, LY - 26);
+  ctx.textAlign = "center";
+
+  // the paddle: follows the finger or mouse at all times, before and during a shot
+  const pw = padW(), padCol = r.lv.wide > r.lv.slim ? "#7ee081" : r.lv.slim > r.lv.wide ? "#a970ff" : r.lv.wide ? "#d8c9a8" : "#f4e7d4";
+  const pe = r.padT < .45 ? spring(r.padT, 32, 11) : 0;   // a ball bounces off: the paddle gives way and springs back
+  ctx.save(); ctx.translate(r.px, LY - 3 * pe); ctx.scale(1 + .1 * pe, 1 - .3 * pe); ctx.translate(-r.px, -LY);
+  ctx.fillStyle = padCol; rr(r.px - pw / 2, LY - 5, pw, 10, 5); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,.45)"; rr(r.px - pw / 2 + 5, LY - 3, pw - 10, 2.5, 1.2); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = "rgba(244,231,212,.45)";
+  for (const sd of [-1, 1]) {
+    const ax = r.px + sd * (pw / 2 + 9);
+    ctx.beginPath(); ctx.moveTo(ax + sd * 6, LY); ctx.lineTo(ax, LY - 5); ctx.lineTo(ax, LY + 5); ctx.closePath(); ctx.fill();
+  }
+  // rebounds, top-right: a little paddle and the count
+  if (r.rebounds) {
+    ctx.font = "700 12px 'Chakra Petch', sans-serif"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    ctx.fillStyle = "#b29a83"; ctx.fillText(r.rebounds, W - 8, 13);
+    const tw = ctx.measureText(String(r.rebounds)).width;
+    rr(W - 28 - tw, 10, 14, 5, 2.5); ctx.fill();
+    ctx.beginPath(); ctx.arc(W - 21 - tw, 5.5, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.textAlign = "center";
+  }
+
+  drawHole();
+  drawTrails();
+  // balls
+  ctx.fillStyle = r.fx.fire > 0 ? "#ff8a4a" : "#fff6e8"; ctx.shadowColor = r.fx.fire > 0 ? "rgba(255,90,40,.95)" : "rgba(255,200,140,.8)"; ctx.shadowBlur = r.fx.fire > 0 ? 14 : 8;
+  if (r.fx.rain > 0) {
+    const t0 = performance.now() / 3;
+    r.balls.forEach((b, i) => {
+      if (b.home) return;
+      const hh = (t0 + i * 40) % 360;
+      ctx.globalAlpha = .35; ctx.fillStyle = "hsl(" + ((hh + 60) % 360) + ",100%,60%)";
+      ctx.beginPath(); ctx.arc(b.x - b.vx * .02, b.y - b.vy * .02, R * 1.4, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1; ctx.fillStyle = "hsl(" + hh + ",100%,62%)"; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 16;
+      ballPath(b); ctx.fill();
+    });
+  } else for (const b of r.balls) { if (b.home) continue; ballPath(b); ctx.fill(); }
+  ctx.shadowBlur = 0;
+  for (const b of r.balls) if (b.home) drawBubble(b);
+  // returning balls rolling over the surface into the drill, with a short streak behind them
+  for (const g of r.homing) {
+    // they don't slide home, they hop: one arc over the distance, stretched going up, squashed coming down
+    const pr = g.d0 > 4 ? clamp(1 - Math.abs(r.dx - g.x) / g.d0, 0, 1) : 1, hop = Math.min(26, (g.d0 || 0) * .3) * Math.sin(Math.PI * pr);
+    const dir = Math.sign(r.dx - g.x) || 1;
+    const tr = ctx.createLinearGradient(g.x - dir * 22, 0, g.x, 0);
+    tr.addColorStop(0, "rgba(255,246,232,0)"); tr.addColorStop(1, "rgba(255,246,232,.45)");
+    ctx.fillStyle = tr; ctx.fillRect(Math.min(g.x, g.x - dir * 22), g.y - R * .6, 22, R * 1.2);
+    ctx.fillStyle = "#fff6e8"; ctx.shadowColor = "rgba(255,200,140,.8)"; ctx.shadowBlur = 8;
+    const vs = 1 + .25 * Math.cos(Math.PI * pr) * Math.min(1, hop / 8);
+    ctx.beginPath(); ctx.ellipse(g.x, g.y - hop, R * .8 / vs, R * .8 * vs, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  // fast-forward badge: just the arrows, sliding
+  if (r.ff && r.state === "shoot") {
+    ctx.fillStyle = "rgba(19,14,12,.75)"; rr(W / 2 - 30, H - 40, 60, 26, 13); ctx.fill();
+    const sl = reduceMotion ? 0 : (performance.now() / 400) % 1;
+    for (let i = 0; i < 3; i++) {
+      const x = W / 2 - 16 + i * 11;
+      ctx.globalAlpha = .45 + .55 * ((i / 3 + 1 - sl) % 1); ctx.fillStyle = "#f4e7d4";
+      ctx.beginPath(); ctx.moveTo(x, H - 33); ctx.lineTo(x + 9, H - 27); ctx.lineTo(x, H - 21); ctx.closePath(); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  drawIcons();
+
+  // floating crystal text
+  ctx.font = "700 16px 'Chakra Petch', sans-serif";
+  for (const t of r.texts) {
+    ctx.globalAlpha = clamp(t.life * 1.5, 0, 1); ctx.fillStyle = t.col || "#f4efe8";
+    const ts = .4 + .6 * easeBack((t.age || 0) / .3);   // pop in with a little overshoot
+    ctx.save(); ctx.translate(t.x, t.y); ctx.scale(ts, ts); ctx.translate(-t.x, -t.y);
+    if (t.big) ctx.font = "800 24px 'Chakra Petch', sans-serif";
+    ctx.fillText(t.t, t.x, t.y);
+    if (t.pearl) coin(ctx, t.x + 18, t.y, 7);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ---------- HUD and menus ----------
+function hud() {
+  const r = run;
+  $("hDepth").textContent = Math.floor(r.depth);
+  $("hGoal").textContent = r.L.goal;
+  // the shaft is this phase only: it fills from the top in the phase's colours, and reaches the very bottom as the core rises into place
+  const sh = $("shaft").clientHeight - 6, dh = Math.round(hueAt(r.li, r.depth));
+  let f = clamp(r.depth / r.L.goal, 0, 1);
+  const core = r.blocks.find(k => k.core);
+  if (core) f += (1 - f) * clamp((H - core.y) / (H - (H / 2 - CORE_R)), 0, 1);
+  if (r.coreDown) f = 1;
+  $("hBar").style.height = (f * sh) + "px";
+  $("hBar").style.background = grad(r.li, "180deg") + " 0 0/100% " + sh + "px no-repeat";   // colours spread over the whole shaft
+  $("hTip").style.top = (3 + f * sh) + "px";
+  $("hTip").style.setProperty("--tip", "hsl(" + dh + ",92%,58%)");
+  $("hTip").style.setProperty("--tip-dk", "hsl(" + dh + ",80%,30%)");
+  $("shaft").setAttribute("aria-valuemax", r.L.goal); $("shaft").setAttribute("aria-valuenow", Math.floor(r.depth));
+  const ps = $("pShots");
+  if ($("hShots").textContent !== String(r.shots)) { ps.classList.remove("pill--bump"); void ps.offsetWidth; ps.classList.add("pill--bump"); }
+  $("hShots").textContent = r.shots;
+  ps.classList.toggle("pill--low", r.shots <= 2);
+  $("hGems").textContent = save.gems;
+  $("hLayer").textContent = r.li + 1;
+  $("hLayer").style.color = "hsl(" + Math.round(hueAt(r.li, r.depth)) + ",90%,62%)";
+}
+
+// the first colour holds like in the dig, then the rest spread evenly to the end
+const grad = (i, dir = "90deg") => {
+  const hs = phaseHues(i), c = hs.map(h => "hsl(" + h + ",88%,62%)"), n = hs.length;
+  return "linear-gradient(" + dir + "," + c[0] + " 0%," + c.map((x, k) => x + " " + (HOLD + (1 - HOLD) * k / (n - 1)) * 100 + "%").join(",") + ")";
+};
+const starsOf = i => "★".repeat(Math.min(5, diff(i).stars)) + (diff(i).stars > 5 ? "+" + (diff(i).stars - 5) : "");
+function phaseCard(i) {
+  const L = LV(i), locked = i > save.maxLevel, st = locked ? "🔒 Bloqueada" : i < save.maxLevel ? "Vencida" : "Próxima";
+  return '<div class="phase__band" style="background:' + grad(i) + '"><span class="phase__num">' + String(i + 1).padStart(2, "0") +
+    '</span><span class="phase__state">' + st + "</span>" + '</div><div class="phase__body"><p class="phase__name">' + L.name +
+    '</p><div class="phase__sub"><span class="stars" aria-label="Dificuldade ' + diff(i).stars + '">' + starsOf(i) + "</span><span>" + L.km +
+    '</span></div><div class="chips"><span class="chip">' + L.goal + "<small>m de meta</small></span><span class=\"chip\">" + L.shots +
+    "<small>tiros</small></span>" + (layerBalls(i) ? '<span class="chip">+' + layerBalls(i) + "<small>bolas</small></span>" : "") + "</div></div>";
+}
+// the card resting in the middle of the carousel is the chosen phase; a locked one can be looked at but not played
+function pickPhase(i) {
+  const core = $("core");
+  for (const c of core.children) c.classList.toggle("is-on", +c.dataset.i === i);
+  const locked = i > save.maxLevel;
+  $("bPlay").disabled = locked; $("bPlay").textContent = locked ? "🔒 Bloqueada" : "Cavar";
+  if (!locked && i !== save.level) { save.level = i; store(); newRun(i); }
+}
+// coverflow: each card's distance from the middle of the carousel, in card widths, drives its turn, size and sink in CSS
+function carFx() {
+  const core = $("core"), mid = core.scrollLeft + core.clientWidth / 2;
+  for (const c of core.children) {
+    const d = clamp((c.offsetLeft + c.offsetWidth / 2 - mid) / (c.offsetWidth || 1), -1.5, 1.5);
+    c.style.setProperty("--d", d.toFixed(3)); c.style.setProperty("--ad", Math.min(1, Math.abs(d)).toFixed(3));
+  }
+}
+let bought = -1;   // index in UPS of the upgrade just bought, lit up once when the shop is rebuilt
+function menu() {
+  const core = $("core"); core.innerHTML = "";
+  for (let i = 0, n = Math.max(8, save.maxLevel + 2); i < n; i++) {
+    const c = document.createElement("section");
+    c.className = "phase" + (i > save.maxLevel ? " phase--locked" : ""); c.dataset.i = i;
+    c.setAttribute("aria-label", "Fase " + (i + 1) + ", " + LV(i).name + (i > save.maxLevel ? ", bloqueada" : ""));
+    c.innerHTML = phaseCard(i);
+    c.onclick = () => c.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    core.appendChild(c);
+  }
+  if (!core.onscroll) {
+    let tm = 0;
+    const centred = () => {
+      const mid = core.scrollLeft + core.clientWidth / 2;
+      let best = 0, bd = 1e9;
+      for (const c of core.children) { const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - mid); if (d < bd) { bd = d; best = +c.dataset.i; } }
+      return best;
+    };
+    // a touch is a user gesture, so sound can start here and the very first swipe already ticks
+    core.addEventListener("pointerdown", audioInit);
+    core.onscroll = () => {
+      // roulette of bubbles: one every time a card passes the middle, fast on a flick and slowing as it settles
+      const now = centred();
+      if (now !== core.tickAt) { if (core.tickAt != null) sfx.tick(now); core.tickAt = now; }
+      if (!core.fxQ) core.fxQ = requestAnimationFrame(() => { core.fxQ = 0; carFx(); });
+      clearTimeout(tm);
+      tm = setTimeout(() => pickPhase(centred()), 90);
+    };
+  }
+  core.tickAt = save.level;
+  pickPhase(save.level);
+  // the menu may still be hidden here: centre the chosen card once it has a size
+  requestAnimationFrame(() => { const c = core.children[save.level]; if (c) core.scrollLeft = c.offsetLeft - (core.clientWidth - c.offsetWidth) / 2; carFx(); });
+  $("mGems").textContent = save.gems; $("mGems2").textContent = save.gems;
+  // legend: what each button and each power-up does, with the same icons as in the game
+  const lb = $("lgBtns");
+  if (!lb.childElementCount) for (const [id, n, d] of [["bRegroup", "Juntar", "põe as bolas numa linha só"], ["bFast", "Acelerar", "bolas mais rápidas"],
+    ["bSound", "Som", "liga e desliga"], ["bMenu", "Pausar", "pausa a partida"]]) {
+    const li = document.createElement("li");
+    li.innerHTML = '<span class="lg__ic" aria-hidden="true">' + $(id).querySelector("svg").outerHTML + "</span><span><b>" + n + "</b><small>" + d + "</small></span>";
+    li.querySelector(".snd-off")?.remove();
+    lb.appendChild(li);
+  }
+  const lc = $("lgCaps");
+  if (!lc.childElementCount) for (const key of CAP_KEYS) {
+    const C = CAPS[key], li = document.createElement("li"), ic = document.createElement("canvas");
+    ic.width = ic.height = 60; ic.className = "lg__ic"; capIcon(ic.getContext("2d"), key, 30, 30, 26, false);
+    if (key === "slim") li.className = "bad";
+    li.innerHTML = "<span><b>" + C.name + "</b><small>" + (key === "slim" ? "ruim: desvie! · " : "") + C.short + "</small></span>";
+    li.prepend(ic); lc.appendChild(li);
+  }
+  const cl = $("capList");
+  if (!cl.childElementCount) for (const key of CAP_KEYS) {
+    const C = CAPS[key], li = document.createElement("li");
+    li.className = "pu" + (key === "slim" ? " pu--bad" : "") + (key === "rain" ? " pu--rain" : "");
+    li.style.setProperty("--c", C.col);
+    const ic = document.createElement("canvas"); ic.width = ic.height = 96; ic.className = "pu__ic";
+    const paint = () => { const g = ic.getContext("2d"); g.clearRect(0, 0, 96, 96); capIcon(g, key, 48, 48, 40, false); };
+    paint();
+    if (key === "rain") (function loop() { if (!$("pCaps").hidden) paint(); requestAnimationFrame(loop); })();   // the rainbow keeps moving
+    li.innerHTML = '<div class="pu__top"><div class="pu__t"><b class="pu__n">' + C.name + '</b><span class="pu__chip">' +
+      (key === "slim" ? "Ruim · " : "") + C.short + '</span></div></div><p class="pu__d">' + C.desc + "</p>";
+    li.querySelector(".pu__top").prepend(ic);
+    cl.appendChild(li);
+  }
+  gallery();
+  const strip = $("mshop"); strip.innerHTML = "";
+  const lit = bought; bought = -1;
+  UPS.forEach((u, i) => {
+    const n = u.lvl(), maxed = n >= u.max, c = u.cost(n), d = document.createElement("div");
+    d.className = "ms" + (i === lit ? " is-bought" : "");
+    d.title = u.name + ": " + u.desc + " " + u.now();
+    d.innerHTML = '<span class="ms__ic">' + upIcon(u.ic) + '</span><span class="ms__n">' + u.short + '</span><span class="ms__lv' + (maxed ? " ms__lv--max" : "") + '" aria-label="Nível ' + n + " de " + u.max + '">' + n + "/" + u.max + "</span>";
+    const b = document.createElement("button"); b.type = "button";
+    if (maxed) b.textContent = "Máximo"; else b.innerHTML = '<span class="pearl" aria-hidden="true"></span> ' + c;
+    b.setAttribute("aria-label", "Comprar " + u.name + (maxed ? "" : " por " + c + " moedas"));
+    b.disabled = maxed || save.gems < c;
+    b.onclick = () => { if (save.gems < c) return; save.gems -= c; u.buy(); store(); sfx.buy(); bought = i; newRun(save.level); menu(); };
+    d.appendChild(b); strip.appendChild(d);
+  });
+  const ups1 = $("ups"), ups2 = $("ups2"); ups1.innerHTML = ""; ups2.innerHTML = "";
+  UPS.forEach((u, i) => {
+    const ups = i < 4 ? ups1 : ups2;
+    const n = u.lvl(), maxed = n >= u.max, c = u.cost(n);
+    const d = document.createElement("div"); d.className = "up" + (i === lit ? " is-bought" : "");
+    d.innerHTML = '<div class="up__top"><span class="up__ic">' + upIcon(u.ic) + '</span><div class="up__n">' + u.name + '<small aria-label="Nível ' + n + " de " + u.max + '">' + n + "/" + u.max + '</small></div></div><div class="up__d">' + u.desc + '<span class="up__now">' + u.now() + '</span></div><div class="pips" aria-label="Nível ' + n + " de " + u.max + '">' +
+      Array.from({ length: u.max }, (_, j) => "<i" + (j < n ? ' class="on"' : "") + "></i>").join("") + "</div>";
+    const btn = document.createElement("button"); btn.type = "button";
+    if (maxed) btn.textContent = "Máximo"; else btn.innerHTML = '<span class="pearl" aria-hidden="true"></span> ' + c;
+    btn.disabled = maxed || save.gems < c;
+    btn.onclick = () => { if (save.gems < c) return; save.gems -= c; u.buy(); store(); sfx.buy(); bought = i; newRun(save.level); menu(); };
+    d.appendChild(btn); ups.appendChild(d);
+  });
+  hud();
+}
+
+// little pictures for the shop cards
+const upIcCache = {};
+function upIcon(k) {
+  if (upIcCache[k]) return upIcCache[k];
+  const capKey = { multi: "multi", fire: "fire", ball2: "ball", slim: "slim" }[k];
+  let html;
+  if (capKey) {
+    const c = document.createElement("canvas"); c.width = c.height = 52;
+    capIcon(c.getContext("2d"), capKey, 26, 26, 21, false);
+    html = '<img alt="" src="' + c.toDataURL() + '">';
+  } else html = {
+    ball: '<svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="8" fill="#fff6e8"/><path d="M20 4v6M17 7h6" stroke="#ffd23a" stroke-width="2.2" stroke-linecap="round"/></svg>',
+    shots: '<svg viewBox="0 0 26 26"><path d="M2 8l6 3M3 14l5 1" stroke="#f4e7d4" stroke-width="1.6" stroke-linecap="round" opacity=".6"/><circle cx="12" cy="14" r="5" fill="#fff6e8"/>' +
+      '<text x="19.5" y="9" text-anchor="middle" font-size="10" font-weight="800" fill="#ffd23a" font-family="Chakra Petch, sans-serif">+2</text></svg>',
+    caps: '<svg viewBox="0 0 26 26"><circle cx="8" cy="15" r="5.5" fill="#ff5a3c"/><circle cx="18" cy="15" r="5.5" fill="#7ee081"/><circle cx="13" cy="7.5" r="5.5" fill="#ffd166"/>' +
+      '<g stroke="#1a110c" stroke-width="1.2" fill="none"><circle cx="8" cy="15" r="5.5"/><circle cx="18" cy="15" r="5.5"/><circle cx="13" cy="7.5" r="5.5"/></g></svg>',
+    coin: '<span class="pearl" style="width:20px;height:20px"></span>',
+    pad: '<svg viewBox="0 0 26 26"><rect x="2" y="11" width="22" height="5" rx="2.5" fill="#7ee081"/><path d="M5 7 2 9.5 5 12M21 7l3 2.5-3 2.5" stroke="#f4e7d4" stroke-width="1.6" fill="none" stroke-linecap="round" transform="translate(0 2)"/></svg>'
+  }[k] || "";
+  return upIcCache[k] = html;
+}
+
+// menu sub-pages (Lojinha, Power-ups, Regras): open over the menu, Voltar or Esc closes
+function openPanel(id) {
+  const m = $("ovMenu");
+  for (const p of m.querySelectorAll(".mpanel")) p.hidden = p.id !== id;
+  m.scrollTop = 0; m.classList.add("has-panel");
+  const p = $(id); p.scrollTop = 0;
+  p.querySelector(".mpanel__back").focus({ preventScroll: true });
+}
+function closePanel() {
+  const m = $("ovMenu"), open = m.querySelector(".mpanel:not([hidden])");
+  if (!open) return false;
+  open.hidden = true; m.classList.remove("has-panel");
+  const t = m.querySelector('[data-panel="' + open.id + '"]'); if (t) t.focus({ preventScroll: true });
+  return true;
+}
+document.querySelectorAll("[data-panel]").forEach(b => b.onclick = () => openPanel(b.dataset.panel));
+document.querySelectorAll(".mpanel__back").forEach(b => b.onclick = closePanel);
+window.addEventListener("keydown", e => { if (e.key === "Escape" && !$("ovMenu").hidden) closePanel(); });
+
+function gallery() {
+  const ml = $("minList");
+  if (!ml) return;
+  for (const m of MINERALS) {
+    if (!m.tex || m.shown) continue;
+    m.shown = true;
+    const d = document.createElement("div"), im = new Image();
+    d.className = "mineral"; d.style.setProperty("--mn", m.neon);
+    im.alt = ""; im.src = m.tex.toDataURL();
+    d.append(im, m.name); ml.appendChild(d);
+  }
+}
+function showMenu() { closePanel(); paused = true; $("ovEnd").hidden = true; $("ovPause").hidden = true; menu(); $("ovMenu").hidden = false; }
+function play() { audioInit(); $("ovMenu").hidden = true; $("ovEnd").hidden = true; newRun(save.level); paused = false; cv.focus(); }
+
+// ---------- input ----------
+let dragging = false;
+// The paddle follows the finger or mouse at all times. The drill is separate (Holedown aiming):
+// it goes to where the last ball of the volley came back.
+// Hold the finger on the screen and the straight dotted line points from the drill to it; let go to fire.
+// Letting go right over the drill cancels. With a mouse the line follows the cursor and a click fires.
+const toField = e => { const b = cv.getBoundingClientRect(); return [(e.clientX - b.left) / b.width * W, (e.clientY - b.top) / b.height * H]; };
+function padAt(e) { setPad(toField(e)[0]); }
+function aimAt(e) {
+  const [x, y] = toField(e), dx = x - run.dx, dy = Math.max(y - BY, 40);
+  run.aimA = clamp(Math.atan2(dy, dx), MIN_A, Math.PI - MIN_A);
+}
+const nearDrill = e => { const [x, y] = toField(e); return y < LY + 30 && Math.abs(x - run.dx) < 34; };
+let lastDown = 0;
+const keys = {};
+cv.addEventListener("pointerdown", e => {
+  audioInit();
+  if (!run || paused) return;
+  if (run.zaps > 0 && (run.state === "aim" || run.state === "shoot") && zapAt(...toField(e))) return;
+  cv.setPointerCapture(e.pointerId);
+  dragging = true;
+  padAt(e);
+  if (run.state === "aim") { aimAt(e); run.aimOn = true; return; }
+  const now = performance.now();
+  if (run.state === "shoot" && now - lastDown < 350) { recall(); lastDown = 0; }   // reset so a third tap doesn't toggle back
+  else lastDown = now;
+});
+cv.addEventListener("pointermove", e => {
+  if (!run || paused) return;
+  if (!dragging && e.pointerType !== "mouse") return;
+  padAt(e);   // the paddle is always free, with or without balls in play
+  if (run.state === "aim") { aimAt(e); run.aimOn = true; }
+});
+cv.addEventListener("pointerup", e => {
+  const was = dragging;
+  dragging = false;
+  if (!was || !run || paused || run.state !== "aim") return;
+  if (nearDrill(e)) { if (e.pointerType !== "mouse") run.aimOn = false; return; }
+  aimAt(e); fire();
+});
+cv.addEventListener("pointercancel", () => { dragging = false; if (run) { if (run.state === "aim") run.aimOn = false; } });
+cv.tabIndex = 0;
+window.addEventListener("keyup", e => { keys[e.key] = false; });
+window.addEventListener("keydown", e => {
+  if (!run || paused) return;
+  if ("aAdD".includes(e.key) && e.key.length === 1) { keys[e.key] = true; return; }
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight") { keys[e.key] = true; e.preventDefault(); }
+ else if (e.key === "r" || e.key === "R") regroup();
+ else if (e.key === " " || e.key === "Enter") {
+    if (document.activeElement && document.activeElement.tagName === "BUTTON") return;
+    fire(); e.preventDefault();
+  }
+});
+
+$("bPlay").onclick = play;
+$("eMain").onclick = play;
+$("eBuy").onclick = buyShots;
+$("eShop").onclick = () => { showMenu(); openPanel("pShop"); };
+$("bMenu").onclick = () => { if (!run || paused) return; paused = true; $("ovPause").hidden = false; $("bResume").focus(); };
+$("bResume").onclick = () => { $("ovPause").hidden = true; paused = false; cv.focus(); };
+$("bQuit").onclick = () => { newRun(save.level); showMenu(); };
+$("bRegroup").onclick = () => { regroup(); cv.focus(); };
+$("bFast").onclick = () => { if (!run) return; run.fast = !run.fast; $("bFast").setAttribute("aria-pressed", run.fast); };
+$("bSound").onclick = () => { setSound(!soundOn); $("bSound").setAttribute("aria-pressed", soundOn); if (soundOn) audioInit(); };
+
+// ---------- boot ----------
+let last = performance.now();
+function frame(t) {
+  const dt = Math.min(.05, (t - last) / 1000); last = t;
+  dustStep(dt); update(dt); draw();
+  requestAnimationFrame(frame);
+}
+function start(data) {
+  // a few stones right away so the shaft can fill, the rest one by one in the background
+  MINERALS.slice(0, 5).forEach(m => { if (!m.tex) m.tex = m.make(); });
+  (function more() {
+    const m = MINERALS.find(q => !q.tex);
+    if (!m) return;
+    m.tex = m.make();
+    if (!$("ovMenu").hidden) gallery();
+    setTimeout(more, 30);
+  })();
+  if (data && data.save) save = Object.assign({}, DEF, data.save);
+  fit();
+  window.addEventListener("resize", fit);
+  newRun(save.level);
+  run.aimOn = false;
+  showMenu();
+  requestAnimationFrame(frame);
+}
+window.claude?.hot?.snapshot?.(() => ({ save }));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+
+</body></html>
